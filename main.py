@@ -7764,7 +7764,8 @@ button:hover{border-color:#425267;background:#17212d}button.primary{background:#
 .brand{font-size:13px;font-weight:800;letter-spacing:.04em;margin-right:auto}.connection{color:var(--muted);font-size:11px;min-width:260px}
 .metrics{display:grid;grid-template-columns:repeat(8,minmax(120px,1fr));gap:7px;margin-bottom:9px}.metric{border:1px solid var(--border);background:var(--panel2);border-radius:9px;padding:9px 10px;min-height:74px}
 .metric-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}.metric-value{font-size:16px;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric-sub{color:var(--muted);font-size:10px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.charts{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:8px;margin-bottom:8px}.panel{border:1px solid var(--border);background:var(--panel);border-radius:10px;overflow:hidden}.chart{width:100%;height:420px}
+.charts{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:8px;margin-bottom:8px}.panel{border:1px solid #334155;background:var(--panel);border-radius:10px;overflow:hidden}.chart{position:relative;width:100%;height:480px;min-height:480px;background:#050708}
+.chart-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;color:#9aa7b8;font-family:"JetBrains Mono",Consolas,monospace;font-size:13px;line-height:1.5;background:linear-gradient(180deg,rgba(13,19,27,.85),rgba(5,7,8,.95));z-index:0}
 .diagnostics{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:7px;padding:8px;border-top:1px solid var(--border)}.diag{background:#0d131b;border:1px solid #1c2733;border-radius:7px;padding:7px 8px}.diag-label{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.07em}.diag-value{font-size:12px;font-weight:700;margin-top:4px}
 .lower{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:8px}.panel-title{height:34px;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--border);color:#cbd5e1;font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;font-weight:780;letter-spacing:.05em}
 .terminal{height:355px;overflow-y:auto;padding:9px 11px;background:#030506;font-size:11px;line-height:1.55;white-space:pre-wrap}.line{color:#9da9b8}.line.BUY,.line.LONG,.line.PROFIT{color:#67dabf}.line.SELL,.line.SHORT,.line.LOSS,.line.KILL{color:#ff8585}.line.EXIT,.line.RISK,.line.SHOCK{color:#e4c462}.line.SYSTEM{color:#77b9eb}.line.WAIT,.line.HOLD{color:#7b8796}
@@ -7787,7 +7788,7 @@ button:hover{border-color:#425267;background:#17212d}button.primary{background:#
 <div class="metric"><div class="metric-label">Max drawdown</div><div class="metric-value" id="drawdownMetric">0.00</div><div class="metric-sub" id="drawdownSub">Coûts 0.00</div></div>
 </div>
 <div class="charts">
-<div class="panel"><div id="modelChart" class="chart"></div><div class="diagnostics">
+<div class="panel"><div class="panel-title">GRAPHIQUE MODELE / TICKS</div><div id="modelChart" class="chart"><div class="chart-fallback">Graphique modele en attente<br>Ajoute la cle LSE pour recevoir les ticks.</div></div><div class="diagnostics">
 <div class="diag"><div class="diag-label">Prix Y</div><div class="diag-value" id="diagPriceY">—</div></div>
 <div class="diag"><div class="diag-label">Prix X</div><div class="diag-value" id="diagPriceX">—</div></div>
 <div class="diag"><div class="diag-label">Pente / beta</div><div class="diag-value" id="diagPrimary">—</div></div>
@@ -7795,7 +7796,7 @@ button:hover{border-color:#425267;background:#17212d}button.primary{background:#
 <div class="diag"><div class="diag-label">Régime</div><div class="diag-value" id="diagRegime">—</div></div>
 <div class="diag"><div class="diag-label">Levier réel</div><div class="diag-value" id="diagLeverage">0.00×</div></div>
 </div></div>
-<div class="panel"><div id="equityChart" class="chart"></div></div>
+<div class="panel"><div class="panel-title">GRAPHIQUE P&L SESSION</div><div id="equityChart" class="chart"><div class="chart-fallback">Graphique P&L en attente<br>Le paper P&L apparaitra apres les premieres observations.</div></div></div>
 </div>
 <div class="lower">
 <div class="panel"><div class="panel-title">LIVE DECISION TERMINAL</div><div id="terminal" class="terminal"></div></div>
@@ -8248,6 +8249,7 @@ Plotly.newPlot("modelChart",[],commonLayout("Waiting for model observations…",
 Plotly.newPlot("equityChart",[],commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity-empty"),plotConfig);
 logLine("SYSTEM",TRADE_REPLAY?"AUTO START · le replay sera inclus dans le paper P&L.":"Le replay initialise le modèle. Clique START SESSION pour commencer le P&L live.");
 connect();
+setTimeout(()=>renderAll(),50);
 </script>
 </body>
 </html>
