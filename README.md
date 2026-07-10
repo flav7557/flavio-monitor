@@ -1,63 +1,93 @@
-# Flavio Monitor
+# Flavio Monitor — version serveur
 
-Flavio Monitor est une application Streamlit de monitoring de marches financiers. Elle combine un flux live London Strategic Edge avec un contexte historique Yahoo Finance.
+Application Streamlit tout-en-un :
 
-## Marches suivis
+- Workspace multi-graphiques LSE / Yahoo
+- Bureau Larbou
+- Kalman Lab
+- Lissage et prévision sur ticks
+- Bêta dynamique
+- Relative value
+- Kalman + HMM avec régimes bruit, hausse, baisse et choc
 
-- CAC 40
-- DAX
-- Euro Stoxx 50
-- Nasdaq 100
-- S&P 500
-- Gold
-- Brent
+## Point d'entrée
 
-## Donnees
+```text
+main.py
+```
 
-- Le live utilise le WebSocket LSE.
-- La vue historique utilise Yahoo Finance via `yfinance`.
-- La cle LSE peut etre saisie manuellement dans la sidebar.
-- En local ou sur Streamlit, la cle peut aussi venir de `LSE_API_KEY`.
+## Installation locale
 
-Pour une application publique, il est plus prudent de saisir la cle dans la sidebar. Une cle injectee automatiquement dans une app publique peut etre visible dans les outils developpeur du navigateur.
-
-## Lancement local
-
-```bash
+```powershell
 python -m pip install -r requirements.txt
-python -m streamlit run streamlit_app.py
+python -m streamlit run main.py
 ```
 
-## Cle LSE en local
+## Secret LSE
 
-Option recommandee pour tester rapidement : saisir la cle LSE dans la sidebar au lancement de l'application.
+Le code recherche la clé dans :
 
-Option avec variable d'environnement :
+```toml
+LSE_API_KEY = "..."
+```
+
+### En local
+
+Créer un fichier non versionné :
+
+```text
+.streamlit/secrets.toml
+```
+
+en copiant le modèle :
+
+```text
+.streamlit/secrets.toml.example
+```
+
+### Sur Streamlit Community Cloud
+
+Dans les paramètres avancés / Secrets de l'application, ajouter :
+
+```toml
+LSE_API_KEY = "TA_CLE_REELLE"
+```
+
+Ne jamais committer la vraie clé.
+
+## Déploiement Streamlit Community Cloud
+
+- Dépôt GitHub : racine de ce dossier
+- Fichier principal : `main.py`
+- Version Python recommandée : 3.11
+- Ajouter le secret `LSE_API_KEY`
+- Déployer puis consulter les logs de build
+
+## Déploiement Docker
 
 ```bash
-LSE_API_KEY="ma_cle_lse"
+docker build -t flavio-monitor .
+docker run --rm -p 8501:8501 -e LSE_API_KEY="TA_CLE" flavio-monitor
 ```
 
-Option avec secrets Streamlit locaux : creer un fichier `.streamlit/secrets.toml` non versionne avec :
+## Sécurité importante
 
-```toml
-LSE_API_KEY = "ma_cle_lse"
-```
+Les graphiques LSE utilisent un WebSocket ouvert depuis le navigateur.
+La clé LSE est donc transmise au client pour cette architecture et peut être
+retrouvée par un utilisateur ayant accès à l'application.
 
-## Deploiement Streamlit Community Cloud
+Il faut donc :
 
-1. Ouvrir https://share.streamlit.io
-2. Cliquer sur **Create app**.
-3. Selectionner le depot GitHub `flavio-monitor`.
-4. Selectionner la branche `main`.
-5. Indiquer `streamlit_app.py` comme fichier principal.
-6. Choisir Python 3.12 dans les parametres avances.
-7. Cliquer sur **Deploy**.
+- déployer l'application en privé ou derrière une authentification ;
+- ne pas publier une clé LSE de production dans une application publique ;
+- régénérer toute clé déjà publiée ;
+- pour un déploiement public, créer un proxy backend authentifié.
 
-Si l'application doit rester privee, ajouter eventuellement la cle dans les secrets Streamlit :
+## Vérifications après déploiement
 
-```toml
-LSE_API_KEY = "ma_cle_lse"
-```
-
-Ne jamais mettre une vraie cle LSE dans GitHub.
+1. Workspace, Bureau Larbou et Kalman Lab sont accessibles.
+2. Le catalogue LSE se charge.
+3. Les bougies Yahoo s'affichent.
+4. Le Kalman reçoit des ticks.
+5. Kalman + HMM affiche les probabilités de régimes.
+6. Aucun secret n'apparaît dans GitHub ni dans les logs.

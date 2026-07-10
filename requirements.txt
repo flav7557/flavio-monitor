@@ -1,5 +1,7 @@
-streamlit>=1.37,<2
-pandas>=2.0,<3
-plotly>=5.24,<6
-yfinance>=0.2.50
-https://github.com/londonstrategicedge/lse-data/archive/refs/heads/main.zip
+streamlit>=1.42,<2
+pandas>=2.2,<3
+plotly>=5.24,<7
+yfinance>=0.2.54
+requests>=2.32,<3
+numpy>=1.26,<3
+lse-data @ https://github.com/londonstrategicedge/lse-data/archive/refs/heads/main.zip

@@ -1,0 +1,58 @@
+Tu dois mettre en ligne l'application Streamlit contenue dans ce dossier.
+
+OBJECTIF
+Déployer la version complète de Flavio Monitor sans la découper en plusieurs
+scripts. Le point d'entrée doit rester `main.py`.
+
+CONTENU ATTENDU
+1. Workspace multi-graphiques avec source LSE ou Yahoo par panneau.
+2. Bureau Larbou avec performances CAC 40 / S&P 500, movers et calendrier.
+3. Kalman Lab avec :
+   - Lissage & prévision
+   - Bêta dynamique
+   - Relative value
+   - Kalman + HMM
+4. Flux ticks LSE et replay.
+5. Mode plein écran du Workspace.
+
+TÂCHES
+1. Inspecte le dépôt existant avant toute modification.
+2. Copie le contenu de ce dossier à la racine du dépôt.
+3. Utilise uniquement `requirements.txt` pour les dépendances Python.
+4. Ne crée pas de dossier `pages` et ne découpe pas `main.py`.
+5. Ne change pas l'interface ou la logique métier sauf correction nécessaire au déploiement.
+6. Vérifie que `.streamlit/secrets.toml` est ignoré par Git.
+7. Ne mets jamais la vraie clé LSE dans le code, les commits, les logs ou le README.
+8. Configure le secret serveur :
+      LSE_API_KEY = "<clé fournie séparément>"
+9. Utilise Python 3.11.
+10. Lance :
+      python -m py_compile main.py
+      python -m pip install -r requirements.txt
+      python -m streamlit run main.py --server.headless true
+11. Vérifie les imports `streamlit`, `pandas`, `plotly`, `yfinance`, `requests` et `lse`.
+12. Vérifie les trois sections et les quatre modes du Kalman Lab.
+13. Si un remote GitHub existe déjà, conserve l'historique et pousse sur la branche principale.
+14. Déploie ou redéploie Streamlit avec `main.py` comme entrypoint.
+15. Le déploiement doit rester privé ou authentifié, car la clé LSE est transmise au navigateur.
+16. Après le push, renvoie :
+    - le hash du commit ;
+    - la branche ;
+    - l'URL de l'application ;
+    - le statut du build ;
+    - les logs exacts des éventuelles erreurs.
+
+CRITÈRES D'ACCEPTATION
+- Build sans erreur de dépendance.
+- `main.py` démarre.
+- La clé est lue depuis les secrets du serveur.
+- La clé n'est pas présente dans Git.
+- Workspace, Bureau Larbou et Kalman Lab sont accessibles.
+- Kalman + HMM reçoit les ticks et affiche les régimes.
+- Aucun chemin local Windows absolu n'est utilisé.
+- Le lien final fonctionne.
+
+IMPORTANT
+Ne publie pas l'application en accès public avec une clé LSE de production.
+Si la plateforme ne permet pas un accès privé, arrête avant publication et
+explique quelle protection d'accès doit être ajoutée.
