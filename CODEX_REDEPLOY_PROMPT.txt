@@ -1,0 +1,145 @@
+Tu dois mettre à jour le site Flavio Monitor qui est déjà en ligne.
+
+CONTEXTE
+Le dépôt Git et l'application existent déjà. La version actuellement en
+production contient Workspace, Bureau Larbou et Kalman Lab. Le dossier fourni
+contient la nouvelle version complète avec une quatrième page : Shadow Trader.
+
+OBJECTIF
+Repousser cette nouvelle version sur LE MÊME dépôt et redéployer LA MÊME
+application, en conservant la branche, l'historique Git et l'URL actuelle
+chaque fois que la plateforme le permet.
+
+NOUVELLE PAGE : SHADOW TRADER
+Shadow Trader est un moteur de paper trading fondé sur les ticks LSE.
+Il ne transmet aucun ordre réel.
+
+Il contient quatre stratégies qui ne cherchent pas à capturer la même chose :
+
+1. Kalman Trend
+   - suit la pente latente ;
+   - sort si la pente disparaît ou si une innovation de choc apparaît.
+
+2. Kalman + HMM Directional
+   - long en régime haussier ;
+   - short en régime baissier ;
+   - flat en bruit/range ou choc.
+
+3. Dynamic Beta Residual Momentum
+   - spread Y/X à deux jambes ;
+   - hedge ratio dynamique ;
+   - cherche la continuation du résiduel.
+
+4. Relative Value Mean Reversion
+   - spread Y/X à deux jambes ;
+   - hedge ratio dynamique ;
+   - cherche le retour à la moyenne du spread.
+
+Le moteur simule :
+- BUY / SHORT / HOLD / EXIT ;
+- sizing par capital et levier brut cible ;
+- ask pour les achats et bid pour les ventes lorsqu'ils sont disponibles ;
+- fallback au dernier prix ;
+- slippage supplémentaire ;
+- commission par unité et par côté ;
+- point value, tick size et conversion FX ;
+- P&L réalisé, latent et net ;
+- P&L en basis points ;
+- ticks équivalents de la jambe Y ;
+- drawdown, stops et kill switch ;
+- trade blotter, decision log et exports CSV.
+
+TÂCHES
+1. Inspecte le dépôt existant, le remote, la branche utilisée et la configuration
+   de l'application déjà déployée.
+2. Note le hash du commit actuellement en production avant toute modification.
+3. Copie le contenu du dossier fourni à la racine du dépôt existant.
+4. Ne crée pas un nouveau dépôt ni une seconde application, sauf impossibilité
+   démontrée de retrouver l'existant.
+5. Conserve `main.py` comme unique entrypoint.
+6. Ne crée pas de dossier `pages` et ne découpe pas `main.py`.
+7. Ne supprime pas Workspace, Bureau Larbou ou Kalman Lab.
+8. Ne modifie pas les règles, seuils ou coûts de Shadow Trader pour améliorer
+   artificiellement les résultats.
+9. Utilise Python 3.11.
+10. Installe les dépendances de `requirements.txt`.
+11. Vérifie que `.streamlit/secrets.toml` est ignoré par Git.
+12. Ne mets jamais la vraie clé LSE dans Git, le code, la documentation ou les
+    logs.
+13. Réutilise le secret serveur déjà configuré :
+       LSE_API_KEY = "<clé existante dans les secrets de la plateforme>"
+14. Lance au minimum :
+       python -m py_compile main.py
+       python -m pip install -r requirements.txt
+       python -m streamlit run main.py --server.headless true
+15. Vérifie les imports :
+       streamlit
+       pandas
+       plotly
+       yfinance
+       requests
+       numpy
+       lse
+16. Vérifie la navigation :
+       Workspace
+       Bureau Larbou
+       Kalman Lab
+       Shadow Trader
+17. Teste Shadow Trader avec :
+       stratégie = Kalman + HMM Directional
+       actif Y = Nasdaq 100
+       replay = 2 heures
+       Trader aussi le replay = activé pour le test uniquement
+       capital = 100000
+       levier = 1
+18. Confirme que les ticks arrivent, que le warm-up se termine et que le
+    terminal produit des états WAIT, LONG, SHORT ou EXIT selon le modèle.
+19. Teste Kalman Trend sur Nasdaq 100.
+20. Teste Dynamic Beta Residual Momentum sur Nasdaq 100 / S&P 500.
+21. Teste Relative Value Mean Reversion sur Nasdaq 100 / S&P 500.
+22. Pour les modèles pair, confirme qu'une ouverture contient deux jambes et
+    que la quantité X dépend du hedge ratio.
+23. Teste START SESSION.
+24. Teste STOP & FLATTEN et vérifie que la position revient à FLAT.
+25. Teste RESET.
+26. Teste les trois exports CSV.
+27. Teste un kill switch avec une petite limite temporaire, puis remets les
+    paramètres par défaut.
+28. Vérifie qu'aucun ordre réel ni appel broker n'existe.
+29. Conserve le site privé ou authentifié. Le WebSocket LSE tourne côté
+    navigateur et la clé est donc inspectable par les utilisateurs autorisés.
+30. Committe les changements avec un message explicite, par exemple :
+       feat: add live shadow trading terminal
+31. Pousse sur la branche déjà utilisée par le déploiement.
+32. Attends la fin du build et corrige les éventuelles erreurs.
+33. Ne change pas l'URL de l'application si ce n'est pas nécessaire.
+
+CRITÈRES D'ACCEPTATION
+- Le même site est redéployé.
+- Les quatre pages sont accessibles.
+- Shadow Trader reçoit les ticks.
+- Les quatre stratégies fonctionnent.
+- Le replay peut servir seulement au warm-up ou être tradé.
+- Le moteur n'envoie aucun ordre réel.
+- Le P&L intègre les coûts configurés.
+- Les stratégies pair ouvrent deux jambes.
+- STOP & FLATTEN ferme la position paper.
+- Les exports CSV fonctionnent.
+- La clé LSE n'est présente dans aucun commit.
+- Le build est vert.
+
+RAPPORT FINAL À FOURNIR
+- dépôt utilisé ;
+- branche ;
+- ancien hash de production ;
+- nouveau hash ;
+- URL finale ;
+- statut du build ;
+- résultat des tests des quatre pages ;
+- résultat des tests des quatre stratégies ;
+- éventuelles limitations ou erreurs restantes avec les logs exacts.
+
+IMPORTANT
+Le P&L est un paper P&L, pas un P&L de courtier ni une preuve de rentabilité.
+La valeur du point, le tick size, la conversion FX et les coûts doivent être
+configurés selon le produit réellement tradable.

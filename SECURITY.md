@@ -1,22 +1,12 @@
-# Sécurité
+# Security
 
-La vraie clé LSE ne doit jamais être stockée dans Git.
-
-Le fichier autorisé dans le dépôt est :
-
-```text
-.streamlit/secrets.toml.example
-```
-
-Le fichier suivant est ignoré :
-
-```text
-.streamlit/secrets.toml
-```
-
-Le flux live LSE est consommé par un composant JavaScript côté navigateur.
-Même chargée depuis `st.secrets`, la clé est envoyée au navigateur afin
-d'authentifier le WebSocket.
-
-Le déploiement doit donc rester privé ou protégé. Pour une application publique,
-il faut ajouter un proxy backend sécurisé et une authentification.
+- Ne jamais committer `.streamlit/secrets.toml`.
+- Ne jamais mettre la clé LSE dans `main.py`, la documentation ou les logs.
+- Le WebSocket LSE est consommé dans le navigateur : un utilisateur autorisé
+  peut inspecter la clé dans le trafic réseau.
+- Garder l'application privée ou authentifiée.
+- Pour un site public, utiliser un backend proxy sécurisé.
+- Shadow Trader est un moteur de paper trading uniquement.
+- Ne pas le connecter à un broker réel sans une architecture séparée :
+  authentification, limites de risque, validations d'ordres, surveillance,
+  journal d'audit et kill switch serveur.

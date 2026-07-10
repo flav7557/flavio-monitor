@@ -3,16 +3,12 @@ __pycache__/
 .venv/
 venv/
 env/
-
 .streamlit/secrets.toml
-
 .env
 .env.*
 !.env.example
-
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
-
 *.log

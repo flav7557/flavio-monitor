@@ -1,14 +1,24 @@
-# Checklist de mise en ligne
+# Checklist de redéploiement
 
-- [ ] `main.py` présent à la racine
-- [ ] `requirements.txt` présent à la racine
-- [ ] Python 3.11 sélectionné
-- [ ] `LSE_API_KEY` ajouté dans les secrets du serveur
-- [ ] `.streamlit/secrets.toml` absent du dépôt
-- [ ] Déploiement privé / authentifié
-- [ ] Build sans erreur
+- [ ] Utiliser le dépôt et l'application existants
+- [ ] Conserver si possible l'URL actuelle
+- [ ] `main.py` est l'unique entrypoint
+- [ ] Python 3.11
+- [ ] `requirements.txt` installé
+- [ ] `LSE_API_KEY` présent dans les secrets du serveur
+- [ ] La clé n'apparaît pas dans Git
 - [ ] Workspace testé
 - [ ] Bureau Larbou testé
 - [ ] Kalman Lab testé
-- [ ] Kalman + HMM testé
-- [ ] URL finale communiquée
+- [ ] Shadow Trader visible
+- [ ] Kalman Trend testé
+- [ ] Kalman + HMM Directional testé
+- [ ] Dynamic Beta Residual Momentum testé
+- [ ] Relative Value Mean Reversion testé
+- [ ] START SESSION fonctionne
+- [ ] STOP & FLATTEN ramène la position à FLAT
+- [ ] RESET fonctionne
+- [ ] Les exports CSV fonctionnent
+- [ ] Le kill switch fonctionne
+- [ ] Le site reste privé / authentifié
+- [ ] Commit, build et URL finale communiqués

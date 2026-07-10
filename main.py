@@ -61,7 +61,7 @@ with st.sidebar:
 
     st.markdown(
         '<div class="unified-navigation-subtitle">'
-        'Trading workspace · Morning desk · Quant lab'
+        'Trading workspace · Morning desk · Quant lab · Shadow trader'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -77,6 +77,7 @@ with st.sidebar:
             "Workspace",
             "Bureau Larbou",
             "Kalman Lab",
+            "Shadow Trader",
         ],
         index=0,
         key="flavio_monitor_navigation",
@@ -7026,6 +7027,1205 @@ st.caption(
 '''
 
 
+PAPER_TRADING_SOURCE = r'''
+from __future__ import annotations
+
+import json
+import os
+import re
+import unicodedata
+from typing import Any
+
+import streamlit as st
+import streamlit.components.v1 as components
+from lse import LSE
+
+
+st.markdown(
+    """
+    <style>
+        .shadow-title {
+            color: #f4f7fb;
+            font-size: 2rem;
+            font-weight: 760;
+            letter-spacing: -0.045em;
+            margin: 0;
+        }
+        .shadow-subtitle {
+            color: #7f8b9c;
+            font-size: 0.9rem;
+            margin: 0.12rem 0 0.8rem 0;
+        }
+        .shadow-warning {
+            border: 1px solid #58461d;
+            background: rgba(217, 180, 74, 0.08);
+            color: #d7c694;
+            border-radius: 9px;
+            padding: 9px 12px;
+            margin-bottom: 0.8rem;
+            font-size: 0.84rem;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    '<div class="shadow-title">Shadow Trader</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="shadow-subtitle">'
+    'Paper execution · Microstructure costs · Live P&L · Trade blotter'
+    '</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="shadow-warning">'
+    '<strong>Simulation uniquement.</strong> Aucun ordre réel n’est envoyé. '
+    'Le P&L dépend des ticks LSE et des paramètres de contrat configurés.'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+
+MARKETS = {
+    "CAC 40": {
+        "candidates": ["CAC40", "CAC40/EUR", "FR40", "FR40/EUR", "FRA40", "PX1"],
+        "search": ["cac 40", "france 40"],
+        "tick_size": 0.1,
+        "point_value": 1.0,
+    },
+    "DAX": {
+        "candidates": ["DAX", "DAX40", "DAX40/EUR", "DE40", "DE40/EUR", "GER40"],
+        "search": ["dax 40", "germany 40", "dax"],
+        "tick_size": 0.1,
+        "point_value": 1.0,
+    },
+    "Euro Stoxx 50": {
+        "candidates": ["SX5E", "EU50", "EU50/EUR", "STOXX50", "ESTX50"],
+        "search": ["euro stoxx 50", "stoxx 50"],
+        "tick_size": 0.1,
+        "point_value": 1.0,
+    },
+    "Nasdaq 100": {
+        "candidates": ["NAS100", "NAS100/USD", "NDX", "NASDAQ100", "US100"],
+        "search": ["nasdaq 100", "nasdaq-100"],
+        "tick_size": 0.1,
+        "point_value": 1.0,
+    },
+    "S&P 500": {
+        "candidates": ["SPX500", "SPX500/USD", "SPX", "US500", "SP500"],
+        "search": ["s&p 500", "sp 500", "standard and poor 500"],
+        "tick_size": 0.1,
+        "point_value": 1.0,
+    },
+    "Gold": {
+        "candidates": ["XAU/USD", "GOLD/USD", "GOLD", "GC"],
+        "search": ["spot gold", "gold"],
+        "tick_size": 0.01,
+        "point_value": 1.0,
+    },
+    "Brent": {
+        "candidates": ["BRENT/USD", "BRENT", "BCO/USD", "UKOIL/USD", "BRN", "BZ"],
+        "search": ["brent crude oil", "brent crude", "brent"],
+        "tick_size": 0.01,
+        "point_value": 1.0,
+    },
+    "EUR/USD": {
+        "candidates": ["EUR/USD", "EURUSD"],
+        "search": ["eur usd", "euro us dollar"],
+        "tick_size": 0.00001,
+        "point_value": 1.0,
+    },
+    "Bitcoin": {
+        "candidates": ["BTC/USD", "BTCUSD"],
+        "search": ["bitcoin", "btc usd"],
+        "tick_size": 0.1,
+        "point_value": 1.0,
+    },
+}
+
+STRATEGIES = {
+    "Kalman Trend": (
+        "Suit la pente latente. Les innovations extrêmes déclenchent une sortie."
+    ),
+    "Kalman + HMM Directional": (
+        "Long en régime haussier, short en régime baissier, flat en bruit ou choc."
+    ),
+    "Dynamic Beta Residual Momentum": (
+        "Spread Y/X hedgé qui cherche la continuation du résiduel dynamique."
+    ),
+    "Relative Value Mean Reversion": (
+        "Spread Y/X hedgé qui cherche le retour à la moyenne après divergence."
+    ),
+}
+
+REPLAY_OPTIONS = {
+    "5 minutes": 5,
+    "15 minutes": 15,
+    "30 minutes": 30,
+    "1 heure": 60,
+    "2 heures": 120,
+    "4 heures": 240,
+    "8 heures": 480,
+    "24 heures": 1440,
+}
+
+SYNC_OPTIONS = {
+    "Chaque tick — dernier prix connu": 0,
+    "1 seconde": 1000,
+    "5 secondes": 5000,
+    "15 secondes": 15000,
+    "1 minute": 60000,
+}
+
+
+def normalize(value: Any) -> str:
+    value = unicodedata.normalize("NFKD", str(value or ""))
+    value = "".join(
+        character
+        for character in value
+        if not unicodedata.combining(character)
+    )
+    value = value.lower().replace("&", " and ")
+    return re.sub(r"[^a-z0-9]+", " ", value).strip()
+
+
+def catalogue_score(row: dict[str, Any], queries: list[str]) -> int:
+    symbol = normalize(row.get("symbol"))
+    name = normalize(row.get("name"))
+    category = normalize(row.get("category"))
+    text = f"{symbol} {name}"
+    score = 0
+
+    for query in queries:
+        query = normalize(query)
+        tokens = query.split()
+
+        if query == symbol:
+            score = max(score, 1200)
+        elif query == name:
+            score = max(score, 1100)
+        elif query and query in name:
+            score = max(score, 700)
+        elif query and query in text:
+            score = max(score, 500)
+        elif tokens and all(token in text for token in tokens):
+            score = max(score, 300)
+
+    if any(
+        word in category
+        for word in ["index", "indice", "commodit", "forex", "crypto"]
+    ):
+        score += 100
+
+    return score
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def resolve_lse_symbols(
+    api_key_value: str,
+) -> tuple[dict[str, str], list[str]]:
+    client = LSE(api_key=api_key_value)
+    catalogue = client.catalog()
+    rows = [row for row in catalogue if row.get("symbol")]
+    rows_by_symbol: dict[str, dict[str, Any]] = {}
+
+    for row in rows:
+        rows_by_symbol.setdefault(str(row["symbol"]).upper(), row)
+
+    resolved: dict[str, str] = {}
+    unresolved: list[str] = []
+
+    for market_name, market_settings in MARKETS.items():
+        selected_row = None
+
+        for candidate in market_settings["candidates"]:
+            selected_row = rows_by_symbol.get(candidate.upper())
+            if selected_row is not None:
+                break
+
+        if selected_row is None:
+            ranked = sorted(
+                rows,
+                key=lambda row: catalogue_score(row, market_settings["search"]),
+                reverse=True,
+            )
+            if ranked and catalogue_score(ranked[0], market_settings["search"]) > 0:
+                selected_row = ranked[0]
+
+        if selected_row is None:
+            unresolved.append(market_name)
+        else:
+            resolved[market_name] = str(selected_row["symbol"])
+
+    return resolved, unresolved
+
+
+try:
+    default_api_key = st.secrets["LSE_API_KEY"]
+except Exception:
+    default_api_key = os.getenv("LSE_API_KEY", "")
+
+with st.sidebar:
+    st.markdown("### Shadow Trader")
+
+    if default_api_key:
+        api_key = default_api_key
+        st.caption("Clé LSE chargée depuis les secrets du serveur.")
+    else:
+        api_key = st.text_input(
+            "Clé API LSE",
+            type="password",
+            placeholder="lse_live_...",
+            key="paper_api_key",
+        )
+
+if not api_key:
+    st.info("Ajoute la clé LSE dans les secrets du serveur ou dans la sidebar.")
+    st.stop()
+
+try:
+    resolved_symbols, unresolved_markets = resolve_lse_symbols(api_key)
+except Exception as error:
+    st.error(f"Impossible de lire le catalogue LSE : {error}")
+    st.stop()
+
+available_markets = [
+    market
+    for market in MARKETS
+    if market in resolved_symbols
+]
+
+if not available_markets:
+    st.error("Aucun marché compatible trouvé dans le catalogue LSE.")
+    st.stop()
+
+with st.sidebar:
+    strategy = st.selectbox(
+        "Stratégie paper",
+        options=list(STRATEGIES),
+        key="paper_strategy",
+    )
+    st.caption(STRATEGIES[strategy])
+
+    is_pair = strategy in {
+        "Dynamic Beta Residual Momentum",
+        "Relative Value Mean Reversion",
+    }
+
+    default_y = (
+        available_markets.index("Nasdaq 100")
+        if "Nasdaq 100" in available_markets
+        else 0
+    )
+
+    asset_y = st.selectbox(
+        "Actif Y",
+        options=available_markets,
+        index=default_y,
+        key="paper_asset_y",
+    )
+    symbol_y = resolved_symbols[asset_y]
+
+    if is_pair:
+        default_x = (
+            available_markets.index("S&P 500")
+            if "S&P 500" in available_markets
+            else min(1, len(available_markets) - 1)
+        )
+        asset_x = st.selectbox(
+            "Actif X / hedge",
+            options=available_markets,
+            index=default_x,
+            key="paper_asset_x",
+        )
+        if asset_x == asset_y:
+            st.warning("Choisis deux actifs différents.")
+            st.stop()
+
+        symbol_x = resolved_symbols[asset_x]
+        sync_label = st.selectbox(
+            "Synchronisation",
+            options=list(SYNC_OPTIONS),
+            index=0,
+            key="paper_sync",
+        )
+        sync_ms = SYNC_OPTIONS[sync_label]
+    else:
+        asset_x = None
+        symbol_x = None
+        sync_ms = 0
+
+    replay_label = st.selectbox(
+        "Warm-up / replay",
+        options=list(REPLAY_OPTIONS),
+        index=4,
+        key="paper_replay",
+    )
+    replay_minutes = REPLAY_OPTIONS[replay_label]
+
+    trade_replay = st.toggle(
+        "Trader aussi le replay",
+        value=False,
+        help=(
+            "Désactivé : le replay initialise le modèle. "
+            "Activé : le paper P&L commence au début du replay."
+        ),
+        key="paper_trade_replay",
+    )
+
+    terminal_verbose = st.toggle(
+        "Terminal verbose",
+        value=False,
+        help="Affiche aussi les WAIT/HOLD.",
+        key="paper_verbose",
+    )
+
+    st.divider()
+    st.markdown("#### Modèle")
+
+    reactivity = st.slider(
+        "Réactivité Kalman",
+        1,
+        10,
+        5,
+        key="paper_reactivity",
+    )
+    observation_trust = st.slider(
+        "Confiance dans les ticks",
+        1,
+        10,
+        6,
+        key="paper_trust",
+    )
+    confirmation = st.slider(
+        "Confirmations avant entrée",
+        1,
+        10,
+        3,
+        key="paper_confirmation",
+    )
+
+    if strategy == "Kalman Trend":
+        entry_threshold = st.slider(
+            "Seuil de pente d’entrée (σ)",
+            0.10,
+            3.00,
+            0.65,
+            0.05,
+            key="paper_trend_entry",
+        )
+        exit_threshold = st.slider(
+            "Seuil de pente de sortie (σ)",
+            0.00,
+            1.50,
+            0.15,
+            0.05,
+            key="paper_trend_exit",
+        )
+        shock_threshold = st.slider(
+            "Innovation de choc (σ)",
+            1.0,
+            6.0,
+            2.75,
+            0.25,
+            key="paper_trend_shock",
+        )
+        hmm_persistence = 0.92
+        secondary_threshold = 0.50
+
+    elif strategy == "Kalman + HMM Directional":
+        entry_threshold = st.slider(
+            "Probabilité d’entrée",
+            0.50,
+            0.95,
+            0.70,
+            0.05,
+            key="paper_hmm_entry",
+        )
+        exit_threshold = st.slider(
+            "Probabilité minimale de maintien",
+            0.20,
+            0.80,
+            0.48,
+            0.04,
+            key="paper_hmm_hold",
+        )
+        secondary_threshold = st.slider(
+            "Probabilité choc — sortie",
+            0.25,
+            0.90,
+            0.50,
+            0.05,
+            key="paper_hmm_shock",
+        )
+        hmm_persistence = st.slider(
+            "Persistance HMM",
+            0.70,
+            0.99,
+            0.92,
+            0.01,
+            key="paper_hmm_persistence",
+        )
+        shock_threshold = 2.75
+
+    elif strategy == "Dynamic Beta Residual Momentum":
+        entry_threshold = st.slider(
+            "Z-score résiduel — entrée",
+            0.50,
+            4.00,
+            1.25,
+            0.10,
+            key="paper_beta_entry",
+        )
+        exit_threshold = st.slider(
+            "Z-score résiduel — sortie",
+            0.00,
+            2.00,
+            0.35,
+            0.05,
+            key="paper_beta_exit",
+        )
+        shock_threshold = 4.0
+        hmm_persistence = 0.92
+        secondary_threshold = 0.50
+
+    else:
+        entry_threshold = st.slider(
+            "Z-score spread — entrée",
+            0.75,
+            5.00,
+            2.00,
+            0.10,
+            key="paper_rv_entry",
+        )
+        exit_threshold = st.slider(
+            "Z-score spread — sortie",
+            0.00,
+            2.00,
+            0.25,
+            0.05,
+            key="paper_rv_exit",
+        )
+        shock_threshold = 5.0
+        hmm_persistence = 0.92
+        secondary_threshold = 0.50
+
+    z_window = st.slider(
+        "Fenêtre z-score",
+        20,
+        250,
+        60,
+        10,
+        key="paper_z_window",
+    )
+
+    st.divider()
+    st.markdown("#### Exécution et levier")
+
+    account_currency = st.selectbox(
+        "Devise du compte",
+        ["EUR", "USD", "GBP", "CHF"],
+        index=0,
+        key="paper_currency",
+    )
+    account_equity = st.number_input(
+        "Capital de référence",
+        min_value=100.0,
+        max_value=100_000_000.0,
+        value=100_000.0,
+        step=10_000.0,
+        key="paper_equity",
+    )
+    target_leverage = st.slider(
+        "Levier brut cible",
+        0.10,
+        20.00,
+        2.00,
+        0.10,
+        key="paper_leverage",
+    )
+
+    point_value_y = st.number_input(
+        f"Valeur d’un point — {asset_y}",
+        min_value=0.000001,
+        max_value=1_000_000.0,
+        value=float(MARKETS[asset_y]["point_value"]),
+        step=0.1,
+        format="%.6f",
+        key="paper_point_y",
+    )
+    tick_size_y = st.number_input(
+        f"Tick size — {asset_y}",
+        min_value=0.000001,
+        max_value=10_000.0,
+        value=float(MARKETS[asset_y]["tick_size"]),
+        step=float(MARKETS[asset_y]["tick_size"]),
+        format="%.6f",
+        key="paper_tick_y",
+    )
+    fx_y = st.number_input(
+        f"Conversion P&L {asset_y} vers {account_currency}",
+        min_value=0.000001,
+        max_value=1000.0,
+        value=1.0,
+        step=0.01,
+        format="%.6f",
+        key="paper_fx_y",
+    )
+
+    if is_pair:
+        point_value_x = st.number_input(
+            f"Valeur d’un point — {asset_x}",
+            min_value=0.000001,
+            max_value=1_000_000.0,
+            value=float(MARKETS[asset_x]["point_value"]),
+            step=0.1,
+            format="%.6f",
+            key="paper_point_x",
+        )
+        tick_size_x = st.number_input(
+            f"Tick size — {asset_x}",
+            min_value=0.000001,
+            max_value=10_000.0,
+            value=float(MARKETS[asset_x]["tick_size"]),
+            step=float(MARKETS[asset_x]["tick_size"]),
+            format="%.6f",
+            key="paper_tick_x",
+        )
+        fx_x = st.number_input(
+            f"Conversion P&L {asset_x} vers {account_currency}",
+            min_value=0.000001,
+            max_value=1000.0,
+            value=1.0,
+            step=0.01,
+            format="%.6f",
+            key="paper_fx_x",
+        )
+    else:
+        point_value_x = 1.0
+        tick_size_x = 0.1
+        fx_x = 1.0
+
+    quantity_step = st.number_input(
+        "Pas minimal de quantité",
+        min_value=0.0001,
+        max_value=1000.0,
+        value=0.01,
+        step=0.01,
+        format="%.4f",
+        key="paper_qty_step",
+    )
+    commission_per_unit = st.number_input(
+        f"Commission par unité et par côté ({account_currency})",
+        min_value=0.0,
+        max_value=10_000.0,
+        value=0.50,
+        step=0.10,
+        key="paper_commission",
+    )
+    extra_slippage_ticks = st.number_input(
+        "Slippage supplémentaire par exécution (ticks)",
+        min_value=0.0,
+        max_value=100.0,
+        value=0.25,
+        step=0.25,
+        key="paper_slippage",
+    )
+    allow_short = st.toggle(
+        "Autoriser les shorts",
+        value=True,
+        key="paper_allow_short",
+    )
+
+    st.divider()
+    st.markdown("#### Risque")
+
+    max_session_loss = st.number_input(
+        f"Kill switch — perte session ({account_currency})",
+        min_value=0.0,
+        max_value=10_000_000.0,
+        value=1_000.0,
+        step=100.0,
+        key="paper_max_session_loss",
+    )
+    max_trade_loss = st.number_input(
+        f"Stop par trade ({account_currency})",
+        min_value=0.0,
+        max_value=10_000_000.0,
+        value=400.0,
+        step=50.0,
+        key="paper_max_trade_loss",
+    )
+    max_holding_seconds = st.number_input(
+        "Durée maximale d’un trade (secondes, 0 = off)",
+        min_value=0,
+        max_value=86_400,
+        value=600,
+        step=30,
+        key="paper_max_holding",
+    )
+    max_trades = st.number_input(
+        "Nombre maximal de trades",
+        min_value=1,
+        max_value=10_000,
+        value=100,
+        step=10,
+        key="paper_max_trades",
+    )
+    cooldown_observations = st.slider(
+        "Cooldown après sortie (observations)",
+        0,
+        50,
+        3,
+        key="paper_cooldown",
+    )
+    full_height = st.toggle(
+        "Vue terminal haute",
+        value=True,
+        key="paper_tall",
+    )
+
+    st.caption(f"Y : `{symbol_y}`")
+    if symbol_x:
+        st.caption(f"X : `{symbol_x}`")
+
+    if unresolved_markets:
+        with st.expander("Marchés non trouvés"):
+            st.write(", ".join(unresolved_markets))
+
+
+settings = {
+    "apiKey": api_key,
+    "strategy": strategy,
+    "assetY": asset_y,
+    "assetX": asset_x,
+    "symbolY": symbol_y,
+    "symbolX": symbol_x,
+    "isPair": is_pair,
+    "replayMinutes": replay_minutes,
+    "tradeReplay": trade_replay,
+    "terminalVerbose": terminal_verbose,
+    "syncMs": sync_ms,
+    "reactivity": reactivity,
+    "observationTrust": observation_trust,
+    "confirmation": confirmation,
+    "entryThreshold": entry_threshold,
+    "exitThreshold": exit_threshold,
+    "shockThreshold": shock_threshold,
+    "secondaryThreshold": secondary_threshold,
+    "hmmPersistence": hmm_persistence,
+    "zWindow": z_window,
+    "accountCurrency": account_currency,
+    "accountEquity": account_equity,
+    "targetLeverage": target_leverage,
+    "pointValueY": point_value_y,
+    "pointValueX": point_value_x,
+    "tickSizeY": tick_size_y,
+    "tickSizeX": tick_size_x,
+    "fxY": fx_y,
+    "fxX": fx_x,
+    "quantityStep": quantity_step,
+    "commissionPerUnit": commission_per_unit,
+    "extraSlippageTicks": extra_slippage_ticks,
+    "allowShort": allow_short,
+    "maxSessionLoss": max_session_loss,
+    "maxTradeLoss": max_trade_loss,
+    "maxHoldingSeconds": max_holding_seconds,
+    "maxTrades": int(max_trades),
+    "cooldownObservations": cooldown_observations,
+}
+
+html_template = r"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#050708;--panel:#0a0f15;--panel2:#0d131b;--border:#202a36;--text:#edf2f7;--muted:#788596;--green:#28b69f;--red:#ef5b5b;--yellow:#d9b44a;--blue:#76b7e5;--purple:#a28af7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;overflow-x:hidden}
+button{border:1px solid var(--border);background:#111923;color:var(--text);border-radius:7px;padding:8px 12px;cursor:pointer;font-weight:650;font-size:12px}
+button:hover{border-color:#425267;background:#17212d}button.primary{background:#12392f;border-color:#1f6c59;color:#b9f4e4}button.danger{background:#38191b;border-color:#6d292d;color:#ffc6c6}
+.page{min-height:100vh;padding:10px}.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--border);background:var(--panel);border-radius:10px;padding:9px 11px;margin-bottom:9px}
+.brand,.connection,.metric-value,.diag-value,.terminal,table,.session-summary{font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace}
+.brand{font-size:13px;font-weight:800;letter-spacing:.04em;margin-right:auto}.connection{color:var(--muted);font-size:11px;min-width:260px}
+.metrics{display:grid;grid-template-columns:repeat(8,minmax(120px,1fr));gap:7px;margin-bottom:9px}.metric{border:1px solid var(--border);background:var(--panel2);border-radius:9px;padding:9px 10px;min-height:74px}
+.metric-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}.metric-value{font-size:16px;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric-sub{color:var(--muted);font-size:10px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.charts{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:8px;margin-bottom:8px}.panel{border:1px solid var(--border);background:var(--panel);border-radius:10px;overflow:hidden}.chart{width:100%;height:420px}
+.diagnostics{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:7px;padding:8px;border-top:1px solid var(--border)}.diag{background:#0d131b;border:1px solid #1c2733;border-radius:7px;padding:7px 8px}.diag-label{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.07em}.diag-value{font-size:12px;font-weight:700;margin-top:4px}
+.lower{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:8px}.panel-title{height:34px;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--border);color:#cbd5e1;font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;font-weight:780;letter-spacing:.05em}
+.terminal{height:355px;overflow-y:auto;padding:9px 11px;background:#030506;font-size:11px;line-height:1.55;white-space:pre-wrap}.line{color:#9da9b8}.line.BUY,.line.LONG,.line.PROFIT{color:#67dabf}.line.SELL,.line.SHORT,.line.LOSS,.line.KILL{color:#ff8585}.line.EXIT,.line.RISK,.line.SHOCK{color:#e4c462}.line.SYSTEM{color:#77b9eb}.line.WAIT,.line.HOLD{color:#7b8796}
+.blotter-wrap{height:355px;overflow:auto;background:#050708}table{width:100%;border-collapse:collapse;font-size:10px}th{position:sticky;top:0;z-index:2;background:#101720;color:#8f9aaa;font-weight:650;text-align:left;padding:7px;border-bottom:1px solid var(--border)}td{padding:7px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}.positive{color:var(--green)!important}.negative{color:var(--red)!important}
+.footer-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.session-summary{margin-left:auto;color:var(--muted);font-size:10px;align-self:center}
+@media(max-width:1200px){.metrics{grid-template-columns:repeat(4,minmax(120px,1fr))}.charts,.lower{grid-template-columns:1fr}}@media(max-width:680px){.metrics{grid-template-columns:repeat(2,minmax(120px,1fr))}.diagnostics{grid-template-columns:repeat(3,minmax(100px,1fr))}}
+</style>
+</head>
+<body>
+<div class="page">
+<div class="topbar"><div class="brand" id="brand"></div><div class="connection" id="connection">BOOTING…</div><button class="primary" id="startButton">START SESSION</button><button class="danger" id="stopButton">STOP & FLATTEN</button><button id="resetButton">RESET</button><button id="fullscreenButton">FULLSCREEN</button></div>
+<div class="metrics">
+<div class="metric"><div class="metric-label">Session</div><div class="metric-value" id="sessionMetric">IDLE</div><div class="metric-sub" id="sessionSub">En attente</div></div>
+<div class="metric"><div class="metric-label">Signal</div><div class="metric-value" id="signalMetric">WAIT</div><div class="metric-sub" id="signalSub">Warm-up</div></div>
+<div class="metric"><div class="metric-label">Position</div><div class="metric-value" id="positionMetric">FLAT</div><div class="metric-sub" id="positionSub">0 unité</div></div>
+<div class="metric"><div class="metric-label">P&L net</div><div class="metric-value" id="netMetric">0.00</div><div class="metric-sub" id="netSub">0.00 bps</div></div>
+<div class="metric"><div class="metric-label">P&L latent</div><div class="metric-value" id="unrealizedMetric">0.00</div><div class="metric-sub" id="unrealizedSub">Flat</div></div>
+<div class="metric"><div class="metric-label">Ticks capturés</div><div class="metric-value" id="ticksMetric">0.0</div><div class="metric-sub" id="ticksSub">Equivalent Y</div></div>
+<div class="metric"><div class="metric-label">Trades / win rate</div><div class="metric-value" id="tradesMetric">0 / —</div><div class="metric-sub" id="tradesSub">Profit factor —</div></div>
+<div class="metric"><div class="metric-label">Max drawdown</div><div class="metric-value" id="drawdownMetric">0.00</div><div class="metric-sub" id="drawdownSub">Coûts 0.00</div></div>
+</div>
+<div class="charts">
+<div class="panel"><div id="modelChart" class="chart"></div><div class="diagnostics">
+<div class="diag"><div class="diag-label">Prix Y</div><div class="diag-value" id="diagPriceY">—</div></div>
+<div class="diag"><div class="diag-label">Prix X</div><div class="diag-value" id="diagPriceX">—</div></div>
+<div class="diag"><div class="diag-label">Pente / beta</div><div class="diag-value" id="diagPrimary">—</div></div>
+<div class="diag"><div class="diag-label">Innovation / z</div><div class="diag-value" id="diagSecondary">—</div></div>
+<div class="diag"><div class="diag-label">Régime</div><div class="diag-value" id="diagRegime">—</div></div>
+<div class="diag"><div class="diag-label">Levier réel</div><div class="diag-value" id="diagLeverage">0.00×</div></div>
+</div></div>
+<div class="panel"><div id="equityChart" class="chart"></div></div>
+</div>
+<div class="lower">
+<div class="panel"><div class="panel-title">LIVE DECISION TERMINAL</div><div id="terminal" class="terminal"></div></div>
+<div class="panel"><div class="panel-title">TRADE BLOTTER</div><div class="blotter-wrap"><table><thead><tr><th>#</th><th>Direction</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th>Gross</th><th>Coûts</th><th>Net</th><th>Raison</th></tr></thead><tbody id="blotterBody"></tbody></table></div></div>
+</div>
+<div class="footer-actions"><button id="exportTradesButton">EXPORT TRADES CSV</button><button id="exportDecisionsButton">EXPORT DECISIONS CSV</button><button id="exportSummaryButton">EXPORT SUMMARY CSV</button><div class="session-summary" id="sessionSummary">PAPER ONLY · NO LIVE ORDERS</div></div>
+</div>
+<script>
+const SETTINGS = __SETTINGS__;
+
+const API_KEY=SETTINGS.apiKey,STRATEGY=SETTINGS.strategy,SYMBOL_Y=SETTINGS.symbolY,SYMBOL_X=SETTINGS.symbolX,ASSET_Y=SETTINGS.assetY,ASSET_X=SETTINGS.assetX;
+const IS_PAIR=Boolean(SETTINGS.isPair),REPLAY_MINUTES=Number(SETTINGS.replayMinutes),TRADE_REPLAY=Boolean(SETTINGS.tradeReplay),VERBOSE=Boolean(SETTINGS.terminalVerbose),SYNC_MS=Number(SETTINGS.syncMs);
+const REACTIVITY=Number(SETTINGS.reactivity),OBSERVATION_TRUST=Number(SETTINGS.observationTrust),CONFIRMATION=Number(SETTINGS.confirmation),ENTRY_THRESHOLD=Number(SETTINGS.entryThreshold),EXIT_THRESHOLD=Number(SETTINGS.exitThreshold),SHOCK_THRESHOLD=Number(SETTINGS.shockThreshold),SECONDARY_THRESHOLD=Number(SETTINGS.secondaryThreshold),HMM_PERSISTENCE=Number(SETTINGS.hmmPersistence),Z_WINDOW=Number(SETTINGS.zWindow);
+const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.accountEquity),TARGET_LEVERAGE=Number(SETTINGS.targetLeverage),POINT_VALUE_Y=Number(SETTINGS.pointValueY),POINT_VALUE_X=Number(SETTINGS.pointValueX),TICK_SIZE_Y=Number(SETTINGS.tickSizeY),TICK_SIZE_X=Number(SETTINGS.tickSizeX),FX_Y=Number(SETTINGS.fxY),FX_X=Number(SETTINGS.fxX),QUANTITY_STEP=Number(SETTINGS.quantityStep),COMMISSION_PER_UNIT=Number(SETTINGS.commissionPerUnit),EXTRA_SLIPPAGE_TICKS=Number(SETTINGS.extraSlippageTicks),ALLOW_SHORT=Boolean(SETTINGS.allowShort),MAX_SESSION_LOSS=Number(SETTINGS.maxSessionLoss),MAX_TRADE_LOSS=Number(SETTINGS.maxTradeLoss),MAX_HOLDING_SECONDS=Number(SETTINGS.maxHoldingSeconds),MAX_TRADES=Number(SETTINGS.maxTrades),COOLDOWN_OBSERVATIONS=Number(SETTINGS.cooldownObservations);
+
+const COLORS={background:"#050708",grid:"#1b2530",text:"#d9e2ec",muted:"#748192",green:"#28b69f",red:"#ef5b5b",yellow:"#d9b44a",blue:"#76b7e5",purple:"#a28af7",raw:"#d9a36c"};
+const currencyPrefix=({EUR:"€",USD:"$",GBP:"£",CHF:"CHF "}[ACCOUNT_CURRENCY]||`${ACCOUNT_CURRENCY} `);
+const $=id=>document.getElementById(id);
+const DOM={brand:$("brand"),connection:$("connection"),startButton:$("startButton"),stopButton:$("stopButton"),resetButton:$("resetButton"),fullscreenButton:$("fullscreenButton"),terminal:$("terminal"),blotterBody:$("blotterBody"),sessionMetric:$("sessionMetric"),sessionSub:$("sessionSub"),signalMetric:$("signalMetric"),signalSub:$("signalSub"),positionMetric:$("positionMetric"),positionSub:$("positionSub"),netMetric:$("netMetric"),netSub:$("netSub"),unrealizedMetric:$("unrealizedMetric"),unrealizedSub:$("unrealizedSub"),ticksMetric:$("ticksMetric"),ticksSub:$("ticksSub"),tradesMetric:$("tradesMetric"),tradesSub:$("tradesSub"),drawdownMetric:$("drawdownMetric"),drawdownSub:$("drawdownSub"),diagPriceY:$("diagPriceY"),diagPriceX:$("diagPriceX"),diagPrimary:$("diagPrimary"),diagSecondary:$("diagSecondary"),diagRegime:$("diagRegime"),diagLeverage:$("diagLeverage"),sessionSummary:$("sessionSummary"),exportTradesButton:$("exportTradesButton"),exportDecisionsButton:$("exportDecisionsButton"),exportSummaryButton:$("exportSummaryButton")};
+DOM.brand.textContent=`SHADOW TRADER :: ${STRATEGY.toUpperCase()} :: ${SYMBOL_Y}${SYMBOL_X?` / ${SYMBOL_X}`:""}`;
+
+const plotConfig={responsive:true,displaylogo:false,scrollZoom:true,doubleClick:"reset+autosize",modeBarButtonsToAdd:["pan2d","zoomIn2d","zoomOut2d","autoScale2d","resetScale2d"],modeBarButtonsToRemove:["lasso2d","select2d"]};
+function commonLayout(title,uirevision){return{template:"plotly_dark",paper_bgcolor:COLORS.background,plot_bgcolor:COLORS.background,height:420,margin:{l:34,r:66,t:48,b:32},title:{text:title,x:.01,font:{size:13,color:COLORS.text,family:"JetBrains Mono, Consolas, monospace"}},hovermode:"x unified",dragmode:"pan",uirevision,legend:{orientation:"h",x:0,y:1.06,font:{size:9,color:COLORS.muted},bgcolor:"rgba(0,0,0,0)"},xaxis:{gridcolor:COLORS.grid,zeroline:false,showspikes:true,spikecolor:COLORS.muted},yaxis:{gridcolor:COLORS.grid,zeroline:false,side:"right",automargin:true}}}
+function finite(value,fallback=null){const n=Number(value);return Number.isFinite(n)?n:fallback}
+function parseTimestamp(value){if(typeof value==="number")return new Date(value<1e12?value*1000:value);const d=new Date(value);return Number.isNaN(d.getTime())?new Date():d}
+function formatNumber(value,decimals=2){return Number.isFinite(value)?value.toLocaleString(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}):"—"}
+function formatMoney(value){return `${currencyPrefix}${value>0?"+":""}${formatNumber(value,2)}`}
+function formatPrice(value){if(!Number.isFinite(value))return"—";const d=Math.abs(value)<10?5:(Math.abs(value)<100?4:2);return formatNumber(value,d)}
+function signed(value,decimals=2){return Number.isFinite(value)?`${value>=0?"+":""}${value.toFixed(decimals)}`:"—"}
+function variance(values){const a=values.filter(Number.isFinite);if(a.length<2)return 1e-8;const m=a.reduce((s,v)=>s+v,0)/a.length;return a.reduce((s,v)=>s+(v-m)**2,0)/a.length}
+function rollingZ(values,windowSize){const a=values.slice(-Math.max(10,windowSize));if(a.length<10)return null;const m=a.reduce((s,v)=>s+v,0)/a.length,sd=Math.sqrt(variance(a));return !Number.isFinite(sd)||sd<1e-12?0:(a[a.length-1]-m)/sd}
+function roundQuantity(value){if(!Number.isFinite(value)||value<=0)return 0;const step=Math.max(QUANTITY_STEP,1e-8);return Math.floor(value/step)*step}
+function canonicalSymbol(symbol){const s=String(symbol||"").toUpperCase();if(s===String(SYMBOL_Y).toUpperCase())return"Y";if(SYMBOL_X&&s===String(SYMBOL_X).toUpperCase())return"X";return null}
+function nowIso(){return new Date().toISOString()}
+
+function logLine(type,message,timestamp=new Date()){
+    const time=timestamp.toLocaleTimeString([],{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit",fractionalSecondDigits:3});
+    portfolio.logs.push({timestamp:timestamp.toISOString(),type,message});
+    if(portfolio.logs.length>5000)portfolio.logs.splice(0,portfolio.logs.length-5000);
+    const e=document.createElement("div");e.className=`line ${type}`;e.textContent=`[${time}] ${type.padEnd(7," ")} | ${message}`;DOM.terminal.appendChild(e);
+    while(DOM.terminal.children.length>800)DOM.terminal.removeChild(DOM.terminal.firstChild);
+    DOM.terminal.scrollTop=DOM.terminal.scrollHeight;
+}
+function logVerbose(type,message,timestamp){if(VERBOSE)logLine(type,message,timestamp)}
+function downloadCsv(filename,rows){
+    if(!rows.length){logLine("SYSTEM",`Aucune donnée à exporter pour ${filename}.`);return}
+    const columns=Array.from(rows.reduce((set,row)=>{Object.keys(row).forEach(k=>set.add(k));return set},new Set()));
+    const esc=v=>`"${(v===null||v===undefined?"":String(v)).replaceAll('"','""')}"`;
+    const csv=[columns.map(esc).join(","),...rows.map(row=>columns.map(c=>esc(row[c])).join(","))].join("\n");
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);
+}
+
+const market={Y:null,X:null,previousY:null,previousX:null,bucket:null,bucketY:null,bucketX:null,lastPairSignature:null,liveSeen:false};
+const kalman={state:null,covariance:null,differences:[],timestamps:[],observed:[],filtered:[],slopeZ:[],innovationZ:[]};
+const hmm={posterior:[.82,.06,.06,.06],candidate:0,candidateCount:0,confirmedState:0,duration:0};
+const regression={state:null,covariance:null,warmup:[],residualVariance:1e-8,residuals:[],timestamps:[],beta:[],zscore:[],normalizedY:[],normalizedX:[],baseY:null,baseX:null};
+const portfolio={active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Date():null,stoppedAt:null,position:0,trade:null,realized:0,grossRealized:0,unrealized:0,costs:0,currentTicks:0,totalTicks:0,currentTarget:0,candidateTarget:0,candidateCount:0,cooldown:0,trades:[],decisions:[],logs:[],equityTimestamps:[],equityNet:[],equityRealized:[],peakNet:0,maxDrawdown:0,observations:0,lastSignalLabel:"WAIT",lastSignalReason:"Warm-up",lastStateFingerprint:null};
+
+function resetPortfolioState(){
+    Object.assign(portfolio,{active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Date():null,stoppedAt:null,position:0,trade:null,realized:0,grossRealized:0,unrealized:0,costs:0,currentTicks:0,totalTicks:0,currentTarget:0,candidateTarget:0,candidateCount:0,cooldown:0,trades:[],decisions:[],logs:[],equityTimestamps:[],equityNet:[],equityRealized:[],peakNet:0,maxDrawdown:0,observations:0,lastSignalLabel:"WAIT",lastSignalReason:"Warm-up",lastStateFingerprint:null});
+    DOM.terminal.innerHTML="";DOM.blotterBody.innerHTML="";logLine("SYSTEM","Paper engine réinitialisé. Aucun ordre réel ne sera envoyé.");
+}
+
+function updateKalman(timestamp,price){
+    if(kalman.observed.length){const d=price-kalman.observed[kalman.observed.length-1];if(Number.isFinite(d)){kalman.differences.push(d);if(kalman.differences.length>300)kalman.differences.shift()}}
+    const baseVariance=Math.max(variance(kalman.differences),price*price*1e-12,1e-10),qMultiplier=10**((REACTIVITY-5)/2),rMultiplier=10**((6-OBSERVATION_TRUST)/2),qLevel=baseVariance*.035*qMultiplier,qTrend=baseVariance*.0015*qMultiplier,measurementVariance=baseVariance*Math.max(rMultiplier,1e-4);
+    let innovation=0,innovationVariance=baseVariance+measurementVariance;
+    if(kalman.state===null){kalman.state=[price,0];kalman.covariance=[[baseVariance*10,0],[0,baseVariance]]}
+    else{
+        let [level,trend]=kalman.state,[[p00,p01],[p10,p11]]=kalman.covariance;
+        const predictedLevel=level+trend,predictedTrend=trend,pp00=p00+p01+p10+p11+qLevel,pp01=p01+p11,pp10=p10+p11,pp11=p11+qTrend;
+        innovation=price-predictedLevel;innovationVariance=pp00+measurementVariance;
+        const k0=pp00/innovationVariance,k1=pp10/innovationVariance;
+        level=predictedLevel+k0*innovation;trend=predictedTrend+k1*innovation;
+        const np00=(1-k0)*pp00,np01=(1-k0)*pp01,np10=pp10-k1*pp00,np11=pp11-k1*pp01,off=(np01+np10)/2;
+        kalman.state=[level,trend];kalman.covariance=[[Math.max(np00,1e-14),off],[off,Math.max(np11,1e-14)]];
+    }
+    const level=kalman.state[0],trend=kalman.state[1],slopeZ=trend/Math.sqrt(Math.max(baseVariance,1e-14)),innovationZ=innovation/Math.sqrt(Math.max(innovationVariance,1e-14));
+    kalman.timestamps.push(timestamp);kalman.observed.push(price);kalman.filtered.push(level);kalman.slopeZ.push(slopeZ);kalman.innovationZ.push(innovationZ);
+    for(const a of [kalman.timestamps,kalman.observed,kalman.filtered,kalman.slopeZ,kalman.innovationZ])if(a.length>5000)a.splice(0,a.length-5000);
+    return{timestamp,price,level,trend,slopeZ,innovationZ,beta:null,zscore:null,hmm:null}
+}
+
+function gaussianLogPdf(value,mean,sd){const s=Math.max(sd,1e-6),d=(value-mean)/s;return-Math.log(s*Math.sqrt(2*Math.PI))-.5*d*d}
+function normalizeLogs(logs){const m=Math.max(...logs),a=logs.map(v=>Math.exp(v-m)),t=a.reduce((s,v)=>s+v,0);return a.map(v=>v/t)}
+function updateHmm(slopeZ,innovationZ){
+    const p=Math.min(Math.max(HMM_PERSISTENCE,.5),.995),m=1-p;
+    const tr=[[p,m*.4,m*.4,m*.2],[m*.43,p,m*.05,m*.52],[m*.43,m*.05,p,m*.52],[m*.55,m*.225,m*.225,p]],pred=[0,0,0,0];
+    for(let d=0;d<4;d++)for(let o=0;o<4;o++)pred[d]+=hmm.posterior[o]*tr[o][d];
+    const ai=Math.abs(innovationZ),em=[gaussianLogPdf(slopeZ,0,.48)+gaussianLogPdf(innovationZ,0,.9),gaussianLogPdf(slopeZ,.9,.72)+gaussianLogPdf(innovationZ,.1,1.25),gaussianLogPdf(slopeZ,-.9,.72)+gaussianLogPdf(innovationZ,-.1,1.25),gaussianLogPdf(slopeZ,0,1.8)+gaussianLogPdf(ai,2.6,1.35)];
+    hmm.posterior=normalizeLogs(pred.map((q,i)=>Math.log(Math.max(q,1e-15))+em[i]));
+    let dominant=0;for(let i=1;i<4;i++)if(hmm.posterior[i]>hmm.posterior[dominant])dominant=i;
+    if(dominant===hmm.candidate)hmm.candidateCount++;else{hmm.candidate=dominant;hmm.candidateCount=1}
+    const needed=dominant===3?1:CONFIRMATION;
+    if(hmm.candidateCount>=needed){if(hmm.confirmedState===dominant)hmm.duration++;else{hmm.confirmedState=dominant;hmm.duration=1}}else hmm.duration++;
+    return{posterior:[...hmm.posterior],dominant,confirmed:hmm.confirmedState,duration:hmm.duration}
+}
+
+function initializeRegression(obs){
+    const n=obs.length;if(n<20)return null;
+    let sx=0,sy=0,sxx=0,sxy=0;for(const v of obs){sx+=v.x;sy+=v.y;sxx+=v.x*v.x;sxy+=v.x*v.y}
+    const den=n*sxx-sx*sx,beta=Math.abs(den)<1e-14?1:(n*sxy-sx*sy)/den,alpha=(sy-beta*sx)/n,res=obs.map(v=>v.y-alpha-beta*v.x),rv=Math.max(variance(res),1e-10);
+    return{state:[alpha,beta],covariance:[[rv,0],[0,.1]],residualVariance:rv}
+}
+function updateRegression(timestamp,y,x,priceY,priceX){
+    if(regression.state===null){
+        regression.warmup.push({y,x});
+        if(regression.warmup.length<30)return{ready:false,warmup:regression.warmup.length};
+        const init=initializeRegression(regression.warmup);if(!init)return{ready:false,warmup:regression.warmup.length};
+        regression.state=init.state;regression.covariance=init.covariance;regression.residualVariance=init.residualVariance;
+    }
+    const qm=10**((REACTIVITY-5)/2),rm=10**((6-OBSERVATION_TRUST)/2),qA=regression.residualVariance*.005*qm,qB=1e-5*qm,r=regression.residualVariance*Math.max(rm,1e-4);
+    let [alpha,beta]=regression.state,[[p00,p01],[p10,p11]]=regression.covariance;p00+=qA;p11+=qB;
+    const predicted=alpha+beta*x,residual=y-predicted,s=p00+x*p01+x*p10+x*x*p11+r,k0=(p00+p01*x)/s,k1=(p10+p11*x)/s;
+    alpha+=k0*residual;beta+=k1*residual;
+    const np00=p00-k0*(p00+x*p10),np01=p01-k0*(p01+x*p11),np10=p10-k1*(p00+x*p10),np11=p11-k1*(p01+x*p11),off=(np01+np10)/2;
+    regression.state=[alpha,beta];regression.covariance=[[Math.max(np00,1e-12),off],[off,Math.max(np11,1e-12)]];
+    regression.residuals.push(residual);if(regression.residuals.length>5000)regression.residuals.shift();
+    const zscore=rollingZ(regression.residuals,Z_WINDOW);
+    regression.timestamps.push(timestamp);regression.beta.push(beta);regression.zscore.push(zscore);
+    if(regression.baseY===null){regression.baseY=priceY;regression.baseX=priceX}
+    regression.normalizedY.push(priceY/regression.baseY*100);regression.normalizedX.push(priceX/regression.baseX*100);
+    for(const a of [regression.timestamps,regression.beta,regression.zscore,regression.normalizedY,regression.normalizedX])if(a.length>5000)a.splice(0,a.length-5000);
+    return{ready:true,alpha,beta,residual,zscore,level:null,slopeZ:null,innovationZ:null,hmm:null}
+}
+
+function strategySignal(features){
+    const current=portfolio.position;
+    if(STRATEGY==="Kalman Trend"){
+        const slope=features.slopeZ,innovation=features.innovationZ;
+        if(Math.abs(innovation)>=SHOCK_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Innovation choc ${signed(innovation)}σ`,confidence:Math.min(1,Math.abs(innovation)/SHOCK_THRESHOLD),regime:"CHOC"};
+        if(current>0)return slope<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG",reason:`Pente retombée ${signed(slope)}σ`,confidence:1,regime:"BRUIT"}:{target:1,label:"HOLD LONG",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,slope/ENTRY_THRESHOLD),regime:"UP"};
+        if(current<0)return slope>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT",reason:`Pente remontée ${signed(slope)}σ`,confidence:1,regime:"BRUIT"}:{target:-1,label:"HOLD SHORT",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,Math.abs(slope)/ENTRY_THRESHOLD),regime:"DOWN"};
+        if(slope>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,slope/ENTRY_THRESHOLD),regime:"UP"};
+        if(ALLOW_SHORT&&slope<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,Math.abs(slope)/ENTRY_THRESHOLD),regime:"DOWN"};
+        return{target:0,label:"WAIT",reason:`Pente ${signed(slope)}σ sous seuil`,confidence:0,regime:"BRUIT"};
+    }
+    if(STRATEGY==="Kalman + HMM Directional"){
+        const p=features.hmm.posterior,noise=p[0],up=p[1],down=p[2],shock=p[3];
+        if(shock>=SECONDARY_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Choc ${(shock*100).toFixed(0)}%`,confidence:shock,regime:"CHOC"};
+        if(current>0){
+            if(up<EXIT_THRESHOLD||noise>=ENTRY_THRESHOLD)return{target:0,label:"EXIT LONG",reason:`Up ${(up*100).toFixed(0)}% · noise ${(noise*100).toFixed(0)}%`,confidence:Math.max(noise,1-up),regime:"BRUIT"};
+            return{target:1,label:"HOLD LONG",reason:`Up ${(up*100).toFixed(0)}%`,confidence:up,regime:"UP"};
+        }
+        if(current<0){
+            if(down<EXIT_THRESHOLD||noise>=ENTRY_THRESHOLD)return{target:0,label:"EXIT SHORT",reason:`Down ${(down*100).toFixed(0)}% · noise ${(noise*100).toFixed(0)}%`,confidence:Math.max(noise,1-down),regime:"BRUIT"};
+            return{target:-1,label:"HOLD SHORT",reason:`Down ${(down*100).toFixed(0)}%`,confidence:down,regime:"DOWN"};
+        }
+        if(up>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Régime hausse ${(up*100).toFixed(0)}%`,confidence:up,regime:"UP"};
+        if(ALLOW_SHORT&&down>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Régime baisse ${(down*100).toFixed(0)}%`,confidence:down,regime:"DOWN"};
+        return{target:0,label:"WAIT",reason:`Noise ${(noise*100).toFixed(0)}%`,confidence:noise,regime:"BRUIT"};
+    }
+    const z=features.zscore;
+    if(!Number.isFinite(z))return{target:0,label:"WARM-UP",reason:"Z-score indisponible",confidence:0,regime:"WARMUP"};
+    if(STRATEGY==="Dynamic Beta Residual Momentum"){
+        if(current>0)return z<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG SPREAD",reason:`Residual z ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:1,label:"HOLD LONG SPREAD",reason:`Residual momentum ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
+        if(current<0)return z>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT SPREAD",reason:`Residual z ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Residual momentum ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
+        if(z>=ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Residual breakout ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
+        if(ALLOW_SHORT&&z<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT SPREAD CANDIDATE",reason:`Residual breakout ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
+        return{target:0,label:"WAIT",reason:`Residual z ${signed(z)}`,confidence:0,regime:"NEUTRAL"};
+    }
+    // Relative Value Mean Reversion.
+    if(current>0)return(Math.abs(z)<=EXIT_THRESHOLD||z>0)?{target:0,label:"EXIT LONG SPREAD",reason:`Spread revenu ${signed(z)}σ`,confidence:1,regime:"MEAN"}:{target:1,label:"HOLD LONG SPREAD",reason:`Y décoté ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y CHEAP"};
+    if(current<0)return(Math.abs(z)<=EXIT_THRESHOLD||z<0)?{target:0,label:"EXIT SHORT SPREAD",reason:`Spread revenu ${signed(z)}σ`,confidence:1,regime:"MEAN"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Y riche ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y RICH"};
+    if(z<=-ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Y décoté ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y CHEAP"};
+    if(ALLOW_SHORT&&z>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT SPREAD CANDIDATE",reason:`Y riche ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"Y RICH"};
+    return{target:0,label:"WAIT",reason:`Spread z ${signed(z)}`,confidence:0,regime:"MEAN"};
+}
+
+function executablePrice(tick,side,tickSize){
+    if(!tick)return null;
+    const base=side>0?(Number.isFinite(tick.ask)?tick.ask:tick.price):(Number.isFinite(tick.bid)?tick.bid:tick.price);
+    return Number.isFinite(base)?base+side*EXTRA_SLIPPAGE_TICKS*tickSize:null
+}
+function markPrice(tick,positionSide,tickSize){return executablePrice(tick,-positionSide,tickSize)}
+function commissionFor(qy,qx=0){return(Math.abs(qy)+Math.abs(qx))*COMMISSION_PER_UNIT}
+function sizePosition(betaValue){
+    if(!market.Y)return null;
+    const grossTarget=ACCOUNT_EQUITY*TARGET_LEVERAGE;
+    if(!IS_PAIR){
+        const per=market.Y.price*POINT_VALUE_Y*FX_Y,qy=roundQuantity(grossTarget/Math.max(per,1e-12));
+        return{quantityY:qy,quantityX:0,grossNotional:qy*per,leverage:qy*per/ACCOUNT_EQUITY}
+    }
+    if(!market.X)return null;
+    const beta=Math.max(Math.abs(finite(betaValue,1)),.05),ny=market.Y.price*POINT_VALUE_Y*FX_Y,nx=market.X.price*POINT_VALUE_X*FX_X,xPerY=beta*ny/Math.max(nx,1e-12),grossPerY=ny+xPerY*nx,qy=roundQuantity(grossTarget/Math.max(grossPerY,1e-12)),qx=roundQuantity(qy*xPerY),gross=qy*ny+qx*nx;
+    return{quantityY:qy,quantityX:qx,grossNotional:gross,leverage:gross/ACCOUNT_EQUITY}
+}
+function currentGrossPnl(trade){
+    if(!trade)return 0;
+    const exitY=markPrice(market.Y,trade.direction,TICK_SIZE_Y);if(!Number.isFinite(exitY))return 0;
+    let pnl=trade.direction*(exitY-trade.entryY)*trade.quantityY*POINT_VALUE_Y*FX_Y;
+    if(trade.isPair){const xd=-trade.direction,exitX=markPrice(market.X,xd,TICK_SIZE_X);if(Number.isFinite(exitX))pnl+=xd*(exitX-trade.entryX)*trade.quantityX*POINT_VALUE_X*FX_X}
+    return pnl
+}
+function currentEquivalentTicks(trade){
+    if(!trade)return 0;
+    const tickValue=Math.max(TICK_SIZE_Y*POINT_VALUE_Y*FX_Y*trade.quantityY,1e-12);
+    return currentGrossPnl(trade)/tickValue
+}
+
+function openPosition(direction,signal,timestamp,features){
+    if(direction<0&&!ALLOW_SHORT)return;
+    if(portfolio.trades.length>=MAX_TRADES){portfolio.locked=true;portfolio.active=false;logLine("KILL",`Nombre maximal de trades atteint (${MAX_TRADES}).`,timestamp);return}
+    const sizing=sizePosition(finite(features.beta,1));
+    if(!sizing||sizing.quantityY<=0||(IS_PAIR&&sizing.quantityX<=0)){logLine("RISK","Taille nulle. Vérifie point value, FX et capital.",timestamp);return}
+    const entryY=executablePrice(market.Y,direction,TICK_SIZE_Y),entryX=IS_PAIR?executablePrice(market.X,-direction,TICK_SIZE_X):null;
+    if(!Number.isFinite(entryY)||(IS_PAIR&&!Number.isFinite(entryX)))return;
+    const entryCommission=commissionFor(sizing.quantityY,sizing.quantityX);
+    portfolio.realized-=entryCommission;portfolio.costs+=entryCommission;portfolio.position=direction;
+    portfolio.trade={id:portfolio.trades.length+1,isPair:IS_PAIR,direction,openedAt:timestamp,entryY,entryX,quantityY:sizing.quantityY,quantityX:sizing.quantityX,beta:finite(features.beta,1),leverage:sizing.leverage,grossNotional:sizing.grossNotional,entryCommission,signal:signal.label,entryReason:signal.reason};
+    portfolio.cooldown=0;
+    logLine(direction>0?"BUY":"SHORT",`${IS_PAIR?"SPREAD ":""}${direction>0?"LONG":"SHORT"} | Y ${sizing.quantityY.toFixed(4)} @ ${formatPrice(entryY)}${IS_PAIR?` | X ${sizing.quantityX.toFixed(4)} @ ${formatPrice(entryX)}`:""} | levier ${sizing.leverage.toFixed(2)}× | ${signal.reason}`,timestamp);
+}
+
+function closePosition(reason,timestamp,exitType="EXIT"){
+    const trade=portfolio.trade;if(!trade)return;
+    const exitY=executablePrice(market.Y,-trade.direction,TICK_SIZE_Y),exitX=trade.isPair?executablePrice(market.X,trade.direction,TICK_SIZE_X):null;
+    if(!Number.isFinite(exitY)||(trade.isPair&&!Number.isFinite(exitX)))return;
+    let gross=trade.direction*(exitY-trade.entryY)*trade.quantityY*POINT_VALUE_Y*FX_Y;
+    if(trade.isPair){const xd=-trade.direction;gross+=xd*(exitX-trade.entryX)*trade.quantityX*POINT_VALUE_X*FX_X}
+    const exitCommission=commissionFor(trade.quantityY,trade.quantityX),totalCosts=trade.entryCommission+exitCommission,net=gross-totalCosts;
+    portfolio.grossRealized+=gross;portfolio.realized+=gross-exitCommission;portfolio.costs+=exitCommission;
+    const duration=Math.max(0,(timestamp-trade.openedAt)/1000),tickValue=Math.max(TICK_SIZE_Y*POINT_VALUE_Y*FX_Y*trade.quantityY,1e-12),tickEq=gross/tickValue;
+    portfolio.totalTicks+=tickEq;
+    portfolio.trades.push({trade_id:trade.id,strategy:STRATEGY,direction:trade.direction>0?(trade.isPair?"LONG_SPREAD":"LONG"):(trade.isPair?"SHORT_SPREAD":"SHORT"),opened_at:trade.openedAt.toISOString(),closed_at:timestamp.toISOString(),duration_seconds:duration,symbol_y:SYMBOL_Y,quantity_y:trade.quantityY,entry_y:trade.entryY,exit_y:exitY,symbol_x:trade.isPair?SYMBOL_X:"",quantity_x:trade.quantityX,entry_x:trade.isPair?trade.entryX:"",exit_x:trade.isPair?exitX:"",beta_entry:trade.beta,gross_pnl:gross,entry_commission:trade.entryCommission,exit_commission:exitCommission,total_costs:totalCosts,net_pnl:net,equivalent_y_ticks:tickEq,leverage:trade.leverage,entry_reason:trade.entryReason,exit_reason:reason});
+    portfolio.position=0;portfolio.trade=null;portfolio.unrealized=0;portfolio.currentTicks=0;portfolio.cooldown=COOLDOWN_OBSERVATIONS;portfolio.candidateTarget=0;portfolio.candidateCount=0;
+    logLine(net>=0?"PROFIT":"LOSS",`${exitType} | gross ${formatMoney(gross)} | coûts ${formatMoney(-totalCosts)} | net ${formatMoney(net)} | ${signed(tickEq,1)} ticks Y-eq | ${reason}`,timestamp);
+    updateBlotter()
+}
+
+function applyTarget(signal,timestamp,features,isReplay){
+    portfolio.lastSignalLabel=signal.label;portfolio.lastSignalReason=signal.reason;portfolio.currentTarget=signal.target;
+    const eligible=portfolio.active&&!portfolio.locked&&(TRADE_REPLAY||!isReplay);
+    if(!eligible){portfolio.candidateTarget=0;portfolio.candidateCount=0;logVerbose("WAIT",`${signal.label} | ${signal.reason} | session non active`,timestamp);return}
+    if(portfolio.cooldown>0){portfolio.cooldown--;logVerbose("WAIT",`Cooldown ${portfolio.cooldown} | ${signal.reason}`,timestamp);return}
+    if(portfolio.position!==0&&signal.target===0){closePosition(signal.reason,timestamp,"MODEL EXIT");return}
+    if(portfolio.position!==0&&signal.target===portfolio.position){logVerbose("HOLD",`${signal.label} | ${signal.reason} | uPnL ${formatMoney(portfolio.unrealized)}`,timestamp);return}
+    if(portfolio.position!==0&&signal.target===-portfolio.position){closePosition(`Signal opposé : ${signal.reason}`,timestamp,"REVERSAL EXIT");return}
+    if(portfolio.position===0&&signal.target!==0){
+        if(signal.target===portfolio.candidateTarget)portfolio.candidateCount++;else{portfolio.candidateTarget=signal.target;portfolio.candidateCount=1}
+        if(portfolio.candidateCount>=CONFIRMATION){openPosition(signal.target,signal,timestamp,features);portfolio.candidateTarget=0;portfolio.candidateCount=0}
+        else logVerbose("WAIT",`${signal.label} | confirmation ${portfolio.candidateCount}/${CONFIRMATION} | ${signal.reason}`,timestamp);
+        return
+    }
+    portfolio.candidateTarget=0;portfolio.candidateCount=0;logVerbose("WAIT",`${signal.label} | ${signal.reason}`,timestamp)
+}
+
+function updateRisk(timestamp){
+    if(!portfolio.trade)return;
+    const gross=currentGrossPnl(portfolio.trade),exitCost=commissionFor(portfolio.trade.quantityY,portfolio.trade.quantityX);
+    portfolio.unrealized=gross-exitCost;portfolio.currentTicks=currentEquivalentTicks(portfolio.trade);
+    const tradeNet=gross-portfolio.trade.entryCommission-exitCost;
+    if(MAX_TRADE_LOSS>0&&tradeNet<=-MAX_TRADE_LOSS){closePosition(`Stop trade ${formatMoney(tradeNet)}`,timestamp,"STOP");return}
+    if(MAX_HOLDING_SECONDS>0&&(timestamp-portfolio.trade.openedAt)/1000>=MAX_HOLDING_SECONDS){closePosition(`Time stop ${((timestamp-portfolio.trade.openedAt)/1000).toFixed(0)}s`,timestamp,"TIME STOP");return}
+    const net=portfolio.realized+portfolio.unrealized;
+    if(MAX_SESSION_LOSS>0&&net<=-MAX_SESSION_LOSS){
+        closePosition(`Kill switch session ${formatMoney(net)}`,timestamp,"KILL");portfolio.locked=true;portfolio.active=false;logLine("KILL","Session verrouillée après la perte maximale.",timestamp)
+    }
+}
+
+function appendDecision(timestamp,features,signal,isReplay){
+    const net=portfolio.realized+portfolio.unrealized;
+    portfolio.decisions.push({timestamp:timestamp.toISOString(),replay:Boolean(isReplay),strategy:STRATEGY,price_y:market.Y?market.Y.price:null,bid_y:market.Y?market.Y.bid:null,ask_y:market.Y?market.Y.ask:null,price_x:market.X?market.X.price:null,bid_x:market.X?market.X.bid:null,ask_x:market.X?market.X.ask:null,kalman_level:finite(features.level),slope_z:finite(features.slopeZ),innovation_z:finite(features.innovationZ),beta:finite(features.beta),residual_z:finite(features.zscore),hmm_noise:features.hmm?features.hmm.posterior[0]:null,hmm_up:features.hmm?features.hmm.posterior[1]:null,hmm_down:features.hmm?features.hmm.posterior[2]:null,hmm_shock:features.hmm?features.hmm.posterior[3]:null,signal:signal.label,signal_reason:signal.reason,target_position:signal.target,actual_position:portfolio.position,realized_pnl:portfolio.realized,unrealized_pnl:portfolio.unrealized,net_pnl:net});
+    if(portfolio.decisions.length>25000)portfolio.decisions.splice(0,portfolio.decisions.length-25000)
+}
+
+function processModelObservation(timestamp,features,isReplay){
+    portfolio.observations++;
+    const signal=strategySignal(features);
+    updateRisk(timestamp);applyTarget(signal,timestamp,features,isReplay);updateRisk(timestamp);appendDecision(timestamp,features,signal,isReplay);
+    const net=portfolio.realized+portfolio.unrealized;portfolio.peakNet=Math.max(portfolio.peakNet,net);portfolio.maxDrawdown=Math.max(portfolio.maxDrawdown,portfolio.peakNet-net);
+    portfolio.equityTimestamps.push(timestamp);portfolio.equityNet.push(net);portfolio.equityRealized.push(portfolio.realized);
+    for(const a of [portfolio.equityTimestamps,portfolio.equityNet,portfolio.equityRealized])if(a.length>5000)a.splice(0,a.length-5000);
+    const fp=`${signal.label}|${signal.regime}|${portfolio.position}`;
+    if(fp!==portfolio.lastStateFingerprint){const type=signal.target>0?"LONG":(signal.target<0?"SHORT":(signal.regime==="CHOC"?"SHOCK":"WAIT"));logLine(type,`${signal.label} | ${signal.reason} | position ${portfolio.position>0?"LONG":portfolio.position<0?"SHORT":"FLAT"}`,timestamp);portfolio.lastStateFingerprint=fp}
+    renderAll(features,signal)
+}
+
+function processSingleTick(tick,isReplay){
+    const features=updateKalman(tick.timestamp,tick.price);
+    if(STRATEGY==="Kalman + HMM Directional")features.hmm=updateHmm(features.slopeZ,features.innovationZ);
+    processModelObservation(tick.timestamp,features,isReplay)
+}
+function processPairPrices(timestamp,priceY,priceX,isReplay){
+    if(market.previousY===null||market.previousX===null){market.previousY=priceY;market.previousX=priceX;return}
+    let y,x;
+    if(STRATEGY==="Dynamic Beta Residual Momentum"){y=Math.log(priceY/market.previousY);x=Math.log(priceX/market.previousX)}
+    else{y=Math.log(priceY);x=Math.log(priceX)}
+    market.previousY=priceY;market.previousX=priceX;
+    if(!Number.isFinite(y)||!Number.isFinite(x))return;
+    if(STRATEGY==="Dynamic Beta Residual Momentum"&&Math.abs(y)<1e-14&&Math.abs(x)<1e-14)return;
+    const result=updateRegression(timestamp,y,x,priceY,priceX);
+    if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/30`;renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`Régression ${result.warmup||0}/30`,regime:"WARMUP"});return}
+    processModelObservation(timestamp,result,isReplay)
+}
+function processPairTick(side,tick,isReplay){
+    if(SYNC_MS===0){
+        if(!market.Y||!market.X)return;
+        const sig=`${market.Y.timestamp.getTime()}|${market.X.timestamp.getTime()}|${market.Y.price}|${market.X.price}`;
+        if(sig===market.lastPairSignature)return;market.lastPairSignature=sig;
+        processPairPrices(tick.timestamp,market.Y.price,market.X.price,isReplay);return
+    }
+    const bucket=Math.floor(tick.timestamp.getTime()/SYNC_MS)*SYNC_MS;
+    if(market.bucket===null)market.bucket=bucket;
+    if(bucket>market.bucket){
+        if(Number.isFinite(market.bucketY)&&Number.isFinite(market.bucketX))processPairPrices(new Date(market.bucket),market.bucketY,market.bucketX,isReplay);
+        market.bucket=bucket;market.bucketY=market.Y?market.Y.price:market.bucketY;market.bucketX=market.X?market.X.price:market.bucketX
+    }
+    if(side==="Y")market.bucketY=tick.price;else market.bucketX=tick.price
+}
+
+function updateBlotter(){
+    DOM.blotterBody.innerHTML="";
+    for(const trade of [...portfolio.trades].reverse().slice(0,250)){
+        const row=document.createElement("tr"),values=[trade.trade_id,trade.direction,formatPrice(trade.entry_y),formatPrice(trade.exit_y),`${trade.duration_seconds.toFixed(1)}s`,formatMoney(trade.gross_pnl),formatMoney(-trade.total_costs),formatMoney(trade.net_pnl),trade.exit_reason];
+        values.forEach((value,index)=>{const cell=document.createElement("td");cell.textContent=value;if(index===7&&trade.net_pnl!==0)cell.className=trade.net_pnl>0?"positive":"negative";row.appendChild(cell)});
+        DOM.blotterBody.appendChild(row)
+    }
+}
+
+function renderMetrics(features,signal){
+    const net=portfolio.realized+portfolio.unrealized,bps=net/ACCOUNT_EQUITY*10000,wins=portfolio.trades.filter(t=>t.net_pnl>0).length,losses=portfolio.trades.filter(t=>t.net_pnl<0).length,winRate=portfolio.trades.length?wins/portfolio.trades.length*100:null,grossWins=portfolio.trades.filter(t=>t.net_pnl>0).reduce((s,t)=>s+t.net_pnl,0),grossLosses=Math.abs(portfolio.trades.filter(t=>t.net_pnl<0).reduce((s,t)=>s+t.net_pnl,0)),pf=grossLosses>0?grossWins/grossLosses:(grossWins>0?Infinity:null);
+    DOM.sessionMetric.textContent=portfolio.locked?"LOCKED":(portfolio.active?"ACTIVE":"IDLE");DOM.sessionMetric.style.color=portfolio.locked?COLORS.red:(portfolio.active?COLORS.green:COLORS.muted);DOM.sessionSub.textContent=TRADE_REPLAY?"Replay + live":(market.liveSeen?"Live":"Replay warm-up");
+    DOM.signalMetric.textContent=signal.label;DOM.signalMetric.style.color=signal.target>0?COLORS.green:(signal.target<0?COLORS.red:(signal.regime==="CHOC"?COLORS.yellow:COLORS.text));DOM.signalSub.textContent=signal.reason;
+    const pLabel=portfolio.position>0?(IS_PAIR?"LONG SPREAD":"LONG"):(portfolio.position<0?(IS_PAIR?"SHORT SPREAD":"SHORT"):"FLAT");
+    DOM.positionMetric.textContent=pLabel;DOM.positionMetric.style.color=portfolio.position>0?COLORS.green:(portfolio.position<0?COLORS.red:COLORS.muted);DOM.positionSub.textContent=portfolio.trade?`Y ${portfolio.trade.quantityY.toFixed(4)}${IS_PAIR?` · X ${portfolio.trade.quantityX.toFixed(4)}`:""}`:"0 unité";
+    DOM.netMetric.textContent=formatMoney(net);DOM.netMetric.style.color=net>0?COLORS.green:(net<0?COLORS.red:COLORS.text);DOM.netSub.textContent=`${signed(bps,2)} bps sur capital`;
+    DOM.unrealizedMetric.textContent=formatMoney(portfolio.unrealized);DOM.unrealizedMetric.style.color=portfolio.unrealized>0?COLORS.green:(portfolio.unrealized<0?COLORS.red:COLORS.text);DOM.unrealizedSub.textContent=portfolio.trade?`Entrée ${formatPrice(portfolio.trade.entryY)}`:"Flat";
+    const totalTicks=portfolio.totalTicks+portfolio.currentTicks;DOM.ticksMetric.textContent=signed(totalTicks,1);DOM.ticksMetric.style.color=totalTicks>0?COLORS.green:(totalTicks<0?COLORS.red:COLORS.text);DOM.ticksSub.textContent=`Réalisés ${signed(portfolio.totalTicks,1)}`;
+    DOM.tradesMetric.textContent=`${portfolio.trades.length} / ${winRate===null?"—":`${winRate.toFixed(1)}%`}`;DOM.tradesSub.textContent=`PF ${pf===Infinity?"∞":pf===null?"—":pf.toFixed(2)} · W ${wins} / L ${losses}`;
+    DOM.drawdownMetric.textContent=formatMoney(-portfolio.maxDrawdown);DOM.drawdownMetric.style.color=portfolio.maxDrawdown>0?COLORS.red:COLORS.text;DOM.drawdownSub.textContent=`Coûts ${formatMoney(-portfolio.costs)}`;
+    DOM.diagPriceY.textContent=market.Y?`${formatPrice(market.Y.price)}${Number.isFinite(market.Y.bid)&&Number.isFinite(market.Y.ask)?` [${formatPrice(market.Y.bid)} / ${formatPrice(market.Y.ask)}]`:""}`:"—";
+    DOM.diagPriceX.textContent=market.X?`${formatPrice(market.X.price)}${Number.isFinite(market.X.bid)&&Number.isFinite(market.X.ask)?` [${formatPrice(market.X.bid)} / ${formatPrice(market.X.ask)}]`:""}`:"N/A";
+    DOM.diagPrimary.textContent=Number.isFinite(features.beta)?`β ${features.beta.toFixed(4)}`:(Number.isFinite(features.slopeZ)?`${signed(features.slopeZ,3)}σ`:"—");
+    DOM.diagSecondary.textContent=Number.isFinite(features.zscore)?`z ${signed(features.zscore,3)}`:(Number.isFinite(features.innovationZ)?`${signed(features.innovationZ,3)}σ`:"—");
+    if(features.hmm){const labels=["NOISE","UP","DOWN","SHOCK"];let d=0;for(let i=1;i<4;i++)if(features.hmm.posterior[i]>features.hmm.posterior[d])d=i;DOM.diagRegime.textContent=`${labels[d]} ${(features.hmm.posterior[d]*100).toFixed(0)}%`}else DOM.diagRegime.textContent=signal.regime;
+    DOM.diagLeverage.textContent=portfolio.trade?`${portfolio.trade.leverage.toFixed(2)}×`:"0.00×";
+    DOM.sessionSummary.textContent=`OBS ${portfolio.observations} · REALIZED ${formatMoney(portfolio.realized)} · GROSS ${formatMoney(portfolio.grossRealized)} · PAPER ONLY`
+}
+
+function renderModelChart(){
+    let traces,layout;
+    if(!IS_PAIR){
+        traces=[{x:kalman.timestamps,y:kalman.observed,type:"scattergl",mode:"markers",name:"Ticks",marker:{size:3,color:COLORS.raw,opacity:.55}},{x:kalman.timestamps,y:kalman.filtered,type:"scattergl",mode:"lines",name:"Prix latent Kalman",line:{color:COLORS.blue,width:2.2}}];
+        if(portfolio.trade&&Number.isFinite(portfolio.trade.entryY))traces.push({x:[portfolio.trade.openedAt,kalman.timestamps[kalman.timestamps.length-1]],y:[portfolio.trade.entryY,portfolio.trade.entryY],type:"scatter",mode:"lines",name:"Prix d’entrée",line:{color:portfolio.trade.direction>0?COLORS.green:COLORS.red,width:1.2,dash:"dot"}});
+        layout=commonLayout(`${ASSET_Y} · Ticks et prix latent`,`shadow-single-${SYMBOL_Y}`)
+    }else{
+        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:"Residual / spread z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
+        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-2,0,2].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
+    }
+    Plotly.react("modelChart",traces,layout,plotConfig)
+}
+function renderEquityChart(){
+    const layout=commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity");layout.yaxis.ticksuffix=` ${ACCOUNT_CURRENCY}`;layout.shapes=[{type:"line",xref:"paper",x0:0,x1:1,y0:0,y1:0,line:{color:COLORS.muted,width:1}}];
+    Plotly.react("equityChart",[{x:portfolio.equityTimestamps,y:portfolio.equityNet,type:"scattergl",mode:"lines",name:"Net liquidation P&L",fill:"tozeroy",fillcolor:"rgba(40,182,159,0.08)",line:{color:COLORS.green,width:2}},{x:portfolio.equityTimestamps,y:portfolio.equityRealized,type:"scattergl",mode:"lines",name:"Réalisé net",line:{color:COLORS.blue,width:1.5,dash:"dot"}}],layout,plotConfig)
+}
+let renderQueued=false,lastFeatures={},lastSignal={target:0,label:"WAIT",reason:"Warm-up",regime:"WARMUP"};
+function renderAll(features=lastFeatures,signal=lastSignal){lastFeatures=features;lastSignal=signal;if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;renderMetrics(lastFeatures,lastSignal);renderModelChart();renderEquityChart()})}
+
+function startSession(){
+    if(portfolio.locked){logLine("RISK","Session verrouillée. Utilise RESET.");return}
+    if(portfolio.active){logLine("SYSTEM","La session est déjà active.");return}
+    portfolio.active=true;portfolio.startedAt=new Date();portfolio.stoppedAt=null;
+    logLine("SYSTEM",`SESSION START | capital ${formatMoney(ACCOUNT_EQUITY)} | levier cible ${TARGET_LEVERAGE.toFixed(2)}× | ${STRATEGY}`);renderAll()
+}
+function stopSession(){
+    const t=new Date();if(portfolio.trade)closePosition("Arrêt manuel de la session",t,"SESSION CLOSE");portfolio.active=false;portfolio.stoppedAt=t;
+    logLine("SYSTEM",`SESSION STOP | net ${formatMoney(portfolio.realized)} | trades ${portfolio.trades.length} | ticks ${signed(portfolio.totalTicks,1)}`,t);renderAll()
+}
+function resetSession(){if(portfolio.trade)closePosition("Reset demandé",new Date(),"RESET CLOSE");resetPortfolioState();renderAll()}
+function sessionSummaryRows(){
+    const net=portfolio.realized+portfolio.unrealized,wins=portfolio.trades.filter(t=>t.net_pnl>0).length,losses=portfolio.trades.filter(t=>t.net_pnl<0).length;
+    return[{generated_at:nowIso(),strategy:STRATEGY,symbol_y:SYMBOL_Y,symbol_x:SYMBOL_X||"",account_currency:ACCOUNT_CURRENCY,account_equity:ACCOUNT_EQUITY,target_leverage:TARGET_LEVERAGE,session_started_at:portfolio.startedAt?portfolio.startedAt.toISOString():"",session_stopped_at:portfolio.stoppedAt?portfolio.stoppedAt.toISOString():"",observations:portfolio.observations,trades:portfolio.trades.length,winning_trades:wins,losing_trades:losses,realized_pnl:portfolio.realized,unrealized_pnl:portfolio.unrealized,net_liquidation_pnl:net,session_bps:net/ACCOUNT_EQUITY*10000,gross_realized_pnl:portfolio.grossRealized,total_costs:portfolio.costs,equivalent_y_ticks:portfolio.totalTicks+portfolio.currentTicks,max_drawdown:portfolio.maxDrawdown,point_value_y:POINT_VALUE_Y,tick_size_y:TICK_SIZE_Y,point_value_x:POINT_VALUE_X,tick_size_x:TICK_SIZE_X,trade_replay:TRADE_REPLAY}]
+}
+
+DOM.startButton.addEventListener("click",startSession);DOM.stopButton.addEventListener("click",stopSession);DOM.resetButton.addEventListener("click",resetSession);
+DOM.fullscreenButton.addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(error){logLine("SYSTEM",`Fullscreen indisponible : ${error.message}`)}});
+DOM.exportTradesButton.addEventListener("click",()=>downloadCsv("shadow_trader_trades.csv",portfolio.trades));
+DOM.exportDecisionsButton.addEventListener("click",()=>downloadCsv("shadow_trader_decisions.csv",portfolio.decisions));
+DOM.exportSummaryButton.addEventListener("click",()=>downloadCsv("shadow_trader_summary.csv",sessionSummaryRows()));
+
+let socket=null,reconnectTimer=null;
+function handleTick(message){
+    const side=canonicalSymbol(message.symbol);if(!side)return;
+    const timestamp=parseTimestamp(message.timestamp??message.ts),price=finite(message.price);if(!Number.isFinite(price)||Number.isNaN(timestamp.getTime()))return;
+    const tick={timestamp,price,bid:finite(message.bid),ask:finite(message.ask),volume:finite(message.volume),replay:Boolean(message.replay)};
+    market[side]=tick;if(!tick.replay)market.liveSeen=true;
+    DOM.connection.textContent=`${tick.replay?"REPLAY":"LIVE"} · ${timestamp.toLocaleTimeString([],{hour12:false})} · Y ${market.Y?formatPrice(market.Y.price):"—"}${IS_PAIR?` · X ${market.X?formatPrice(market.X.price):"—"}`:""}`;
+    if(!IS_PAIR)processSingleTick(tick,tick.replay);else processPairTick(side,tick,tick.replay)
+}
+function connect(){
+    clearTimeout(reconnectTimer);DOM.connection.textContent="CONNECTING TO LSE WEBSOCKET…";socket=new WebSocket("wss://data-ws.londonstrategicedge.com");
+    socket.onmessage=event=>{
+        const message=JSON.parse(event.data);
+        if(message.type==="welcome"){socket.send(JSON.stringify({action:"auth",api_key:API_KEY}));return}
+        if(message.type==="authenticated"){
+            const start=new Date(Date.now()-REPLAY_MINUTES*60000).toISOString(),symbols=IS_PAIR?[SYMBOL_Y,SYMBOL_X]:[SYMBOL_Y];
+            for(const symbol of symbols)socket.send(JSON.stringify({action:"subscribe",symbol,start}));
+            DOM.connection.textContent=`AUTHENTICATED · REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connecté | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradé":"replay warm-up uniquement"}`);return
+        }
+        if(message.type==="replay_started"){DOM.connection.textContent="REPLAY WARM-UP…";return}
+        if(message.type==="replay_complete"){DOM.connection.textContent="REPLAY COMPLETE · WAITING LIVE";return}
+        if(message.type==="tick"){handleTick(message);return}
+        if(message.type==="error"){const e=message.message||message.code||"Unknown error";DOM.connection.textContent=`ERROR · ${e}`;logLine("RISK",`Erreur LSE : ${e}`)}
+    };
+    socket.onerror=()=>{DOM.connection.textContent="WEBSOCKET ERROR";logLine("RISK","Erreur de connexion WebSocket.")};
+    socket.onclose=()=>{DOM.connection.textContent="DISCONNECTED · RECONNECTING…";logLine("SYSTEM","Connexion perdue. Reconnexion dans 2.5 secondes.");reconnectTimer=setTimeout(connect,2500)}
+}
+window.addEventListener("beforeunload",()=>{if(socket)socket.close()});
+window.addEventListener("resize",()=>{Plotly.Plots.resize($("modelChart"));Plotly.Plots.resize($("equityChart"))});
+
+resetPortfolioState();
+Plotly.newPlot("modelChart",[],commonLayout("Waiting for model observations…","shadow-model-empty"),plotConfig);
+Plotly.newPlot("equityChart",[],commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity-empty"),plotConfig);
+logLine("SYSTEM",TRADE_REPLAY?"AUTO START · le replay sera inclus dans le paper P&L.":"Le replay initialise le modèle. Clique START SESSION pour commencer le P&L live.");
+connect();
+</script>
+</body>
+</html>
+"""
+
+html = html_template.replace(
+    "__SETTINGS__",
+    json.dumps(settings),
+)
+
+components.html(
+    html,
+    height=1380 if full_height else 1120,
+    scrolling=False,
+)
+
+st.caption(
+    "Exécution paper au bid/ask lorsqu’ils sont fournis, sinon au dernier prix "
+    "avec slippage. Adapte la valeur du point, le tick size et la conversion FX "
+    "au produit réellement tradable que tu souhaites simuler."
+)
+
+'''
+
 if selected_page == "Workspace":
     execute_embedded_page(
         WORKSPACE_SOURCE,
@@ -7040,9 +8240,16 @@ elif selected_page == "Bureau Larbou":
         "embedded_bureau_larbou.py",
     )
 
-else:
+elif selected_page == "Kalman Lab":
     execute_embedded_page(
         KALMAN_LAB_SOURCE,
         "flavio_monitor_kalman_lab",
         "embedded_kalman_lab.py",
+    )
+
+else:
+    execute_embedded_page(
+        PAPER_TRADING_SOURCE,
+        "flavio_monitor_shadow_trader",
+        "embedded_shadow_trader.py",
     )
