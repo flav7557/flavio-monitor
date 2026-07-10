@@ -7284,10 +7284,20 @@ with st.sidebar:
 
 if not api_key:
     st.info("Ajoute la clé LSE dans les secrets du serveur ou dans la sidebar.")
-    st.stop()
+    pass
 
 try:
-    resolved_symbols, unresolved_markets = resolve_lse_symbols(api_key)
+    resolved_symbols, unresolved_markets = (
+        resolve_lse_symbols(api_key)
+        if api_key
+        else (
+            {
+                market_name: market_settings["candidates"][0]
+                for market_name, market_settings in MARKETS.items()
+            },
+            [],
+        )
+    )
 except Exception as error:
     st.error(f"Impossible de lire le catalogue LSE : {error}")
     st.stop()
@@ -8126,8 +8136,29 @@ function renderMetrics(features,signal){
     DOM.sessionSummary.textContent=`OBS ${portfolio.observations} · REALIZED ${formatMoney(portfolio.realized)} · GROSS ${formatMoney(portfolio.grossRealized)} · PAPER ONLY`
 }
 
+function placeholderTrace(name,color=COLORS.muted){
+    const now=new Date(),then=new Date(now.getTime()-Math.max(REPLAY_MINUTES,1)*60000);
+    return{x:[then,now],y:[0,0],type:"scatter",mode:"lines",name,line:{color,width:1.2,dash:"dot"},hoverinfo:"skip"}
+}
+function placeholderLayout(title,uirevision,message){
+    const layout=commonLayout(title,uirevision);
+    layout.annotations=[{text:message,xref:"paper",yref:"paper",x:.5,y:.52,showarrow:false,font:{size:13,color:COLORS.muted,family:"JetBrains Mono, Consolas, monospace"},align:"center"}];
+    return layout
+}
+function renderModelPlaceholder(message){
+    const title=IS_PAIR?`${ASSET_Y} / ${ASSET_X} - Pair model`:`${ASSET_Y} - Ticks et prix latent`;
+    Plotly.react("modelChart",[placeholderTrace("En attente",COLORS.raw)],placeholderLayout(title,"shadow-model-empty",message),plotConfig)
+}
+function renderEquityPlaceholder(message){
+    Plotly.react("equityChart",[placeholderTrace("Net liquidation P&L",COLORS.green)],placeholderLayout(`Session P&L - ${ACCOUNT_CURRENCY}`,"shadow-equity-empty",message),plotConfig)
+}
+
 function renderModelChart(){
     let traces,layout;
+    if((!IS_PAIR&&kalman.timestamps.length===0)||(IS_PAIR&&regression.timestamps.length===0)){
+        renderModelPlaceholder(API_KEY?"En attente des ticks LSE...":"Ajoute une cle LSE pour recevoir les ticks.");
+        return
+    }
     if(!IS_PAIR){
         traces=[{x:kalman.timestamps,y:kalman.observed,type:"scattergl",mode:"markers",name:"Ticks",marker:{size:3,color:COLORS.raw,opacity:.55}},{x:kalman.timestamps,y:kalman.filtered,type:"scattergl",mode:"lines",name:"Prix latent Kalman",line:{color:COLORS.blue,width:2.2}}];
         if(portfolio.trade&&Number.isFinite(portfolio.trade.entryY))traces.push({x:[portfolio.trade.openedAt,kalman.timestamps[kalman.timestamps.length-1]],y:[portfolio.trade.entryY,portfolio.trade.entryY],type:"scatter",mode:"lines",name:"Prix d’entrée",line:{color:portfolio.trade.direction>0?COLORS.green:COLORS.red,width:1.2,dash:"dot"}});
@@ -8139,6 +8170,10 @@ function renderModelChart(){
     Plotly.react("modelChart",traces,layout,plotConfig)
 }
 function renderEquityChart(){
+    if(portfolio.equityTimestamps.length===0){
+        renderEquityPlaceholder(API_KEY?"Le P&L apparaitra apres les premieres observations.":"Ajoute une cle LSE pour demarrer le paper trading.");
+        return
+    }
     const layout=commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity");layout.yaxis.ticksuffix=` ${ACCOUNT_CURRENCY}`;layout.shapes=[{type:"line",xref:"paper",x0:0,x1:1,y0:0,y1:0,line:{color:COLORS.muted,width:1}}];
     Plotly.react("equityChart",[{x:portfolio.equityTimestamps,y:portfolio.equityNet,type:"scattergl",mode:"lines",name:"Net liquidation P&L",fill:"tozeroy",fillcolor:"rgba(40,182,159,0.08)",line:{color:COLORS.green,width:2}},{x:portfolio.equityTimestamps,y:portfolio.equityRealized,type:"scattergl",mode:"lines",name:"Réalisé net",line:{color:COLORS.blue,width:1.5,dash:"dot"}}],layout,plotConfig)
 }
@@ -8197,7 +8232,18 @@ function connect(){
 window.addEventListener("beforeunload",()=>{if(socket)socket.close()});
 window.addEventListener("resize",()=>{Plotly.Plots.resize($("modelChart"));Plotly.Plots.resize($("equityChart"))});
 
+const connectToLse=connect;
+connect=function(){
+    if(!API_KEY){
+        DOM.connection.textContent="CLE LSE REQUISE";
+        logLine("SYSTEM","Ajoute une cle LSE dans la sidebar pour recevoir les ticks et remplir les graphiques.");
+        return
+    }
+    connectToLse()
+};
+
 resetPortfolioState();
+renderAll();
 Plotly.newPlot("modelChart",[],commonLayout("Waiting for model observations…","shadow-model-empty"),plotConfig);
 Plotly.newPlot("equityChart",[],commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity-empty"),plotConfig);
 logLine("SYSTEM",TRADE_REPLAY?"AUTO START · le replay sera inclus dans le paper P&L.":"Le replay initialise le modèle. Clique START SESSION pour commencer le P&L live.");
