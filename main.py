@@ -8153,6 +8153,10 @@ function renderModelPlaceholder(message){
 function renderEquityPlaceholder(message){
     Plotly.react("equityChart",[placeholderTrace("Net liquidation P&L",COLORS.green)],placeholderLayout(`Session P&L - ${ACCOUNT_CURRENCY}`,"shadow-equity-empty",message),plotConfig)
 }
+function prepareChart(id){
+    const node=$(id);
+    if(node)node.querySelectorAll(".chart-fallback").forEach(child=>child.remove());
+}
 
 function renderModelChart(){
     let traces,layout;
@@ -8168,9 +8172,10 @@ function renderModelChart(){
         traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:"Residual / spread z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
         layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-2,0,2].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
     }
-    Plotly.react("modelChart",traces,layout,plotConfig)
+    prepareChart("modelChart");Plotly.react("modelChart",traces,layout,plotConfig)
 }
 function renderEquityChart(){
+    prepareChart("equityChart");
     if(portfolio.equityTimestamps.length===0){
         renderEquityPlaceholder(API_KEY?"Le P&L apparaitra apres les premieres observations.":"Ajoute une cle LSE pour demarrer le paper trading.");
         return
@@ -8218,7 +8223,7 @@ function connect(){
         const message=JSON.parse(event.data);
         if(message.type==="welcome"){socket.send(JSON.stringify({action:"auth",api_key:API_KEY}));return}
         if(message.type==="authenticated"){
-            const start=new Date(Date.now()-REPLAY_MINUTES*60000).toISOString(),symbols=IS_PAIR?[SYMBOL_Y,SYMBOL_X]:[SYMBOL_Y];
+            const start=(Date.now()-REPLAY_MINUTES*60000)/1000,symbols=IS_PAIR?[SYMBOL_Y,SYMBOL_X]:[SYMBOL_Y];
             for(const symbol of symbols)socket.send(JSON.stringify({action:"subscribe",symbol,start}));
             DOM.connection.textContent=`AUTHENTICATED · REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connecté | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradé":"replay warm-up uniquement"}`);return
         }
