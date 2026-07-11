@@ -8160,6 +8160,7 @@ function prepareChart(id){
 
 function renderModelChart(){
     let traces,layout;
+    prepareChart("modelChart");
     if((!IS_PAIR&&kalman.timestamps.length===0)||(IS_PAIR&&regression.timestamps.length===0)){
         renderModelPlaceholder(API_KEY?"En attente des ticks LSE...":"Ajoute une cle LSE pour recevoir les ticks.");
         return
@@ -8172,7 +8173,7 @@ function renderModelChart(){
         traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:"Residual / spread z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
         layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-2,0,2].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
     }
-    prepareChart("modelChart");Plotly.react("modelChart",traces,layout,plotConfig)
+    Plotly.react("modelChart",traces,layout,plotConfig)
 }
 function renderEquityChart(){
     prepareChart("equityChart");
