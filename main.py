@@ -3328,7 +3328,9 @@ import json
 import os
 import re
 import unicodedata
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -7034,7 +7036,9 @@ import json
 import os
 import re
 import unicodedata
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -7160,6 +7164,91 @@ STRATEGIES = {
         "Spread Y/X hedgé qui cherche le retour à la moyenne après divergence."
     ),
 }
+
+# Shadow Trader v2 safe catalogue. Labels are ASCII on purpose: this app embeds
+# Python, HTML and JS in one file, so keeping strategy copy ASCII avoids mojibake.
+STRATEGIES = {
+    "Trend momentum": "Mono-actif. Suit la pente Kalman du prix latent.",
+    "Mean reversion intraday": "Mono-actif. Fade les innovations extremes du Kalman.",
+    "Breakout impulse": "Mono-actif. Momentum quand pente et surprise vont ensemble.",
+    "Volatility breakout": "Mono-actif. Momentum court sur expansion de volatilite.",
+    "HMM directional": "Mono-actif. Regime hausse/baisse/bruit/choc via HMM.",
+    "HMM risk-off momentum": "Mono-actif. Momentum seulement hors regime de choc.",
+    "Relative value mean reversion": "Paire Y/X. Retour a la moyenne du spread.",
+    "Dynamic beta residual momentum": "Paire Y/X. Continuation du residuel hedge.",
+    "Pair breakout": "Paire Y/X. Cassure statistique du spread.",
+    "Dispersion widening": "Paire Y/X. Suit l'ecartement de dispersion.",
+    "Dispersion convergence": "Paire Y/X. Compression apres dispersion excessive.",
+    "Stat arb conservative": "Paire Y/X. Mean reversion stricte, peu de trades.",
+}
+
+STRATEGY_FAMILY = {
+    "Trend momentum": "trend",
+    "Mean reversion intraday": "single_reversion",
+    "Breakout impulse": "trend",
+    "Volatility breakout": "trend",
+    "HMM directional": "hmm",
+    "HMM risk-off momentum": "hmm",
+    "Relative value mean reversion": "pair_reversion",
+    "Dynamic beta residual momentum": "pair_momentum",
+    "Pair breakout": "pair_momentum",
+    "Dispersion widening": "pair_momentum",
+    "Dispersion convergence": "pair_reversion",
+    "Stat arb conservative": "pair_reversion",
+}
+
+PAIR_STRATEGIES = {
+    name
+    for name, family in STRATEGY_FAMILY.items()
+    if family.startswith("pair_")
+}
+
+PAIR_INPUT = {
+    "Dynamic beta residual momentum": "returns",
+    "Dispersion widening": "returns",
+}
+
+MARKET_SESSIONS = {
+    "europe_index": {"timezone": "Europe/Paris", "open": "09:00", "close": "17:35"},
+    "us_index": {"timezone": "America/New_York", "open": "09:30", "close": "16:15"},
+    "weekday": {"timezone": "UTC", "open": None, "close": None},
+    "always": {"timezone": "UTC", "open": None, "close": None},
+}
+
+MARKET_SESSION_BY_ASSET = {
+    "CAC 40": "europe_index",
+    "DAX": "europe_index",
+    "Euro Stoxx 50": "europe_index",
+    "Nasdaq 100": "us_index",
+    "S&P 500": "us_index",
+    "Gold": "weekday",
+    "Brent": "weekday",
+    "EUR/USD": "weekday",
+    "Bitcoin": "always",
+}
+
+
+def _minutes(value: str) -> int:
+    hours, minutes = value.split(":", 1)
+    return int(hours) * 60 + int(minutes)
+
+
+def market_is_open(asset_name: str | None) -> tuple[bool, str]:
+    if not asset_name:
+        return True, ""
+    session_key = MARKET_SESSION_BY_ASSET.get(asset_name, "weekday")
+    session = MARKET_SESSIONS[session_key]
+    if session_key == "always":
+        return True, "24/7"
+    now = datetime.now(ZoneInfo(session["timezone"]))
+    if now.weekday() >= 5:
+        return False, "week-end"
+    if session_key == "weekday":
+        return True, "24/5"
+    current = now.hour * 60 + now.minute
+    is_open = _minutes(session["open"]) <= current <= _minutes(session["close"])
+    return is_open, f"{session['open']}-{session['close']} {session['timezone']}"
+
 
 REPLAY_OPTIONS = {
     "5 minutes": 5,
@@ -7310,10 +7399,8 @@ with st.sidebar:
     )
     st.caption(STRATEGIES[strategy])
 
-    is_pair = strategy in {
-        "Dynamic Beta Residual Momentum",
-        "Relative Value Mean Reversion",
-    }
+    strategy_family = STRATEGY_FAMILY[strategy]
+    is_pair = strategy in PAIR_STRATEGIES
 
     default_y = (
         available_markets.index("Nasdaq 100")
@@ -7329,31 +7416,20 @@ with st.sidebar:
     )
     symbol_y = resolved_symbols[asset_y]
 
-    preferred_x = "S&P 500" if asset_y != "S&P 500" else "Nasdaq 100"
-    default_x = (
-        available_markets.index(preferred_x)
-        if preferred_x in available_markets
-        else min(1, len(available_markets) - 1)
-    )
-    asset_x = st.selectbox(
-        "Actif X / hedge" if is_pair else "Actif X / comparaison",
-        options=available_markets,
-        index=default_x,
-        key="paper_asset_x",
-    )
-    if asset_x == asset_y and is_pair:
-        st.warning("Choisis deux actifs différents.")
-        st.stop()
-
-    symbol_x = resolved_symbols[asset_x]
-
-    if not is_pair:
-        st.caption(
-            "En mode directionnel, X reste un repere visuel. "
-            "Le signal et le paper trading utilisent Y."
-        )
-
     if is_pair:
+        x_options = [market for market in available_markets if market != asset_y]
+        if not x_options:
+            st.error("Cette strategie a besoin de deux actifs disponibles.")
+            st.stop()
+        preferred_x = "S&P 500" if asset_y != "S&P 500" else "Nasdaq 100"
+        default_x = x_options.index(preferred_x) if preferred_x in x_options else 0
+        asset_x = st.selectbox(
+            "Actif X / hedge",
+            options=x_options,
+            index=default_x,
+            key="paper_asset_x",
+        )
+        symbol_x = resolved_symbols[asset_x]
         sync_label = st.selectbox(
             "Synchronisation",
             options=list(SYNC_OPTIONS),
@@ -7362,7 +7438,21 @@ with st.sidebar:
         )
         sync_ms = SYNC_OPTIONS[sync_label]
     else:
+        asset_x = None
+        symbol_x = None
+        st.caption("Mode mono-actif : le signal et le paper trading utilisent Y.")
         sync_ms = 0
+
+    y_market_open, y_market_detail = market_is_open(asset_y)
+    x_market_open, x_market_detail = market_is_open(asset_x)
+    market_open = y_market_open and x_market_open
+    market_status = f"Y {asset_y}: {y_market_detail}"
+    if asset_x:
+        market_status += f" | X {asset_x}: {x_market_detail}"
+    if market_open:
+        st.success(f"Marche ouvert - {market_status}")
+    else:
+        st.warning(f"Marche ferme - {market_status}")
 
     replay_label = st.selectbox(
         "Warm-up / replay",
@@ -7427,7 +7517,7 @@ with st.sidebar:
         key="paper_norm_window",
     )
 
-    if strategy == "Kalman Trend":
+    if strategy_family in {"trend", "single_reversion"}:
         entry_threshold = st.slider(
             "Seuil de pente d’entrée (σ)",
             0.10,
@@ -7455,7 +7545,7 @@ with st.sidebar:
         hmm_persistence = 0.92
         secondary_threshold = 0.50
 
-    elif strategy == "Kalman + HMM Directional":
+    elif strategy_family == "hmm":
         entry_threshold = st.slider(
             "Probabilité d’entrée",
             0.50,
@@ -7490,7 +7580,7 @@ with st.sidebar:
         )
         shock_threshold = 2.75
 
-    elif strategy == "Dynamic Beta Residual Momentum":
+    elif strategy_family == "pair_momentum":
         entry_threshold = st.slider(
             "Z-score momentum résiduel — entrée",
             0.50,
@@ -7744,11 +7834,15 @@ with st.sidebar:
 settings = {
     "apiKey": api_key,
     "strategy": strategy,
+    "signalFamily": strategy_family,
+    "pairInput": PAIR_INPUT.get(strategy, "level"),
     "assetY": asset_y,
     "assetX": asset_x,
     "symbolY": symbol_y,
     "symbolX": symbol_x,
     "isPair": is_pair,
+    "marketOpen": market_open,
+    "marketStatus": market_status,
     "replayMinutes": replay_minutes,
     "tradeReplay": trade_replay,
     "terminalVerbose": terminal_verbose,
@@ -7810,6 +7904,10 @@ if live_settings is None:
         "puis clique sur **Appliquer & (re)lancer le cockpit**."
     )
     st.stop()
+
+if "signalFamily" not in live_settings:
+    st.session_state[LIVE_KEY] = settings
+    live_settings = settings
 
 if live_settings != settings:
     st.warning(
@@ -7938,7 +8036,7 @@ td{padding:6px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}
 <script>
 const SETTINGS = __SETTINGS__;
 
-const API_KEY=SETTINGS.apiKey,STRATEGY=SETTINGS.strategy,SYMBOL_Y=SETTINGS.symbolY,SYMBOL_X=SETTINGS.symbolX,ASSET_Y=SETTINGS.assetY,ASSET_X=SETTINGS.assetX;
+const API_KEY=SETTINGS.apiKey,STRATEGY=SETTINGS.strategy,SIGNAL_FAMILY=SETTINGS.signalFamily||"trend",PAIR_INPUT=SETTINGS.pairInput||"level",SYMBOL_Y=SETTINGS.symbolY,SYMBOL_X=SETTINGS.symbolX,ASSET_Y=SETTINGS.assetY,ASSET_X=SETTINGS.assetX;
 const IS_PAIR=Boolean(SETTINGS.isPair),HAS_X=Boolean(SYMBOL_X&&SYMBOL_X!==SYMBOL_Y),REPLAY_MINUTES=Number(SETTINGS.replayMinutes),TRADE_REPLAY=Boolean(SETTINGS.tradeReplay),VERBOSE=Boolean(SETTINGS.terminalVerbose),SYNC_MS=Number(SETTINGS.syncMs);
 const REACTIVITY=Number(SETTINGS.reactivity),OBSERVATION_TRUST=Number(SETTINGS.observationTrust),CONFIRMATION=Number(SETTINGS.confirmation),ENTRY_THRESHOLD=Number(SETTINGS.entryThreshold),EXIT_THRESHOLD=Number(SETTINGS.exitThreshold),SHOCK_THRESHOLD=Number(SETTINGS.shockThreshold),SECONDARY_THRESHOLD=Number(SETTINGS.secondaryThreshold),HMM_PERSISTENCE=Number(SETTINGS.hmmPersistence),Z_WINDOW=Number(SETTINGS.zWindow);
 const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.accountEquity),TARGET_LEVERAGE=Number(SETTINGS.targetLeverage),POINT_VALUE_Y=Number(SETTINGS.pointValueY),POINT_VALUE_X=Number(SETTINGS.pointValueX),TICK_SIZE_Y=Number(SETTINGS.tickSizeY),TICK_SIZE_X=Number(SETTINGS.tickSizeX),FX_Y=Number(SETTINGS.fxY),FX_X=Number(SETTINGS.fxX),QUANTITY_STEP=Number(SETTINGS.quantityStep),COMMISSION_BPS=Number(SETTINGS.commissionBps),MIN_COMMISSION=Number(SETTINGS.minCommission),EXTRA_SLIPPAGE_TICKS=Number(SETTINGS.extraSlippageTicks),ALLOW_SHORT=Boolean(SETTINGS.allowShort),MAX_SESSION_LOSS=Number(SETTINGS.maxSessionLoss),MAX_TRADE_LOSS=Number(SETTINGS.maxTradeLoss),MAX_HOLDING_SECONDS=Number(SETTINGS.maxHoldingSeconds),MAX_TRADES=Number(SETTINGS.maxTrades),COOLDOWN_OBSERVATIONS=Number(SETTINGS.cooldownObservations);
@@ -7949,8 +8047,9 @@ const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.a
    vaut ~0.25, donc un seuil d'entrée de 0.65 est à ~2.6 sd dans la queue. */
 const NORM_WINDOW=Math.max(120,Number(SETTINGS.normWindow)||750);
 const NORM_MIN=Math.max(60,Math.floor(NORM_WINDOW*0.2));
-const PAIR_WARMUP=STRATEGY==="Relative Value Mean Reversion"?240:60;
+const PAIR_WARMUP=PAIR_INPUT==="returns"?60:240;
 const CHART_MIN_INTERVAL_MS=150;
+const MARKET_OPEN=Boolean(SETTINGS.marketOpen),MARKET_STATUS=SETTINGS.marketStatus||"";
 
 const COLORS={background:"#050708",grid:"#1b2530",text:"#d9e2ec",muted:"#748192",green:"#28b69f",red:"#ef5b5b",yellow:"#d9b44a",blue:"#76b7e5",purple:"#a28af7",raw:"#d9a36c"};
 const currencyPrefix=({EUR:"€",USD:"$",GBP:"£",CHF:"CHF "}[ACCOUNT_CURRENCY]||`${ACCOUNT_CURRENCY} `);
@@ -8089,7 +8188,7 @@ function updateRegression(timestamp,y,x,priceY,priceX){
        Mesure sur paire cointegree simulee : corr(z, vrai spread) = 0.04 avant,
        0.55 en ralentissant alpha d'un facteur 5000. Le modele momentum regresse
        des rendements (alpha ~ 0), il garde donc le reglage d'origine. */
-    const isRv=STRATEGY==="Relative Value Mean Reversion";
+    const isRv=SIGNAL_FAMILY==="pair_reversion";
     const qA=regression.residualVariance*(isRv?1e-6:.005)*qm,qB=(isRv?regression.residualVariance*1e-8:1e-5)*qm,r=regression.residualVariance*Math.max(rm,1e-4);
     let [alpha,beta]=regression.state,[[p00,p01],[p10,p11]]=regression.covariance;p00+=qA;p11+=qB;
     const predicted=alpha+beta*xc,residual=y-predicted,s=p00+xc*p01+xc*p10+xc*xc*p11+r,k0=(p00+p01*xc)/s,k1=(p10+p11*xc)/s;
@@ -8137,7 +8236,7 @@ function updateRegression(timestamp,y,x,priceY,priceX){
 
 function strategySignal(features){
     const current=portfolio.position;
-    if(STRATEGY==="Kalman Trend"){
+    if(SIGNAL_FAMILY==="trend"){
         const slope=features.slopeZ,innovation=features.innovationZ;
         if(!Number.isFinite(slope))return{target:0,label:"WARM-UP",reason:"Normalisation en cours",confidence:0,regime:"WARMUP"};
         if(Number.isFinite(innovation)&&Math.abs(innovation)>=SHOCK_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Innovation choc ${signed(innovation)}σ`,confidence:Math.min(1,Math.abs(innovation)/SHOCK_THRESHOLD),regime:"CHOC"};
@@ -8147,7 +8246,16 @@ function strategySignal(features){
         if(ALLOW_SHORT&&slope<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,Math.abs(slope)/ENTRY_THRESHOLD),regime:"DOWN"};
         return{target:0,label:"WAIT",reason:`Pente ${signed(slope)}σ sous seuil ${ENTRY_THRESHOLD.toFixed(2)}σ`,confidence:0,regime:"BRUIT"};
     }
-    if(STRATEGY==="Kalman + HMM Directional"){
+    if(SIGNAL_FAMILY==="single_reversion"){
+        const innovation=features.innovationZ;
+        if(!Number.isFinite(innovation))return{target:0,label:"WARM-UP",reason:"Normalisation en cours",confidence:0,regime:"WARMUP"};
+        if(current>0)return(Math.abs(innovation)<=EXIT_THRESHOLD||innovation>0)?{target:0,label:"EXIT LONG",reason:`Innovation revenue ${signed(innovation)}`,confidence:1,regime:"MEAN"}:{target:1,label:"HOLD LONG",reason:`Innovation negative ${signed(innovation)}`,confidence:Math.min(1,Math.abs(innovation)/ENTRY_THRESHOLD),regime:"CHEAP"};
+        if(current<0)return(Math.abs(innovation)<=EXIT_THRESHOLD||innovation<0)?{target:0,label:"EXIT SHORT",reason:`Innovation revenue ${signed(innovation)}`,confidence:1,regime:"MEAN"}:{target:-1,label:"HOLD SHORT",reason:`Innovation positive ${signed(innovation)}`,confidence:Math.min(1,Math.abs(innovation)/ENTRY_THRESHOLD),regime:"RICH"};
+        if(innovation<=-ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Fade baisse ${signed(innovation)}`,confidence:Math.min(1,Math.abs(innovation)/ENTRY_THRESHOLD),regime:"CHEAP"};
+        if(ALLOW_SHORT&&innovation>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Fade hausse ${signed(innovation)}`,confidence:Math.min(1,innovation/ENTRY_THRESHOLD),regime:"RICH"};
+        return{target:0,label:"WAIT",reason:`Innovation ${signed(innovation)} sous seuil ${ENTRY_THRESHOLD.toFixed(2)}`,confidence:0,regime:"MEAN"};
+    }
+    if(SIGNAL_FAMILY==="hmm"){
         if(!features.hmm)return{target:0,label:"WARM-UP",reason:"Normalisation en cours",confidence:0,regime:"WARMUP"};
         const p=features.hmm.posterior,noise=p[0],up=p[1],down=p[2],shock=p[3];
         if(shock>=SECONDARY_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Choc ${(shock*100).toFixed(0)}%`,confidence:shock,regime:"CHOC"};
@@ -8165,7 +8273,7 @@ function strategySignal(features){
     }
     const z=features.zscore;
     if(!Number.isFinite(z))return{target:0,label:"WARM-UP",reason:"Z-score indisponible",confidence:0,regime:"WARMUP"};
-    if(STRATEGY==="Dynamic Beta Residual Momentum"){
+    if(SIGNAL_FAMILY==="pair_momentum"){
         if(current>0)return z<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:1,label:"HOLD LONG SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
         if(current<0)return z>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
         if(z>=ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Dérive résiduelle ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
@@ -8262,6 +8370,7 @@ function closePosition(reason,timestamp,exitType="EXIT"){
 
 function applyTarget(signal,timestamp,features,isReplay){
     portfolio.lastSignalLabel=signal.label;portfolio.lastSignalReason=signal.reason;portfolio.currentTarget=signal.target;
+    if(!MARKET_OPEN){portfolio.candidateTarget=0;portfolio.candidateCount=0;logVerbose("WAIT",`${signal.label} | marche ferme`,timestamp);return}
     const eligible=portfolio.active&&!portfolio.locked&&(TRADE_REPLAY||!isReplay);
     if(!eligible){portfolio.candidateTarget=0;portfolio.candidateCount=0;logVerbose("WAIT",`${signal.label} | ${signal.reason} | session non active`,timestamp);return}
     if(portfolio.position!==0&&signal.target===0){closePosition(signal.reason,timestamp,"MODEL EXIT");return}
@@ -8319,17 +8428,17 @@ function processModelObservation(timestamp,features,isReplay){
 function processSingleTick(tick,isReplay){
     const features=updateKalman(tick.timestamp,tick.price);
     if(!features.ready){renderAll(features,{target:0,label:"WARM-UP",reason:`Calibration ${features.warmup}/${NORM_MIN} obs`,confidence:0,regime:"WARMUP"});return}
-    if(STRATEGY==="Kalman + HMM Directional")features.hmm=updateHmm(features.slopeZ,features.innovationZ);
+    if(SIGNAL_FAMILY==="hmm")features.hmm=updateHmm(features.slopeZ,features.innovationZ);
     processModelObservation(tick.timestamp,features,isReplay)
 }
 function processPairPrices(timestamp,priceY,priceX,isReplay){
     if(market.previousY===null||market.previousX===null){market.previousY=priceY;market.previousX=priceX;return}
     let y,x;
-    if(STRATEGY==="Dynamic Beta Residual Momentum"){y=Math.log(priceY/market.previousY);x=Math.log(priceX/market.previousX)}
+    if(PAIR_INPUT==="returns"){y=Math.log(priceY/market.previousY);x=Math.log(priceX/market.previousX)}
     else{y=Math.log(priceY);x=Math.log(priceX)}
     market.previousY=priceY;market.previousX=priceX;
     if(!Number.isFinite(y)||!Number.isFinite(x))return;
-    if(STRATEGY==="Dynamic Beta Residual Momentum"&&Math.abs(y)<1e-14&&Math.abs(x)<1e-14)return;
+    if(PAIR_INPUT==="returns"&&Math.abs(y)<1e-14&&Math.abs(x)<1e-14)return;
     const result=updateRegression(timestamp,y,x,priceY,priceX);
     if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/${PAIR_WARMUP}`;renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`Régression ${result.warmup||0}/${PAIR_WARMUP}`,regime:"WARMUP"});return}
     processModelObservation(timestamp,result,isReplay)
@@ -8393,7 +8502,7 @@ function renderModelChart(){
         layout=commonLayout(`${ASSET_Y} · Kalman${HAS_X?` · comparaison ${ASSET_X}`:""}`,`shadow-single-${SYMBOL_Y}-${SYMBOL_X||"none"}`);
         if(HAS_X&&comparison.timestamps.length)layout.yaxis2={title:"base 100",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:false,automargin:true};
     }else{
-        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:STRATEGY==="Relative Value Mean Reversion"?"Spread z (niveau)":"Momentum résiduel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
+        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:SIGNAL_FAMILY==="pair_reversion"?"Spread z":"Residuel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
         layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
     }
     Plotly.react("modelChart",traces,layout,plotConfig)
@@ -8416,6 +8525,7 @@ function renderAll(features=lastFeatures,signal=lastSignal){
 function startSession(){
     if(portfolio.locked){logLine("RISK","Session verrouillée. Utilise RESET.");return}
     if(portfolio.active){logLine("SYSTEM","La session est déjà active.");return}
+    if(!MARKET_OPEN){DOM.connection.textContent="MARKET CLOSED";logLine("RISK",`Marche ferme | ${MARKET_STATUS}`);renderAll();return}
     portfolio.active=true;portfolio.startedAt=new Date();portfolio.stoppedAt=null;
     logLine("SYSTEM",`SESSION START | capital ${formatMoney(ACCOUNT_EQUITY)} | levier cible ${TARGET_LEVERAGE.toFixed(2)}× | commission ${COMMISSION_BPS} bps/côté | ${STRATEGY}`);renderAll()
 }
