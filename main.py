@@ -7084,15 +7084,6 @@ st.markdown(
     '</div>',
     unsafe_allow_html=True,
 )
-st.markdown(
-    '<div class="shadow-warning">'
-    '<strong>Simulation uniquement.</strong> Aucun ordre réel n’est envoyé. '
-    'Le P&L dépend des ticks LSE et des paramètres de contrat configurés.'
-    '</div>',
-    unsafe_allow_html=True,
-)
-
-
 MARKETS = {
     "CAC 40": {
         "candidates": ["CAC40", "CAC40/EUR", "FR40", "FR40/EUR", "FRA40", "PX1"],
@@ -7556,180 +7547,178 @@ with st.sidebar:
             exit_threshold = st.slider("Seuil sortie", 0.00, 2.00, exit_threshold, 0.05, key="paper_single_exit")
             shock_threshold = st.slider("Innovation choc", 1.00, 6.00, shock_threshold, 0.25, key="paper_single_shock")
 
-    st.divider()
-    st.markdown("#### Exécution et levier")
+    with st.expander("Execution et levier", expanded=False):
 
-    account_currency = st.selectbox(
-        "Devise du compte",
-        ["EUR", "USD", "GBP", "CHF"],
-        index=0,
-        key="paper_currency",
-    )
-    account_equity = st.number_input(
-        "Capital de référence",
-        min_value=100.0,
-        max_value=100_000_000.0,
-        value=100_000.0,
-        step=10_000.0,
-        key="paper_equity",
-    )
-    target_leverage = st.slider(
-        "Levier brut cible",
-        0.10,
-        20.00,
-        2.00,
-        0.10,
-        key="paper_leverage",
-    )
+        account_currency = st.selectbox(
+            "Devise du compte",
+            ["EUR", "USD", "GBP", "CHF"],
+            index=0,
+            key="paper_currency",
+        )
+        account_equity = st.number_input(
+            "Capital de référence",
+            min_value=100.0,
+            max_value=100_000_000.0,
+            value=100_000.0,
+            step=10_000.0,
+            key="paper_equity",
+        )
+        target_leverage = st.slider(
+            "Levier brut cible",
+            0.10,
+            20.00,
+            2.00,
+            0.10,
+            key="paper_leverage",
+        )
 
-    point_value_y = st.number_input(
-        f"Valeur d’un point — {asset_y}",
-        min_value=0.000001,
-        max_value=1_000_000.0,
-        value=float(MARKETS[asset_y]["point_value"]),
-        step=0.1,
-        format="%.6f",
-        key="paper_point_y",
-    )
-    tick_size_y = st.number_input(
-        f"Tick size — {asset_y}",
-        min_value=0.000001,
-        max_value=10_000.0,
-        value=float(MARKETS[asset_y]["tick_size"]),
-        step=float(MARKETS[asset_y]["tick_size"]),
-        format="%.6f",
-        key="paper_tick_y",
-    )
-    fx_y = st.number_input(
-        f"Conversion P&L {asset_y} vers {account_currency}",
-        min_value=0.000001,
-        max_value=1000.0,
-        value=1.0,
-        step=0.01,
-        format="%.6f",
-        key="paper_fx_y",
-    )
-
-    if is_pair:
-        point_value_x = st.number_input(
-            f"Valeur d’un point — {asset_x}",
+        point_value_y = st.number_input(
+            f"Valeur d’un point — {asset_y}",
             min_value=0.000001,
             max_value=1_000_000.0,
-            value=float(MARKETS[asset_x]["point_value"]),
+            value=float(MARKETS[asset_y]["point_value"]),
             step=0.1,
             format="%.6f",
-            key="paper_point_x",
+            key="paper_point_y",
         )
-        tick_size_x = st.number_input(
-            f"Tick size — {asset_x}",
+        tick_size_y = st.number_input(
+            f"Tick size — {asset_y}",
             min_value=0.000001,
             max_value=10_000.0,
-            value=float(MARKETS[asset_x]["tick_size"]),
-            step=float(MARKETS[asset_x]["tick_size"]),
+            value=float(MARKETS[asset_y]["tick_size"]),
+            step=float(MARKETS[asset_y]["tick_size"]),
             format="%.6f",
-            key="paper_tick_x",
+            key="paper_tick_y",
         )
-        fx_x = st.number_input(
-            f"Conversion P&L {asset_x} vers {account_currency}",
+        fx_y = st.number_input(
+            f"Conversion P&L {asset_y} vers {account_currency}",
             min_value=0.000001,
             max_value=1000.0,
             value=1.0,
             step=0.01,
             format="%.6f",
-            key="paper_fx_x",
+            key="paper_fx_y",
         )
-    else:
-        point_value_x = 1.0
-        tick_size_x = 0.1
-        fx_x = 1.0
 
-    quantity_step = st.number_input(
-        "Pas minimal de quantité",
-        min_value=0.0001,
-        max_value=1000.0,
-        value=0.01,
-        step=0.01,
-        format="%.4f",
-        key="paper_qty_step",
-    )
-    commission_bps = st.number_input(
-        "Commission par côté (bps du notionnel)",
-        min_value=0.0,
-        max_value=500.0,
-        value=0.75,
-        step=0.25,
-        format="%.4f",
-        help=(
-            "Coût exprimé en points de base du notionnel exécuté, et non par "
-            "unité. Une commission par unité produit des coûts absurdes dès que "
-            "le prix unitaire est faible (FX, crypto)."
-        ),
-        key="paper_commission_bps",
-    )
-    min_commission = st.number_input(
-        f"Commission minimale par côté ({account_currency})",
-        min_value=0.0,
-        max_value=10_000.0,
-        value=0.0,
-        step=0.5,
-        key="paper_min_commission",
-    )
-    extra_slippage_ticks = st.number_input(
-        "Slippage supplémentaire par exécution (ticks)",
-        min_value=0.0,
-        max_value=100.0,
-        value=0.25,
-        step=0.25,
-        key="paper_slippage",
-    )
-    allow_short = st.toggle(
-        "Autoriser les shorts",
-        value=True,
-        key="paper_allow_short",
-    )
+        if is_pair:
+            point_value_x = st.number_input(
+                f"Valeur d’un point — {asset_x}",
+                min_value=0.000001,
+                max_value=1_000_000.0,
+                value=float(MARKETS[asset_x]["point_value"]),
+                step=0.1,
+                format="%.6f",
+                key="paper_point_x",
+            )
+            tick_size_x = st.number_input(
+                f"Tick size — {asset_x}",
+                min_value=0.000001,
+                max_value=10_000.0,
+                value=float(MARKETS[asset_x]["tick_size"]),
+                step=float(MARKETS[asset_x]["tick_size"]),
+                format="%.6f",
+                key="paper_tick_x",
+            )
+            fx_x = st.number_input(
+                f"Conversion P&L {asset_x} vers {account_currency}",
+                min_value=0.000001,
+                max_value=1000.0,
+                value=1.0,
+                step=0.01,
+                format="%.6f",
+                key="paper_fx_x",
+            )
+        else:
+            point_value_x = 1.0
+            tick_size_x = 0.1
+            fx_x = 1.0
 
-    st.divider()
-    st.markdown("#### Risque")
+        quantity_step = st.number_input(
+            "Pas minimal de quantité",
+            min_value=0.0001,
+            max_value=1000.0,
+            value=0.01,
+            step=0.01,
+            format="%.4f",
+            key="paper_qty_step",
+        )
+        commission_bps = st.number_input(
+            "Commission par côté (bps du notionnel)",
+            min_value=0.0,
+            max_value=500.0,
+            value=0.75,
+            step=0.25,
+            format="%.4f",
+            help=(
+                "Coût exprimé en points de base du notionnel exécuté, et non par "
+                "unité. Une commission par unité produit des coûts absurdes dès que "
+                "le prix unitaire est faible (FX, crypto)."
+            ),
+            key="paper_commission_bps",
+        )
+        min_commission = st.number_input(
+            f"Commission minimale par côté ({account_currency})",
+            min_value=0.0,
+            max_value=10_000.0,
+            value=0.0,
+            step=0.5,
+            key="paper_min_commission",
+        )
+        extra_slippage_ticks = st.number_input(
+            "Slippage supplémentaire par exécution (ticks)",
+            min_value=0.0,
+            max_value=100.0,
+            value=0.25,
+            step=0.25,
+            key="paper_slippage",
+        )
+        allow_short = st.toggle(
+            "Autoriser les shorts",
+            value=True,
+            key="paper_allow_short",
+        )
 
-    max_session_loss = st.number_input(
-        f"Kill switch — perte session ({account_currency})",
-        min_value=0.0,
-        max_value=10_000_000.0,
-        value=1_000.0,
-        step=100.0,
-        key="paper_max_session_loss",
-    )
-    max_trade_loss = st.number_input(
-        f"Stop par trade ({account_currency})",
-        min_value=0.0,
-        max_value=10_000_000.0,
-        value=400.0,
-        step=50.0,
-        key="paper_max_trade_loss",
-    )
-    max_holding_seconds = st.number_input(
-        "Durée maximale d’un trade (secondes, 0 = off)",
-        min_value=0,
-        max_value=86_400,
-        value=600,
-        step=30,
-        key="paper_max_holding",
-    )
-    max_trades = st.number_input(
-        "Nombre maximal de trades",
-        min_value=1,
-        max_value=10_000,
-        value=100,
-        step=10,
-        key="paper_max_trades",
-    )
-    cooldown_observations = st.slider(
-        "Cooldown après sortie (observations)",
-        0,
-        50,
-        3,
-        key="paper_cooldown",
-    )
+    with st.expander("Risque", expanded=False):
+
+        max_session_loss = st.number_input(
+            f"Kill switch — perte session ({account_currency})",
+            min_value=0.0,
+            max_value=10_000_000.0,
+            value=1_000.0,
+            step=100.0,
+            key="paper_max_session_loss",
+        )
+        max_trade_loss = st.number_input(
+            f"Stop par trade ({account_currency})",
+            min_value=0.0,
+            max_value=10_000_000.0,
+            value=400.0,
+            step=50.0,
+            key="paper_max_trade_loss",
+        )
+        max_holding_seconds = st.number_input(
+            "Durée maximale d’un trade (secondes, 0 = off)",
+            min_value=0,
+            max_value=86_400,
+            value=600,
+            step=30,
+            key="paper_max_holding",
+        )
+        max_trades = st.number_input(
+            "Nombre maximal de trades",
+            min_value=1,
+            max_value=10_000,
+            value=100,
+            step=10,
+            key="paper_max_trades",
+        )
+        cooldown_observations = st.slider(
+            "Cooldown après sortie (observations)",
+            0,
+            50,
+            3,
+            key="paper_cooldown",
+        )
 
     st.divider()
     st.markdown("#### Cockpit")
@@ -7973,7 +7962,7 @@ const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.a
 const NORM_WINDOW=Math.max(120,Number(SETTINGS.normWindow)||750);
 const NORM_MIN=Math.max(60,Math.floor(NORM_WINDOW*0.2));
 const PAIR_WARMUP=PAIR_INPUT==="returns"?60:240;
-const CHART_MIN_INTERVAL_MS=150;
+const CHART_MIN_INTERVAL_MS=50;
 const MARKET_OPEN=Boolean(SETTINGS.marketOpen),MARKET_STATUS=SETTINGS.marketStatus||"";
 
 const COLORS={background:"#050708",grid:"#1b2530",text:"#d9e2ec",muted:"#748192",green:"#28b69f",red:"#ef5b5b",yellow:"#d9b44a",blue:"#76b7e5",purple:"#a28af7",raw:"#d9a36c"};
@@ -8016,7 +8005,7 @@ function logLine(type,message,timestamp=new Date()){
     portfolio.logs.push({timestamp:timestamp.toISOString(),type,message});
     if(portfolio.logs.length>5000)portfolio.logs.splice(0,portfolio.logs.length-5000);
     const e=document.createElement("div");e.className=`line ${type}`;e.textContent=`[${time}] ${type.padEnd(7," ")} | ${message}`;DOM.terminal.appendChild(e);
-    while(DOM.terminal.children.length>800)DOM.terminal.removeChild(DOM.terminal.firstChild);
+    while(DOM.terminal.children.length>300)DOM.terminal.removeChild(DOM.terminal.firstChild);
     DOM.terminal.scrollTop=DOM.terminal.scrollHeight;
 }
 function logVerbose(type,message,timestamp){if(VERBOSE)logLine(type,message,timestamp)}
@@ -8029,6 +8018,7 @@ function downloadCsv(filename,rows){
 }
 
 const market={Y:null,X:null,previousY:null,previousX:null,bucket:null,bucketY:null,bucketX:null,lastPairSignature:null,liveSeen:false};
+const rawTicks={timestampsY:[],pricesY:[],timestampsX:[],pricesX:[]};
 const kalman={state:null,covariance:null,differences:[],trendBuffer:[],innovationBuffer:[],timestamps:[],observed:[],filtered:[],slopeZ:[],innovationZ:[]};
 const hmm={posterior:[.82,.06,.06,.06],candidate:0,candidateCount:0,confirmedState:0,duration:0};
 const regression={state:null,covariance:null,warmup:[],xBar:0,residualVariance:1e-8,residuals:[],spread:[],momentum:[],cumulativeResidual:0,cumulativeSeries:[],timestamps:[],beta:[],zscore:[],normalizedY:[],normalizedX:[],baseY:null,baseX:null};
@@ -8038,6 +8028,18 @@ const portfolio={active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Dat
 function resetPortfolioState(){
     Object.assign(portfolio,{active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Date():null,stoppedAt:null,position:0,trade:null,realized:0,grossRealized:0,unrealized:0,costs:0,currentTicks:0,totalTicks:0,currentTarget:0,candidateTarget:0,candidateCount:0,cooldown:0,trades:[],decisions:[],logs:[],equityTimestamps:[],equityNet:[],equityRealized:[],peakNet:0,maxDrawdown:0,observations:0,lastSignalLabel:"WAIT",lastSignalReason:"Warm-up",lastStateFingerprint:null});
     DOM.terminal.innerHTML="";DOM.blotterBody.innerHTML="";logLine("SYSTEM","Paper engine réinitialisé. Aucun ordre réel ne sera envoyé.");
+}
+
+function appendRawTick(side,tick){
+    const times=side==="Y"?rawTicks.timestampsY:rawTicks.timestampsX,prices=side==="Y"?rawTicks.pricesY:rawTicks.pricesX;
+    times.push(tick.timestamp);prices.push(tick.price);
+    if(times.length>5000){times.splice(0,times.length-5000);prices.splice(0,prices.length-5000)}
+}
+function recordEquity(timestamp){
+    const net=portfolio.realized+portfolio.unrealized;
+    portfolio.equityTimestamps.push(timestamp);portfolio.equityNet.push(net);portfolio.equityRealized.push(portfolio.realized);
+    for(const a of [portfolio.equityTimestamps,portfolio.equityNet,portfolio.equityRealized])if(a.length>5000)a.splice(0,a.length-5000);
+    portfolio.peakNet=Math.max(portfolio.peakNet,net);portfolio.maxDrawdown=Math.max(portfolio.maxDrawdown,portfolio.peakNet-net);
 }
 
 function updateKalman(timestamp,price){
@@ -8342,9 +8344,7 @@ function processModelObservation(timestamp,features,isReplay){
     portfolio.observations++;
     const signal=strategySignal(features);
     updateRisk(timestamp);applyTarget(signal,timestamp,features,isReplay);updateRisk(timestamp);appendDecision(timestamp,features,signal,isReplay);
-    const net=portfolio.realized+portfolio.unrealized;portfolio.peakNet=Math.max(portfolio.peakNet,net);portfolio.maxDrawdown=Math.max(portfolio.maxDrawdown,portfolio.peakNet-net);
-    portfolio.equityTimestamps.push(timestamp);portfolio.equityNet.push(net);portfolio.equityRealized.push(portfolio.realized);
-    for(const a of [portfolio.equityTimestamps,portfolio.equityNet,portfolio.equityRealized])if(a.length>5000)a.splice(0,a.length-5000);
+    recordEquity(timestamp);
     const fp=`${signal.label}|${signal.regime}|${portfolio.position}`;
     if(fp!==portfolio.lastStateFingerprint){const type=signal.target>0?"LONG":(signal.target<0?"SHORT":(signal.regime==="CHOC"?"SHOCK":"WAIT"));logLine(type,`${signal.label} | ${signal.reason} | position ${portfolio.position>0?"LONG":portfolio.position<0?"SHORT":"FLAT"}`,timestamp);portfolio.lastStateFingerprint=fp}
     renderAll(features,signal)
@@ -8352,7 +8352,7 @@ function processModelObservation(timestamp,features,isReplay){
 
 function processSingleTick(tick,isReplay){
     const features=updateKalman(tick.timestamp,tick.price);
-    if(!features.ready){renderAll(features,{target:0,label:"WARM-UP",reason:`Calibration ${features.warmup}/${NORM_MIN} obs`,confidence:0,regime:"WARMUP"});return}
+    if(!features.ready){recordEquity(tick.timestamp);renderAll(features,{target:0,label:"WARM-UP",reason:`Calibration ${features.warmup}/${NORM_MIN} obs`,confidence:0,regime:"WARMUP"});return}
     if(SIGNAL_FAMILY==="hmm")features.hmm=updateHmm(features.slopeZ,features.innovationZ);
     processModelObservation(tick.timestamp,features,isReplay)
 }
@@ -8365,7 +8365,7 @@ function processPairPrices(timestamp,priceY,priceX,isReplay){
     if(!Number.isFinite(y)||!Number.isFinite(x))return;
     if(PAIR_INPUT==="returns"&&Math.abs(y)<1e-14&&Math.abs(x)<1e-14)return;
     const result=updateRegression(timestamp,y,x,priceY,priceX);
-    if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/${PAIR_WARMUP}`;renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`Régression ${result.warmup||0}/${PAIR_WARMUP}`,regime:"WARMUP"});return}
+    if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/${PAIR_WARMUP}`;recordEquity(timestamp);renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`Régression ${result.warmup||0}/${PAIR_WARMUP}`,regime:"WARMUP"});return}
     processModelObservation(timestamp,result,isReplay)
 }
 function processPairTick(side,tick,isReplay){
@@ -8418,7 +8418,10 @@ function renderMetrics(features,signal){
 function renderModelChart(){
     let traces,layout;
     if(!IS_PAIR){
-        traces=[{x:kalman.timestamps,y:kalman.observed,type:"scattergl",mode:"markers",name:"Ticks",marker:{size:3,color:COLORS.raw,opacity:.55}},{x:kalman.timestamps,y:kalman.filtered,type:"scattergl",mode:"lines",name:"Prix latent Kalman",line:{color:COLORS.blue,width:2.2}}];
+        const tickTimes=kalman.timestamps.length?kalman.timestamps:rawTicks.timestampsY;
+        const tickPrices=kalman.observed.length?kalman.observed:rawTicks.pricesY;
+        traces=[{x:tickTimes,y:tickPrices,type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks`,line:{color:COLORS.raw,width:1.6}}];
+        if(kalman.filtered.length)traces.push({x:kalman.timestamps,y:kalman.filtered,type:"scattergl",mode:"lines",name:"Prix latent Kalman",line:{color:COLORS.blue,width:2.2}});
         if(HAS_X&&comparison.timestamps.length){
             traces.push({x:comparison.timestamps,y:comparison.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,yaxis:"y2",line:{color:COLORS.green,width:1.3,dash:"dot"}});
             traces.push({x:comparison.timestamps,y:comparison.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,yaxis:"y2",line:{color:COLORS.purple,width:1.5}});
@@ -8489,6 +8492,7 @@ function handleTick(message){
     const timestamp=parseTimestamp(message.timestamp??message.ts),price=finite(message.price);if(!Number.isFinite(price)||Number.isNaN(timestamp.getTime()))return;
     const tick={timestamp,price,bid:finite(message.bid),ask:finite(message.ask),volume:finite(message.volume),replay:Boolean(message.replay)};
     market[side]=tick;if(!tick.replay)market.liveSeen=true;
+    appendRawTick(side,tick);
     updateComparison(timestamp);
     DOM.connection.textContent=`${tick.replay?"REPLAY":"LIVE"} · ${timestamp.toLocaleTimeString([],{hour12:false})} · Y ${market.Y?formatPrice(market.Y.price):"—"}${HAS_X?` · X ${market.X?formatPrice(market.X.price):"—"}`:""}`;
     if(IS_PAIR)processPairTick(side,tick,tick.replay);
