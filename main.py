@@ -1,5 +1,5 @@
 """
-FLAVIO MONITOR — ALL-IN-ONE AVEC KALMAN SUR TICKS LSE
+FLAVIO MONITOR ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ALL-IN-ONE AVEC KALMAN SUR TICKS LSE
 
 Installation dans le terminal PyCharm :
 
@@ -61,7 +61,7 @@ with st.sidebar:
 
     st.markdown(
         '<div class="unified-navigation-subtitle">'
-        'Trading workspace · Morning desk · Quant lab · Shadow trader'
+        'Trading workspace ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Morning desk ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Quant lab ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Shadow trader'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -206,7 +206,7 @@ LSE_INTERVALS = {
 REFERENCE_YAHOO_INTERVAL = "15 minutes"
 
 LAYOUTS = {
-    "1 — Plein écran": {
+    "1 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Plein ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran": {
         "count": 1,
         "columns": "1fr",
         "rows": "1fr",
@@ -214,7 +214,7 @@ LAYOUTS = {
         "css_areas": '"p0"',
         "height": 820,
     },
-    "2 — Côte à côte": {
+    "2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´te ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´te": {
         "count": 2,
         "columns": "1fr 1fr",
         "rows": "1fr",
@@ -222,7 +222,7 @@ LAYOUTS = {
         "css_areas": '"p0 p1"',
         "height": 820,
     },
-    "2 — Empilés": {
+    "2 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â EmpilÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s": {
         "count": 2,
         "columns": "1fr",
         "rows": "1fr 1fr",
@@ -230,7 +230,7 @@ LAYOUTS = {
         "css_areas": '"p0" "p1"',
         "height": 1060,
     },
-    "3 — Principal + 2": {
+    "3 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Principal + 2": {
         "count": 3,
         "columns": "2fr 1fr",
         "rows": "1fr 1fr",
@@ -238,7 +238,7 @@ LAYOUTS = {
         "css_areas": '"p0 p1" "p0 p2"',
         "height": 920,
     },
-    "4 — Grille 2 × 2": {
+    "4 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Grille 2 ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â 2": {
         "count": 4,
         "columns": "1fr 1fr",
         "rows": "1fr 1fr",
@@ -246,7 +246,7 @@ LAYOUTS = {
         "css_areas": '"p0 p1" "p2 p3"',
         "height": 940,
     },
-    "5 — Principal + 4": {
+    "5 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Principal + 4": {
         "count": 5,
         "columns": "2fr 1fr 1fr",
         "rows": "1fr 1fr",
@@ -254,7 +254,7 @@ LAYOUTS = {
         "css_areas": '"p0 p1 p2" "p0 p3 p4"',
         "height": 940,
     },
-    "6 — Grille 3 × 2": {
+    "6 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Grille 3 ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â 2": {
         "count": 6,
         "columns": "1fr 1fr 1fr",
         "rows": "1fr 1fr",
@@ -265,9 +265,9 @@ LAYOUTS = {
 }
 
 SETUPS = {
-    "Contexte": ["Ouverture", "Clôture veille"],
-    "VWAP": ["Ouverture", "Clôture veille", "VWAP séance", "Bandes VWAP"],
-    "Microstructure": ["Mid-price", "VWAP séance"],
+    "Contexte": ["Ouverture", "ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture veille"],
+    "VWAP": ["Ouverture", "ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture veille", "VWAP sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ance", "Bandes VWAP"],
+    "Microstructure": ["Mid-price", "VWAP sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ance"],
 }
 
 DEFAULT_MARKETS = [
@@ -364,10 +364,10 @@ with st.sidebar:
 
     if DEFAULT_API_KEY:
         api_key = DEFAULT_API_KEY
-        st.caption("Clé LSE chargée depuis les secrets du serveur.")
+        st.caption("ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© LSE chargÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e depuis les secrets du serveur.")
     else:
         api_key = st.text_input(
-            "Clé API LSE",
+            "ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© API LSE",
             value="",
             type="password",
             placeholder="lse_live_...",
@@ -378,7 +378,7 @@ if not api_key:
         '<div class="workspace-title">Flavio Monitor</div>',
         unsafe_allow_html=True,
     )
-    st.info("Entre ta clé API LSE dans la barre latérale.")
+    st.info("Entre ta clÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© API LSE dans la barre latÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rale.")
     st.stop()
 
 
@@ -477,12 +477,12 @@ AVAILABLE_MARKETS = [
 ]
 
 if not AVAILABLE_MARKETS:
-    st.error("Aucun marché demandé n’a été trouvé dans le catalogue LSE.")
+    st.error("Aucun marchÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© demandÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢a ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© trouvÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© dans le catalogue LSE.")
     st.stop()
 
 
 # =============================================================================
-# DONNÉES YAHOO
+# DONNÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°ES YAHOO
 # =============================================================================
 
 @st.cache_data(ttl=YAHOO_CACHE_SECONDS, show_spinner=False)
@@ -502,13 +502,13 @@ def load_yahoo_context(
     )
 
     if intraday.empty:
-        raise ValueError(f"Aucune donnée intraday pour {yahoo_symbol}.")
+        raise ValueError(f"Aucune donnÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e intraday pour {yahoo_symbol}.")
 
     intraday = intraday.rename(columns=str.title)
     intraday = intraday.dropna(subset=["Open", "High", "Low", "Close"])
 
     if intraday.empty:
-        raise ValueError(f"Les bougies reçues pour {yahoo_symbol} sont vides.")
+        raise ValueError(f"Les bougies reÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§ues pour {yahoo_symbol} sont vides.")
 
     latest_session_date = intraday.index[-1].date()
     session = intraday[intraday.index.date == latest_session_date].copy()
@@ -590,9 +590,9 @@ with st.sidebar:
     panel_count = layout_config["count"]
 
     st.caption(
-        "Chaque fenêtre choisit sa source et son timeframe. "
+        "Chaque fenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre choisit sa source et son timeframe. "
         "LSE : ticks ou bougies live. Yahoo : bougies intraday. "
-        "Déplacer reste le mode par défaut."
+        "DÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©placer reste le mode par dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©faut."
     )
 
     panel_settings: list[dict[str, Any]] = []
@@ -603,11 +603,11 @@ with st.sidebar:
             default_market = AVAILABLE_MARKETS[0]
 
         with st.expander(
-            f"Fenêtre {panel_index + 1}",
+            f"FenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre {panel_index + 1}",
             expanded=panel_index < min(panel_count, 2),
         ):
             market = st.selectbox(
-                "Marché",
+                "MarchÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©",
                 options=AVAILABLE_MARKETS,
                 index=AVAILABLE_MARKETS.index(default_market),
                 key=f"workspace_market_{panel_index}",
@@ -670,18 +670,18 @@ with st.sidebar:
     st.divider()
     st.markdown(
         '<div class="small-note">'
-        'Clique sur <b>Mode écran</b> pour masquer toute l’interface et ne garder que les graphiques. '
-        'Déplace ensuite la fenêtre sur ton deuxième écran. Échap permet de quitter.'
+        'Clique sur <b>Mode ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran</b> pour masquer toute lÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢interface et ne garder que les graphiques. '
+        'DÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©place ensuite la fenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre sur ton deuxiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨me ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran. ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°chap permet de quitter.'
         '</div>',
         unsafe_allow_html=True,
     )
 
 
-# Charge une seule fois chaque combinaison marché / timeframe.
+# Charge une seule fois chaque combinaison marchÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© / timeframe.
 context_cache: dict[tuple[str, str], dict[str, Any]] = {}
 loading_errors: list[str] = []
 
-with st.spinner("Chargement du workspace…"):
+with st.spinner("Chargement du workspaceÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦"):
     for panel in panel_settings:
         market = panel["market"]
         yahoo_interval_label = panel["yahoo_interval_label"]
@@ -700,7 +700,7 @@ with st.spinner("Chargement du workspace…"):
             )
         except Exception as error:
             loading_errors.append(
-                f"{market} ({panel['source']} · {panel['timeframe_label']}) : {error}"
+                f"{market} ({panel['source']} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {panel['timeframe_label']}) : {error}"
             )
             context_cache[cache_key] = {
                 "x": [],
@@ -714,7 +714,7 @@ with st.spinner("Chargement du workspace…"):
                 "session_high": None,
                 "session_low": None,
                 "yahoo_last": None,
-                "session_date": "—",
+                "session_date": "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â",
                 "session_start_iso": (
                     datetime.now(timezone.utc) - timedelta(minutes=30)
                 ).isoformat(),
@@ -1069,15 +1069,15 @@ def render_workspace(
         </div>
 
         <div id="workspaceActions">
-            <div id="connectionStatus">Connexion…</div>
-            <button class="topButton" onclick="enterScreenMode()">Mode écran</button>
+            <div id="connectionStatus">ConnexionÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</div>
+            <button class="topButton" onclick="enterScreenMode()">Mode ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran</button>
         </div>
     </div>
 
     <div id="grid"></div>
 
     <div id="exitHotZone">
-        <button id="exitScreenButton" onclick="exitScreenMode()" title="Quitter le mode écran (Échap)">×</button>
+        <button id="exitScreenButton" onclick="exitScreenMode()" title="Quitter le mode ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran (ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°chap)">ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â</button>
     </div>
 </div>
 
@@ -1094,7 +1094,7 @@ const grid = document.getElementById("grid");
 const connectionStatus = document.getElementById("connectionStatus");
 const workspaceMeta = document.getElementById("workspaceMeta");
 
-workspaceMeta.textContent = SETTINGS.layoutLabel + " · " + PANELS.length + " fenêtre(s)";
+workspaceMeta.textContent = SETTINGS.layoutLabel + " ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· " + PANELS.length + " fenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre(s)";
 
 const panelRuntime = {};
 const symbolStates = {};
@@ -1111,7 +1111,7 @@ function isFiniteNumber(value) {
 
 function formatPrice(value) {
     if (!isFiniteNumber(value)) {
-        return "—";
+        return "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
     }
 
     const number = Number(value);
@@ -1140,7 +1140,7 @@ function formatPrice(value) {
 
 function formatSignedPercent(value) {
     if (!isFiniteNumber(value)) {
-        return "—";
+        return "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
     }
 
     const number = Number(value);
@@ -1284,29 +1284,29 @@ function buildPanel(panel) {
             <div class="panelIdentity">
                 <div class="panelTitleLine">
                     <span class="panelTitle">${panel.market}</span>
-                    <span class="panelPrice" id="price-${panel.id}">—</span>
+                    <span class="panelPrice" id="price-${panel.id}">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</span>
                 </div>
-                <div class="panelSubtitle">${panel.source === "LSE" ? panel.symbol : panel.yahoo_symbol} · ${panel.source} · ${panel.timeframe_label} · ${panel.setup}</div>
+                <div class="panelSubtitle">${panel.source === "LSE" ? panel.symbol : panel.yahoo_symbol} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${panel.source} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${panel.timeframe_label} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${panel.setup}</div>
             </div>
 
             <div class="panelControls">
-                <button class="chartButton active" id="pan-${panel.id}" onclick="setDragMode('${panel.id}', 'pan')">Déplacer</button>
+                <button class="chartButton active" id="pan-${panel.id}" onclick="setDragMode('${panel.id}', 'pan')">DÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©placer</button>
                 <button class="chartButton" id="zoom-${panel.id}" onclick="setDragMode('${panel.id}', 'zoom')">Zone</button>
                 <button class="chartButton axisButton" onclick="zoomAxis('${panel.id}', 'x', 0.66)">Temps +</button>
-                <button class="chartButton axisButton" onclick="zoomAxis('${panel.id}', 'x', 1.52)">Temps −</button>
+                <button class="chartButton axisButton" onclick="zoomAxis('${panel.id}', 'x', 1.52)">Temps ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢</button>
                 <button class="chartButton axisButton" onclick="zoomAxis('${panel.id}', 'y', 0.66)">Prix +</button>
-                <button class="chartButton axisButton" onclick="zoomAxis('${panel.id}', 'y', 1.52)">Prix −</button>
+                <button class="chartButton axisButton" onclick="zoomAxis('${panel.id}', 'y', 1.52)">Prix ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢</button>
                 <button class="chartButton" onclick="resetChart('${panel.id}')">Reset</button>
                 <button class="chartButton" onclick="togglePanelMaximize('${panel.id}')">Agrandir</button>
             </div>
         </div>
 
         <div class="panelMetrics">
-            <span>Jour <span class="metricValue" id="day-${panel.id}">—</span></span>
-            <span>Open <span class="metricValue" id="open-${panel.id}">—</span></span>
-            <span>VWAP <span class="metricValue" id="vwap-${panel.id}">—</span></span>
-            <span>Spread <span class="metricValue" id="spread-${panel.id}">—</span></span>
-            <span id="status-${panel.id}">En attente…</span>
+            <span>Jour <span class="metricValue" id="day-${panel.id}">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</span></span>
+            <span>Open <span class="metricValue" id="open-${panel.id}">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</span></span>
+            <span>VWAP <span class="metricValue" id="vwap-${panel.id}">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</span></span>
+            <span>Spread <span class="metricValue" id="spread-${panel.id}">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</span></span>
+            <span id="status-${panel.id}">En attenteÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</span>
         </div>
 
         <div class="chart" id="chart-${panel.id}"></div>
@@ -1403,7 +1403,7 @@ const plotConfig = {
 
 function createLseTickChart(panel, chart) {
     const showMid = panel.overlays.includes("Mid-price");
-    const showVwap = panel.overlays.includes("VWAP séance");
+    const showVwap = panel.overlays.includes("VWAP sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ance");
     const showBands = panel.overlays.includes("Bandes VWAP");
 
     const traces = [
@@ -1441,7 +1441,7 @@ function createLseTickChart(panel, chart) {
             y: [],
             type: "scattergl",
             mode: "lines",
-            name: "VWAP +1σ",
+            name: "VWAP +1ÃƒÆ’Ã‚ÂÃƒâ€ Ã¢â‚¬â„¢",
             visible: showBands ? true : "legendonly",
             line: {color: "#f59e0b", width: 0.8, dash: "dash"},
             hoverinfo: "skip"
@@ -1451,7 +1451,7 @@ function createLseTickChart(panel, chart) {
             y: [],
             type: "scattergl",
             mode: "lines",
-            name: "VWAP -1σ",
+            name: "VWAP -1ÃƒÆ’Ã‚ÂÃƒâ€ Ã¢â‚¬â„¢",
             visible: showBands ? true : "legendonly",
             fill: showBands ? "tonexty" : "none",
             fillcolor: "rgba(245,158,11,0.07)",
@@ -1490,7 +1490,7 @@ function createYahooCandleChart(panel, chart) {
 
 
 function createLseCandleChart(panel, chart) {
-    const showVwap = panel.overlays.includes("VWAP séance");
+    const showVwap = panel.overlays.includes("VWAP sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ance");
     const showBands = panel.overlays.includes("Bandes VWAP");
 
     const traces = [
@@ -1526,7 +1526,7 @@ function createLseCandleChart(panel, chart) {
             y: [],
             type: "scattergl",
             mode: "lines",
-            name: "VWAP +1σ",
+            name: "VWAP +1ÃƒÆ’Ã‚ÂÃƒâ€ Ã¢â‚¬â„¢",
             visible: showBands ? true : "legendonly",
             line: {color: "#f59e0b", width: 0.8, dash: "dash"},
             hoverinfo: "skip"
@@ -1536,7 +1536,7 @@ function createLseCandleChart(panel, chart) {
             y: [],
             type: "scattergl",
             mode: "lines",
-            name: "VWAP -1σ",
+            name: "VWAP -1ÃƒÆ’Ã‚ÂÃƒâ€ Ã¢â‚¬â„¢",
             visible: showBands ? true : "legendonly",
             fill: showBands ? "tonexty" : "none",
             fillcolor: "rgba(245,158,11,0.07)",
@@ -1594,9 +1594,9 @@ function initializeYahooMetrics(panel) {
     openElement.textContent = formatSignedPercent(openPerformance);
     setDirectionalColor(openElement, openPerformance);
 
-    vwapElement.textContent = "—";
-    spreadElement.textContent = "—";
-    statusElement.textContent = "Yahoo · " + context.session_date;
+    vwapElement.textContent = "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
+    spreadElement.textContent = "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
+    statusElement.textContent = "Yahoo ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· " + context.session_date;
     statusElement.style.color = "#94a3b8";
 }
 
@@ -1689,9 +1689,9 @@ function setImmersiveChartTitles(enabled) {
         const panel = runtime.panel;
         const titleText = enabled
             ? panel.market
-                + " · "
+                + " ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· "
                 + panel.source
-                + " · "
+                + " ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· "
                 + panel.timeframe_label
             : "";
 
@@ -1713,7 +1713,7 @@ async function enterScreenMode() {
             await workspace.requestFullscreen();
         }
     } catch (error) {
-        connectionStatus.textContent = "Mode écran actif dans la page · F11 pour masquer le navigateur";
+        connectionStatus.textContent = "Mode ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran actif dans la page ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· F11 pour masquer le navigateur";
         connectionStatus.style.color = "#f0b90b";
     }
 
@@ -1782,13 +1782,13 @@ function updatePanelMetrics(panel, state) {
         const spread = Number(tick.ask) - Number(tick.bid);
         spreadElement.textContent = formatPrice(spread);
     } else {
-        spreadElement.textContent = "—";
+        spreadElement.textContent = "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
     }
 
     if (tick) {
         const tickDate = parseTimestamp(tick.ts ?? tick.timestamp);
         statusElement.textContent = (tick.replay ? "Replay" : "Live")
-            + " · "
+            + " ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· "
             + tickDate.toLocaleTimeString([], {hour12: false});
         statusElement.style.color = tick.replay ? "#f0b90b" : "#26a69a";
     }
@@ -1800,7 +1800,7 @@ function buildReferenceShapes(panel, state) {
     const annotations = [];
     const context = panel.context;
 
-    if (panel.overlays.includes("Clôture veille") && isFiniteNumber(context.previous_close)) {
+    if (panel.overlays.includes("ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture veille") && isFiniteNumber(context.previous_close)) {
         shapes.push({
             type: "line",
             xref: "paper",
@@ -2101,7 +2101,7 @@ function buildSubscriptions() {
 function connect() {
     clearTimeout(reconnectTimer);
 
-    connectionStatus.textContent = "Connexion…";
+    connectionStatus.textContent = "ConnexionÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
     connectionStatus.style.color = "#f0b90b";
 
     socket = new WebSocket("wss://data-ws.londonstrategicedge.com");
@@ -2130,7 +2130,7 @@ function connect() {
                 }));
             }
 
-            connectionStatus.textContent = "Reconstruction des séances…";
+            connectionStatus.textContent = "Reconstruction des sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ancesÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
             return;
         }
 
@@ -2157,7 +2157,7 @@ function connect() {
     };
 
     socket.onclose = function() {
-        connectionStatus.textContent = "Reconnexion…";
+        connectionStatus.textContent = "ReconnexionÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
         connectionStatus.style.color = "#f0b90b";
         reconnectTimer = setTimeout(connect, 2500);
     };
@@ -2228,25 +2228,25 @@ window.addEventListener("beforeunload", function() {
 # =============================================================================
 
 st.markdown(
-    '<div class="workspace-title">Flavio Monitor — Workspace V5.1</div>',
+    '<div class="workspace-title">Flavio Monitor ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Workspace V5.1</div>',
     unsafe_allow_html=True,
 )
 
 st.markdown(
     '<div class="workspace-subtitle">'
-    'Sources indépendantes LSE / Yahoo · Timeframes adaptés · Mode écran immersif'
+    'Sources indÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©pendantes LSE / Yahoo ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Timeframes adaptÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Mode ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran immersif'
     '</div>',
     unsafe_allow_html=True,
 )
 
 if UNRESOLVED_MARKETS:
     st.warning(
-        "Marchés non trouvés dans le catalogue LSE : "
+        "MarchÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s non trouvÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s dans le catalogue LSE : "
         + ", ".join(UNRESOLVED_MARKETS)
     )
 
 if loading_errors:
-    with st.expander("Certaines données Yahoo n’ont pas pu être chargées"):
+    with st.expander("Certaines donnÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es Yahoo nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ont pas pu ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre chargÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es"):
         for error in loading_errors:
             st.write(error)
 
@@ -2350,7 +2350,7 @@ st.markdown(
 
 st.markdown(
     '<div class="bureau-subtitle">'
-    'Performance multi-horizons · Market movers · Calendrier macro'
+    'Performance multi-horizons ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Market movers ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Calendrier macro'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -2429,7 +2429,7 @@ def extract_close_frame(
 
 def signed_percent(value: float | None) -> str:
     if value is None or pd.isna(value):
-        return "—"
+        return "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â"
     return f"{value:+.2f}%"
 
 
@@ -2454,7 +2454,7 @@ def style_performance_table(
     return (
         dataframe.style
         .map(color_value)
-        .format(lambda value: "—" if pd.isna(value) else f"{value:+.2f}%")
+        .format(lambda value: "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â" if pd.isna(value) else f"{value:+.2f}%")
     )
 
 
@@ -2483,7 +2483,7 @@ def load_index_performance() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     if close.empty:
         raise ValueError(
-            "Yahoo n’a retourné aucune clôture pour le CAC 40 et le S&P 500."
+            "Yahoo nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢a retournÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© aucune clÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture pour le CAC 40 et le S&P 500."
         )
 
     reverse_names = {
@@ -2547,15 +2547,15 @@ with st.sidebar:
     st.markdown("### Bureau Larbou")
 
     if st.button(
-        "Actualiser les données",
+        "Actualiser les donnÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es",
         use_container_width=True,
     ):
         st.cache_data.clear()
         st.rerun()
 
     st.caption(
-        "Les horizons sont calculés en séances de bourse : "
-        "21j correspond approximativement à un mois."
+        "Les horizons sont calculÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s en sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ances de bourse : "
+        "21j correspond approximativement ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  un mois."
     )
 
 
@@ -2611,7 +2611,7 @@ for index_name in ["CAC 40", "S&P 500"]:
             name=index_name,
             hovertemplate=(
                 index_name
-                + "<br>%{x} séance(s)"
+                + "<br>%{x} sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ance(s)"
                 + "<br>%{y:+.2f}%"
                 + "<extra></extra>"
             ),
@@ -2638,7 +2638,7 @@ chart.update_layout(
         y=1.08,
     ),
     xaxis=dict(
-        title="Nombre de séances",
+        title="Nombre de sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ances",
         dtick=1,
         gridcolor="#202938",
         zeroline=False,
@@ -2662,7 +2662,7 @@ st.plotly_chart(
 )
 
 with st.expander(
-    "Voir toutes les performances de 1j à 21j",
+    "Voir toutes les performances de 1j ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  21j",
     expanded=False,
 ):
     st.dataframe(
@@ -2673,9 +2673,9 @@ with st.expander(
     )
 
 st.caption(
-    "Calcul : dernière clôture Yahoo disponible contre la clôture "
-    "située N séances plus tôt. Pendant la séance, la bougie journalière "
-    "Yahoo peut encore évoluer."
+    "Calcul : derniÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re clÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture Yahoo disponible contre la clÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture "
+    "situÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e N sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ances plus tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´t. Pendant la sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ance, la bougie journaliÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re "
+    "Yahoo peut encore ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©voluer."
 )
 
 
@@ -2896,7 +2896,7 @@ def load_constituents(
 
     if not tables:
         raise ValueError(
-            "Aucun tableau HTML n'a été détecté sur Wikipédia."
+            "Aucun tableau HTML n'a ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tectÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© sur WikipÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©dia."
         )
 
     symbol_candidates = (
@@ -2936,7 +2936,7 @@ def load_constituents(
 
     if selected is None:
         raise ValueError(
-            f"Impossible d’identifier la table des composants {universe}."
+            f"Impossible dÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢identifier la table des composants {universe}."
         )
 
     constituents = selected[
@@ -3041,7 +3041,7 @@ def load_daily_movers(
 
     if close.empty:
         raise ValueError(
-            f"Yahoo n’a retourné aucun prix pour les composants {universe}."
+            f"Yahoo nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢a retournÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© aucun prix pour les composants {universe}."
         )
 
     name_map = constituents.set_index(
@@ -3107,7 +3107,7 @@ def load_daily_movers(
 st.divider()
 
 st.markdown(
-    '<div class="section-label">Top performers de la journée</div>',
+    '<div class="section-label">Top performers de la journÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e</div>',
     unsafe_allow_html=True,
 )
 
@@ -3132,13 +3132,13 @@ with control_two:
 if movers_universe == "S&P 500":
     st.caption(
         "Le premier chargement du S&P 500 peut prendre quelques secondes, "
-        "car Yahoo doit traiter environ 500 valeurs. Le résultat est ensuite "
+        "car Yahoo doit traiter environ 500 valeurs. Le rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sultat est ensuite "
         "mis en cache pendant 15 minutes."
     )
 
 try:
     with st.spinner(
-        f"Chargement des composants {movers_universe}…"
+        f"Chargement des composants {movers_universe}ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦"
     ):
         movers = load_daily_movers(
             movers_universe
@@ -3208,9 +3208,9 @@ except Exception as error:
     )
 
 st.caption(
-    "Composants récupérés depuis Wikipédia, cours et performances "
-    "calculés avec Yahoo Finance. Il s’agit de variations clôture à clôture "
-    "sur la dernière séance disponible."
+    "Composants rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cupÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s depuis WikipÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©dia, cours et performances "
+    "calculÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s avec Yahoo Finance. Il sÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢agit de variations clÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  clÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ture "
+    "sur la derniÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re sÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ance disponible."
 )
 
 
@@ -3221,19 +3221,19 @@ st.caption(
 st.divider()
 
 st.markdown(
-    '<div class="section-label">Calendrier économique</div>',
+    '<div class="section-label">Calendrier ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©conomique</div>',
     unsafe_allow_html=True,
 )
 
 calendar_view = st.radio(
-    "Période",
-    options=["Aujourd’hui", "Semaine"],
+    "PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©riode",
+    options=["AujourdÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢hui", "Semaine"],
     horizontal=True,
 )
 
 calendar_type = (
     "day"
-    if calendar_view == "Aujourd’hui"
+    if calendar_view == "AujourdÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢hui"
     else "week"
 )
 
@@ -3250,7 +3250,7 @@ calendar_parameters = {
     "features": (
         "datepicker,timezone,timeselector,filters"
     ),
-    # Principales économies et zones macro.
+    # Principales ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©conomies et zones macro.
     "countries": (
         "25,32,6,37,72,22,17,39,14,10,"
         "35,43,56,36,110,11,26,12,4,5"
@@ -3313,9 +3313,9 @@ components.html(
 )
 
 st.caption(
-    "Investing.com ne fournit pas ici une API publique structurée : "
-    "cette section utilise son widget officiel, actualisé automatiquement. "
-    "Les filtres et le fuseau horaire peuvent être modifiés directement "
+    "Investing.com ne fournit pas ici une API publique structurÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e : "
+    "cette section utilise son widget officiel, actualisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© automatiquement. "
+    "Les filtres et le fuseau horaire peuvent ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre modifiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s directement "
     "dans le calendrier."
 )
 
@@ -3328,7 +3328,9 @@ import json
 import os
 import re
 import unicodedata
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -3388,13 +3390,13 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="tick-kalman-title">Kalman Lab — Tick Engine</div>',
+    '<div class="tick-kalman-title">Kalman Lab ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Tick Engine</div>',
     unsafe_allow_html=True,
 )
 
 st.markdown(
     '<div class="tick-kalman-subtitle">'
-    'Replay LSE · Kalman filtering · HMM regimes · Dynamic beta · Relative value'
+    'Replay LSE ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Kalman filtering ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· HMM regimes ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Dynamic beta ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Relative value'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -3475,17 +3477,17 @@ SYNC_OPTIONS = {
 }
 
 MODE_DESCRIPTIONS = {
-    "Lissage & prévision": (
-        "Chaque tick met à jour directement le filtre local level + trend."
+    "Lissage & prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision": (
+        "Chaque tick met ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  jour directement le filtre local level + trend."
     ),
-    "Bêta dynamique": (
-        "Les ticks des deux actifs sont synchronisés, puis le bêta est mis à jour récursivement."
+    "BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta dynamique": (
+        "Les ticks des deux actifs sont synchronisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s, puis le bÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta est mis ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  jour rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cursivement."
     ),
     "Relative value": (
         "Le Kalman estime un hedge ratio dynamique et le z-score du spread."
     ),
     "Kalman + HMM": (
-        "Le Kalman nettoie les ticks ; un HMM estime les régimes bruit, hausse, baisse et choc."
+        "Le Kalman nettoie les ticks ; un HMM estime les rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gimes bruit, hausse, baisse et choc."
     ),
 }
 
@@ -3620,10 +3622,10 @@ with st.sidebar:
 
     if default_api_key:
         api_key = default_api_key
-        st.caption("Clé LSE chargée depuis les secrets du serveur.")
+        st.caption("ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© LSE chargÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e depuis les secrets du serveur.")
     else:
         api_key = st.text_input(
-            "Clé API LSE",
+            "ClÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© API LSE",
             value="",
             type="password",
             placeholder="lse_live_...",
@@ -3632,7 +3634,7 @@ with st.sidebar:
 
 if not api_key:
     st.info(
-        "Entre ta clé API LSE dans la sidebar pour charger les ticks."
+        "Entre ta clÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© API LSE dans la sidebar pour charger les ticks."
     )
     st.stop()
 
@@ -3654,13 +3656,13 @@ available_markets = [
 
 if not available_markets:
     st.error(
-        "Aucun des marchés demandés n'a été trouvé dans le catalogue LSE."
+        "Aucun des marchÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s demandÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s n'a ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© trouvÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© dans le catalogue LSE."
     )
     st.stop()
 
 with st.sidebar:
     mode = st.selectbox(
-        "Modèle",
+        "ModÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨le",
         options=list(MODE_DESCRIPTIONS),
         key="kalman_tick_mode",
     )
@@ -3668,7 +3670,7 @@ with st.sidebar:
     st.caption(MODE_DESCRIPTIONS[mode])
 
     replay_label = st.selectbox(
-        "Historique rejoué",
+        "Historique rejouÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©",
         options=list(REPLAY_OPTIONS),
         index=4,
         key="kalman_tick_replay",
@@ -3677,7 +3679,7 @@ with st.sidebar:
     replay_minutes = REPLAY_OPTIONS[replay_label]
 
     max_points = st.slider(
-        "Points conservés",
+        "Points conservÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s",
         min_value=500,
         max_value=8000,
         value=3000,
@@ -3685,7 +3687,7 @@ with st.sidebar:
         key="kalman_tick_max_points",
     )
 
-    if mode in {"Lissage & prévision", "Kalman + HMM"}:
+    if mode in {"Lissage & prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision", "Kalman + HMM"}:
         asset_y = st.selectbox(
             "Actif",
             options=available_markets,
@@ -3703,7 +3705,7 @@ with st.sidebar:
         sync_ms = 0
 
         forecast_ticks = st.slider(
-            "Horizon de prévision (ticks)",
+            "Horizon de prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision (ticks)",
             min_value=10,
             max_value=200,
             value=50,
@@ -3712,7 +3714,7 @@ with st.sidebar:
         )
 
         reactivity = st.slider(
-            "Réactivité du filtre",
+            "RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©activitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© du filtre",
             min_value=1,
             max_value=10,
             value=5,
@@ -3720,7 +3722,7 @@ with st.sidebar:
         )
 
         observation_trust = st.slider(
-            "Confiance dans le tick observé",
+            "Confiance dans le tick observÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©",
             min_value=1,
             max_value=10,
             value=6,
@@ -3729,14 +3731,14 @@ with st.sidebar:
 
         if mode == "Kalman + HMM":
             hmm_persistence = st.slider(
-                "Persistance des régimes HMM",
+                "Persistance des rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gimes HMM",
                 min_value=70,
                 max_value=99,
                 value=92,
                 step=1,
                 help=(
-                    "Plus la valeur est élevée, plus le HMM demande des preuves "
-                    "avant de changer de régime."
+                    "Plus la valeur est ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©levÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e, plus le HMM demande des preuves "
+                    "avant de changer de rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gime."
                 ),
                 key="kalman_hmm_persistence",
             )
@@ -3748,7 +3750,7 @@ with st.sidebar:
                 value=65,
                 step=5,
                 help=(
-                    "Probabilité minimale avant d'afficher LONG, SHORT "
+                    "ProbabilitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© minimale avant d'afficher LONG, SHORT "
                     "ou RISK OFF."
                 ),
                 key="kalman_hmm_threshold",
@@ -3788,7 +3790,7 @@ with st.sidebar:
 
         if asset_y == asset_x:
             st.warning(
-                "Choisis deux actifs différents."
+                "Choisis deux actifs diffÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rents."
             )
             st.stop()
 
@@ -3821,7 +3823,7 @@ with st.sidebar:
         )
 
         z_window = st.slider(
-            "Fenêtre du z-score",
+            "FenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre du z-score",
             min_value=20,
             max_value=200,
             value=60,
@@ -3850,7 +3852,7 @@ with st.sidebar:
         )
 
     if unresolved_markets:
-        with st.expander("Marchés non trouvés"):
+        with st.expander("MarchÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s non trouvÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s"):
             st.write(", ".join(unresolved_markets))
 
 
@@ -4053,46 +4055,46 @@ html_template = r"""
     <div id="toolbar">
         <div id="titleBlock">
             <div id="terminalTitle">Kalman Tick Engine</div>
-            <div id="terminalStatus">Initialisation…</div>
+            <div id="terminalStatus">InitialisationÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</div>
         </div>
 
         <div id="toolbarButtons">
-            <button id="panButton">Déplacer</button>
+            <button id="panButton">DÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©placer</button>
             <button id="zoomButton">Zone</button>
             <button id="resetButton">Reset</button>
-            <button id="fullscreenButton">Plein écran</button>
+            <button id="fullscreenButton">Plein ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cran</button>
         </div>
     </div>
 
     <div id="metrics">
         <div class="metric">
             <div class="metricLabel" id="metricLabel1">Dernier Y</div>
-            <div class="metricValue" id="metricValue1">—</div>
-            <div class="metricSub" id="metricSub1">—</div>
+            <div class="metricValue" id="metricValue1">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
+            <div class="metricSub" id="metricSub1">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
         </div>
 
         <div class="metric">
-            <div class="metricLabel" id="metricLabel2">Filtré / Bêta</div>
-            <div class="metricValue" id="metricValue2">—</div>
-            <div class="metricSub" id="metricSub2">—</div>
+            <div class="metricLabel" id="metricLabel2">FiltrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© / BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta</div>
+            <div class="metricValue" id="metricValue2">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
+            <div class="metricSub" id="metricSub2">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
         </div>
 
         <div class="metric">
             <div class="metricLabel" id="metricLabel3">Tendance / Alpha</div>
-            <div class="metricValue" id="metricValue3">—</div>
-            <div class="metricSub" id="metricSub3">—</div>
+            <div class="metricValue" id="metricValue3">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
+            <div class="metricSub" id="metricSub3">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
         </div>
 
         <div class="metric">
-            <div class="metricLabel" id="metricLabel4">Prévision / Résiduel</div>
-            <div class="metricValue" id="metricValue4">—</div>
-            <div class="metricSub" id="metricSub4">—</div>
+            <div class="metricLabel" id="metricLabel4">PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision / RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©siduel</div>
+            <div class="metricValue" id="metricValue4">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
+            <div class="metricSub" id="metricSub4">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
         </div>
 
         <div class="metric">
-            <div class="metricLabel" id="metricLabel5">Activité / Z-score</div>
-            <div class="metricValue" id="metricValue5">—</div>
-            <div class="metricSub" id="metricSub5">—</div>
+            <div class="metricLabel" id="metricLabel5">ActivitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© / Z-score</div>
+            <div class="metricValue" id="metricValue5">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
+            <div class="metricSub" id="metricSub5">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div>
         </div>
     </div>
 
@@ -4137,10 +4139,10 @@ const HMM_PERSISTENCE = Number(SETTINGS.hmmPersistence || 92) / 100;
 const HMM_SIGNAL_THRESHOLD = Number(SETTINGS.hmmSignalThreshold || 65) / 100;
 const MIN_PAIR_WARMUP = 20;
 
-const IS_SMOOTH = MODE === "Lissage & prévision";
+const IS_SMOOTH = MODE === "Lissage & prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision";
 const IS_HYBRID = MODE === "Kalman + HMM";
 const IS_SINGLE = IS_SMOOTH || IS_HYBRID;
-const IS_BETA = MODE === "Bêta dynamique";
+const IS_BETA = MODE === "BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta dynamique";
 const IS_RV = MODE === "Relative value";
 
 const COLORS = {
@@ -4170,13 +4172,13 @@ const HMM_STATES = [
     },
     {
         key: "up",
-        label: "Tendance haussière",
+        label: "Tendance haussiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re",
         color: COLORS.up,
         fill: "rgba(38,166,154,0.10)"
     },
     {
         key: "down",
-        label: "Tendance baissière",
+        label: "Tendance baissiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re",
         color: COLORS.down,
         fill: "rgba(239,83,80,0.10)"
     },
@@ -4272,7 +4274,7 @@ function parseTimestamp(value) {
 }
 
 function formatPrice(value) {
-    if (!Number.isFinite(Number(value))) return "—";
+    if (!Number.isFinite(Number(value))) return "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
     const number = Number(value);
     const absolute = Math.abs(number);
 
@@ -4297,7 +4299,7 @@ function formatPrice(value) {
 }
 
 function formatSigned(value, digits=2) {
-    if (!Number.isFinite(Number(value))) return "—";
+    if (!Number.isFinite(Number(value))) return "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
     const number = Number(value);
     return (number >= 0 ? "+" : "") + number.toFixed(digits);
 }
@@ -4327,7 +4329,7 @@ function standardDeviation(values) {
     return Math.sqrt(variance(values));
 }
 
-function setMetric(index, label, value, sub="—", color=COLORS.text) {
+function setMetric(index, label, value, sub="ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â", color=COLORS.text) {
     metricLabels[index].textContent = label;
     metricValues[index].textContent = value;
     metricValues[index].style.color = color;
@@ -4484,7 +4486,7 @@ function hmmEmissionLogLikelihoods(
             1.25
         ),
 
-        // Etat 2: pente négative persistante.
+        // Etat 2: pente nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gative persistante.
         gaussianLogPdf(
             slopeZ,
             -0.90,
@@ -5148,7 +5150,7 @@ function renderSingle() {
             line: {width: 0},
             fill: "tonexty",
             fillcolor: COLORS.filterBand,
-            name: "Incertitude filtrée 95%",
+            name: "Incertitude filtrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e 95%",
             hoverinfo: "skip"
         },
         {
@@ -5156,7 +5158,7 @@ function renderSingle() {
             y: single.observed,
             type: "scattergl",
             mode: "markers",
-            name: "Ticks observés",
+            name: "Ticks observÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s",
             marker: {size: 4, color: COLORS.raw, opacity: 0.82},
             hovertemplate: "%{x|%H:%M:%S.%L}<br>Tick : %{y:,.5f}<extra></extra>"
         },
@@ -5167,7 +5169,7 @@ function renderSingle() {
             mode: "lines",
             name: "Prix latent Kalman",
             line: {color: COLORS.filter, width: 2.3},
-            hovertemplate: "%{x|%H:%M:%S.%L}<br>Filtré : %{y:,.5f}<extra></extra>"
+            hovertemplate: "%{x|%H:%M:%S.%L}<br>FiltrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© : %{y:,.5f}<extra></extra>"
         },
         {
             x: forecast.x,
@@ -5186,7 +5188,7 @@ function renderSingle() {
             line: {width: 0},
             fill: "tonexty",
             fillcolor: COLORS.forecastBand,
-            name: "Cône de prévision 95%",
+            name: "CÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´ne de prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision 95%",
             hoverinfo: "skip"
         },
         {
@@ -5194,14 +5196,14 @@ function renderSingle() {
             y: forecast.level,
             type: "scattergl",
             mode: "lines",
-            name: "Prévision ticks",
+            name: "PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision ticks",
             line: {color: COLORS.forecast, width: 2, dash: "dash"},
-            hovertemplate: "%{x|%H:%M:%S.%L}<br>Prévision : %{y:,.5f}<extra></extra>"
+            hovertemplate: "%{x|%H:%M:%S.%L}<br>PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision : %{y:,.5f}<extra></extra>"
         }
     ];
 
     const layout = commonLayout(
-        `${ASSET_Y} · ${SYMBOL_Y} · tick-by-tick Kalman`,
+        `${ASSET_Y} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${SYMBOL_Y} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· tick-by-tick Kalman`,
         `tick-single-${SYMBOL_Y}`
     );
 
@@ -5235,7 +5237,7 @@ function renderSingle() {
         setMetric(0, "Dernier tick", formatPrice(last), SYMBOL_Y);
         setMetric(
             1,
-            "Prix filtré",
+            "Prix filtrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©",
             formatPrice(filtered),
             `${formatSigned((filtered / last - 1) * 100)}% vs tick`,
             filtered >= last ? COLORS.green : COLORS.red
@@ -5243,12 +5245,12 @@ function renderSingle() {
         setMetric(2, "Tendance / tick", formatSigned(trend, 5), "local linear trend");
         setMetric(
             3,
-            `Prévision ${FORECAST_TICKS} ticks`,
+            `PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision ${FORECAST_TICKS} ticks`,
             formatPrice(forecastLast),
-            `${formatSigned(forecastChange)}% · ~${Math.max(1, Math.round(estimatedMs / 1000))} sec`,
+            `${formatSigned(forecastChange)}% ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ~${Math.max(1, Math.round(estimatedMs / 1000))} sec`,
             forecastChange >= 0 ? COLORS.green : COLORS.red
         );
-        setMetric(4, "Activité live", `${liveTickArrivals.length} ticks/min`, `${single.observed.length} points conservés`);
+        setMetric(4, "ActivitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© live", `${liveTickArrivals.length} ticks/min`, `${single.observed.length} points conservÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s`);
     }
 }
 
@@ -5357,7 +5359,7 @@ function renderHybrid() {
             y: single.observed,
             type: "scattergl",
             mode: "markers",
-            name: "Ticks observés",
+            name: "Ticks observÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s",
             marker: {
                 size: 3.5,
                 color: COLORS.raw,
@@ -5380,7 +5382,7 @@ function renderHybrid() {
             },
             hovertemplate:
                 "%{x|%H:%M:%S.%L}"
-                + "<br>Filtré : %{y:,.5f}"
+                + "<br>FiltrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© : %{y:,.5f}"
                 + "<extra></extra>"
         }
     ];
@@ -5412,7 +5414,7 @@ function renderHybrid() {
                 fillcolor:
                     COLORS.forecastBand,
                 name:
-                    "Prévision 95%",
+                    "PrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©vision 95%",
                 hoverinfo: "skip"
             },
             {
@@ -5433,7 +5435,7 @@ function renderHybrid() {
 
     const priceLayout =
         commonLayout(
-            `${ASSET_Y} · Prix latent et régimes HMM`,
+            `${ASSET_Y} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Prix latent et rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gimes HMM`,
             `hybrid-price-${SYMBOL_Y}`
         );
 
@@ -5504,7 +5506,7 @@ function renderHybrid() {
 
     const probabilityLayout =
         commonLayout(
-            "Probabilités des régimes HMM",
+            "ProbabilitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s des rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gimes HMM",
             `hybrid-probabilities-${SYMBOL_Y}`
         );
 
@@ -5548,7 +5550,7 @@ function renderHybrid() {
             y: single.slopeZ,
             type: "scattergl",
             mode: "lines",
-            name: "Pente normalisée",
+            name: "Pente normalisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e",
             line: {
                 color: COLORS.filter,
                 width: 1.9
@@ -5559,7 +5561,7 @@ function renderHybrid() {
             y: single.innovationZ,
             type: "scattergl",
             mode: "lines",
-            name: "Innovation normalisée",
+            name: "Innovation normalisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e",
             line: {
                 color: COLORS.raw,
                 width: 1.5
@@ -5690,11 +5692,11 @@ function renderHybrid() {
 
         setMetric(
             2,
-            "Régime HMM",
+            "RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gime HMM",
             state.label,
             `${(
                 confidence * 100
-            ).toFixed(1)}% de probabilité`,
+            ).toFixed(1)}% de probabilitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©`,
             state.color
         );
 
@@ -5708,14 +5710,14 @@ function renderHybrid() {
                 innovation,
                 2
             )}`,
-            "unités d'écart-type"
+            "unitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s d'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cart-type"
         );
 
         setMetric(
             4,
-            "Signal théorique",
+            "Signal thÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©orique",
             action,
-            `${duration} ticks dans le régime`,
+            `${duration} ticks dans le rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gime`,
             state.color
         );
     }
@@ -5918,8 +5920,8 @@ function pairObservation(timestamp, priceY, priceX) {
             pair.previousX = priceX;
 
             statusBox.textContent =
-                "Premier couple synchronisé reçu"
-                + " · initialisation des rendements";
+                "Premier couple synchronisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© reÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§u"
+                + " ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· initialisation des rendements";
 
             return;
         }
@@ -5960,8 +5962,8 @@ function pairObservation(timestamp, priceY, priceX) {
         statusBox.textContent =
             `Warm-up Kalman : `
             + `${pair.warmup.length}/${MIN_PAIR_WARMUP} observations`
-            + ` · Y ${pair.received[SYMBOL_Y] || 0} ticks`
-            + ` · X ${pair.received[SYMBOL_X] || 0} ticks`;
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Y ${pair.received[SYMBOL_Y] || 0} ticks`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${pair.received[SYMBOL_X] || 0} ticks`;
 
         if (
             pair.warmup.length
@@ -6201,8 +6203,8 @@ function synchronizeReplay(force=false) {
     if (!ticksY.length || !ticksX.length) {
         statusBox.textContent =
             `Attente des deux flux`
-            + ` · Y ${ticksY.length} ticks`
-            + ` · X ${ticksX.length} ticks`;
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Y ${ticksY.length} ticks`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${ticksX.length} ticks`;
 
         return;
     }
@@ -6222,9 +6224,9 @@ function synchronizeReplay(force=false) {
     ) {
         statusBox.textContent =
             `Synchronisation`
-            + ` · ${observations.length}/${requiredObservations} observations`
-            + ` · Y ${ticksY.length} ticks`
-            + ` · X ${ticksX.length} ticks`;
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${observations.length}/${requiredObservations} observations`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Y ${ticksY.length} ticks`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${ticksX.length} ticks`;
 
         return;
     }
@@ -6290,14 +6292,14 @@ function synchronizeReplay(force=false) {
 
     if (pair.beta.length) {
         statusBox.textContent =
-            `Moteur initialisé`
-            + ` · ${observations.length} observations synchronisées`
-            + ` · ${pair.beta.length} estimations Kalman`;
+            `Moteur initialisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${observations.length} observations synchronisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${pair.beta.length} estimations Kalman`;
     } else {
         statusBox.textContent =
             `Initialisation partielle`
-            + ` · ${observations.length} observations`
-            + ` · attente de nouveaux ticks live`;
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${observations.length} observations`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· attente de nouveaux ticks live`;
     }
 
     dirty = true;
@@ -6321,9 +6323,9 @@ function maybeInitializePair(force=false) {
 
     if (!countY || !countX) {
         statusBox.textContent =
-            `Réception des ticks`
-            + ` · Y ${countY}`
-            + ` · X ${countX}`;
+            `RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ception des ticks`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Y ${countY}`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${countX}`;
 
         return;
     }
@@ -6409,7 +6411,7 @@ function renderPair() {
         "pairPriceChart",
         priceTraces,
         commonLayout(
-            `${ASSET_Y} / ${ASSET_X} · ticks synchronisés · base 100`,
+            `${ASSET_Y} / ${ASSET_X} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ticks synchronisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· base 100`,
             `tick-pair-price-${SYMBOL_Y}-${SYMBOL_X}`
         ),
         plotConfig
@@ -6441,13 +6443,13 @@ function renderPair() {
             y: pair.beta,
             type: "scattergl",
             mode: "lines",
-            name: IS_BETA ? "Bêta Kalman" : "Hedge ratio Kalman",
+            name: IS_BETA ? "BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta Kalman" : "Hedge ratio Kalman",
             line: {color: COLORS.filter, width: 2.2}
         }
     ];
 
     const betaLayout = commonLayout(
-        IS_BETA ? "Bêta dynamique" : "Hedge ratio dynamique",
+        IS_BETA ? "BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta dynamique" : "Hedge ratio dynamique",
         `tick-pair-beta-${SYMBOL_Y}-${SYMBOL_X}-${MODE}`
     );
 
@@ -6477,7 +6479,7 @@ function renderPair() {
     );
 
     const residualLayout = commonLayout(
-        IS_BETA ? "Z-score du résiduel" : "Z-score du spread relative value",
+        IS_BETA ? "Z-score du rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©siduel" : "Z-score du spread relative value",
         `tick-pair-z-${SYMBOL_Y}-${SYMBOL_X}-${MODE}`
     );
 
@@ -6513,8 +6515,8 @@ function renderPair() {
             y: 0.5,
             text:
                 pair.beta.length
-                    ? "Le z-score nécessite encore plusieurs résiduels"
-                    : "Le z-score apparaîtra après le warm-up du Kalman",
+                    ? "Le z-score nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cessite encore plusieurs rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©siduels"
+                    : "Le z-score apparaÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â®tra aprÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s le warm-up du Kalman",
             showarrow: false,
             align: "center",
             font: {
@@ -6543,16 +6545,16 @@ function renderPair() {
             ? (Math.abs(z) >= 2 ? COLORS.red : (Math.abs(z) >= 1 ? COLORS.forecast : COLORS.green))
             : COLORS.text;
 
-        setMetric(0, "Dernier Y", latestY ? formatPrice(latestY.price) : "—", SYMBOL_Y);
+        setMetric(0, "Dernier Y", latestY ? formatPrice(latestY.price) : "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â", SYMBOL_Y);
         setMetric(
             1,
-            IS_BETA ? "Bêta dynamique" : "Hedge ratio",
+            IS_BETA ? "BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta dynamique" : "Hedge ratio",
             beta.toFixed(4),
-            `${pair.timestamps.length} estimations · ${pair.rawTimestamps.length} couples`
+            `${pair.timestamps.length} estimations ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${pair.rawTimestamps.length} couples`
         );
-        setMetric(2, "Dernier X", latestX ? formatPrice(latestX.price) : "—", SYMBOL_X);
-        setMetric(3, IS_BETA ? "Résiduel" : "Spread", formatSigned(residual, 3), IS_BETA ? "bps" : "% log");
-        setMetric(4, "Z-score", Number.isFinite(z) ? formatSigned(z, 2) : "—", `${liveTickArrivals.length} ticks/min`, zColor);
+        setMetric(2, "Dernier X", latestX ? formatPrice(latestX.price) : "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â", SYMBOL_X);
+        setMetric(3, IS_BETA ? "RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©siduel" : "Spread", formatSigned(residual, 3), IS_BETA ? "bps" : "% log");
+        setMetric(4, "Z-score", Number.isFinite(z) ? formatSigned(z, 2) : "ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â", `${liveTickArrivals.length} ticks/min`, zColor);
     }
 }
 
@@ -6708,17 +6710,17 @@ function handleTick(message) {
 
             statusBox.textContent =
                 `${message.replay ? "Replay" : "Live"}`
-                + ` · ${timestamp.toLocaleTimeString([], {hour12:false})}`
-                + ` · ${single.observed.length} ticks`
-                + ` · ${HMM_STATES[currentState].label}`
+                + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${timestamp.toLocaleTimeString([], {hour12:false})}`
+                + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${single.observed.length} ticks`
+                + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${HMM_STATES[currentState].label}`
                 + ` ${(
                     currentConfidence * 100
                 ).toFixed(0)}%`;
         } else {
             statusBox.textContent =
                 `${message.replay ? "Replay" : "Live"}`
-                + ` · ${timestamp.toLocaleTimeString([], {hour12:false})}`
-                + ` · ${single.observed.length} ticks`;
+                + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${timestamp.toLocaleTimeString([], {hour12:false})}`
+                + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${single.observed.length} ticks`;
         }
 
         return;
@@ -6784,8 +6786,8 @@ function handleTick(message) {
 
         statusBox.textContent =
             `${message.replay ? "Replay" : "Warm-up live"}`
-            + ` · Y ${pair.received[SYMBOL_Y] || 0} ticks`
-            + ` · X ${pair.received[SYMBOL_X] || 0} ticks`;
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Y ${pair.received[SYMBOL_Y] || 0} ticks`
+            + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${pair.received[SYMBOL_X] || 0} ticks`;
 
         return;
     }
@@ -6798,16 +6800,16 @@ function handleTick(message) {
 
     statusBox.textContent =
         `${message.replay ? "Replay" : "Live"}`
-        + ` · ${timestamp.toLocaleTimeString([], {hour12:false})}`
-        + ` · Y ${pair.received[SYMBOL_Y] || 0}`
-        + ` · X ${pair.received[SYMBOL_X] || 0}`
-        + ` · sync ${SYNC_MS === 0 ? "tick" : (SYNC_MS / 1000) + "s"}`;
+        + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${timestamp.toLocaleTimeString([], {hour12:false})}`
+        + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Y ${pair.received[SYMBOL_Y] || 0}`
+        + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${pair.received[SYMBOL_X] || 0}`
+        + ` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· sync ${SYNC_MS === 0 ? "tick" : (SYNC_MS / 1000) + "s"}`;
 }
 
 
 function connect() {
     clearTimeout(reconnectTimer);
-    statusBox.textContent = "Connexion au WebSocket LSE…";
+    statusBox.textContent = "Connexion au WebSocket LSEÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
 
     socket = new WebSocket("wss://data-ws.londonstrategicedge.com");
 
@@ -6828,18 +6830,18 @@ function connect() {
                 socket.send(JSON.stringify({action: "subscribe", symbol, start}));
             }
 
-            statusBox.textContent = `Authentifié · replay ${REPLAY_MINUTES} min…`;
+            statusBox.textContent = `AuthentifiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· replay ${REPLAY_MINUTES} minÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦`;
             return;
         }
 
         if (message.type === "replay_started") {
-            statusBox.textContent = "Replay ticks en cours…";
+            statusBox.textContent = "Replay ticks en coursÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
             return;
         }
 
         if (message.type === "replay_complete") {
             if (IS_SINGLE) {
-                statusBox.textContent = "Replay terminé · passage en live";
+                statusBox.textContent = "Replay terminÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· passage en live";
             } else {
                 recordReplayCompletion(message);
             }
@@ -6866,7 +6868,7 @@ function connect() {
     };
 
     socket.onclose = () => {
-        statusBox.textContent = "Connexion perdue · reconnexion…";
+        statusBox.textContent = "Connexion perdue ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· reconnexionÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";
         reconnectTimer = setTimeout(connect, 2500);
     };
 }
@@ -6879,13 +6881,13 @@ if (IS_SMOOTH) {
         "none";
 
     titleBox.textContent =
-        `${MODE} · ${ASSET_Y} · ${SYMBOL_Y}`;
+        `${MODE} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${ASSET_Y} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${SYMBOL_Y}`;
 
     Plotly.newPlot(
         "singleChart",
         [],
         commonLayout(
-            "En attente des ticks…",
+            "En attente des ticksÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦",
             `empty-${SYMBOL_Y}`
         ),
         plotConfig
@@ -6898,13 +6900,13 @@ if (IS_SMOOTH) {
         "grid";
 
     titleBox.textContent =
-        `${MODE} · ${ASSET_Y} · ${SYMBOL_Y}`;
+        `${MODE} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${ASSET_Y} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${SYMBOL_Y}`;
 
     Plotly.newPlot(
         "pairPriceChart",
         [],
         commonLayout(
-            "En attente des ticks Kalman…",
+            "En attente des ticks KalmanÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦",
             "empty-hybrid-price"
         ),
         plotConfig
@@ -6914,7 +6916,7 @@ if (IS_SMOOTH) {
         "pairBetaChart",
         [],
         commonLayout(
-            "Warm-up des probabilités HMM…",
+            "Warm-up des probabilitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s HMMÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦",
             "empty-hybrid-probabilities"
         ),
         plotConfig
@@ -6924,7 +6926,7 @@ if (IS_SMOOTH) {
         "pairResidualChart",
         [],
         commonLayout(
-            "Warm-up des variables de régime…",
+            "Warm-up des variables de rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gimeÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦",
             "empty-hybrid-features"
         ),
         plotConfig
@@ -6937,13 +6939,13 @@ if (IS_SMOOTH) {
         "grid";
 
     titleBox.textContent =
-        `${MODE} · ${ASSET_Y} / ${ASSET_X}`;
+        `${MODE} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${ASSET_Y} / ${ASSET_X}`;
 
     Plotly.newPlot(
         "pairPriceChart",
         [],
         commonLayout(
-            "En attente des ticks synchronisés…",
+            "En attente des ticks synchronisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦",
             "empty-pair-price"
         ),
         plotConfig
@@ -6953,7 +6955,7 @@ if (IS_SMOOTH) {
         "pairBetaChart",
         [],
         commonLayout(
-            "Warm-up du Kalman…",
+            "Warm-up du KalmanÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦",
             "empty-pair-beta"
         ),
         plotConfig
@@ -6963,7 +6965,7 @@ if (IS_SMOOTH) {
         "pairResidualChart",
         [],
         commonLayout(
-            "Warm-up du z-score…",
+            "Warm-up du z-scoreÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦",
             "empty-pair-z"
         ),
         plotConfig
@@ -7020,9 +7022,9 @@ components.html(
 
 st.caption(
     "Lissage : chaque tick est une observation. "
-    "Bêta et relative value : les ticks bruts sont synchronisés avant calcul, "
-    "car deux actifs ne publient pas exactement au même instant. "
-    "Le mode ‘Chaque tick’ utilise le dernier prix connu de l’autre actif."
+    "BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªta et relative value : les ticks bruts sont synchronisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s avant calcul, "
+    "car deux actifs ne publient pas exactement au mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªme instant. "
+    "Le mode ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…â€œChaque tickÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ utilise le dernier prix connu de lÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢autre actif."
 )
 '''
 
@@ -7076,14 +7078,14 @@ st.markdown(
 )
 st.markdown(
     '<div class="shadow-subtitle">'
-    'Paper execution · Microstructure costs · Live P&L · Trade blotter'
+    'Paper execution ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Microstructure costs ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Live P&L ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Trade blotter'
     '</div>',
     unsafe_allow_html=True,
 )
 st.markdown(
     '<div class="shadow-warning">'
-    '<strong>Simulation uniquement.</strong> Aucun ordre réel n’est envoyé. '
-    'Le P&L dépend des ticks LSE et des paramètres de contrat configurés.'
+    '<strong>Simulation uniquement.</strong> Aucun ordre rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©el nÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢est envoyÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©. '
+    'Le P&L dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©pend des ticks LSE et des paramÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨tres de contrat configurÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s.'
     '</div>',
     unsafe_allow_html=True,
 )
@@ -7146,20 +7148,305 @@ MARKETS = {
     },
 }
 
+STRATEGY_DEFAULTS = {
+    "replay_minutes": 60,
+    "reactivity": 5,
+    "observation_trust": 6,
+    "confirmation": 3,
+    "norm_window": 750,
+    "entry_threshold": 1.25,
+    "exit_threshold": 0.35,
+    "shock_threshold": 2.75,
+    "secondary_threshold": 0.50,
+    "hmm_persistence": 0.92,
+    "z_window": 60,
+    "max_holding_seconds": 600,
+    "cooldown_observations": 3,
+    "sync_ms": 1000,
+}
+
+
+def strategy_config(
+    description: str,
+    engine: str,
+    signal_model: str,
+    **overrides: Any,
+) -> dict[str, Any]:
+    params = dict(STRATEGY_DEFAULTS)
+    params.update(overrides)
+    return {
+        "description": description,
+        "engine": engine,
+        "signal_model": signal_model,
+        "params": params,
+    }
+
+
 STRATEGIES = {
-    "Kalman Trend": (
-        "Suit la pente latente. Les innovations extrêmes déclenchent une sortie."
+    "Trend momentum": strategy_config(
+        "Mono-actif. Suit une pente Kalman robuste, coupe sur choc.",
+        "single",
+        "single_trend",
+        entry_threshold=1.20,
+        exit_threshold=0.30,
     ),
-    "Kalman + HMM Directional": (
-        "Long en régime haussier, short en régime baissier, flat en bruit ou choc."
+    "Mean reversion intraday": strategy_config(
+        "Mono-actif. Fade des ecarts d'innovation quand le prix s'eloigne trop du latent.",
+        "single",
+        "single_mean_reversion",
+        entry_threshold=1.80,
+        exit_threshold=0.35,
+        shock_threshold=4.50,
+        max_holding_seconds=420,
     ),
-    "Dynamic Beta Residual Momentum": (
-        "Spread Y/X hedgé qui cherche la continuation du résiduel dynamique."
+    "Breakout impulse": strategy_config(
+        "Mono-actif. Entre quand pente et surprise de prix vont dans le meme sens.",
+        "single",
+        "single_breakout",
+        entry_threshold=1.15,
+        secondary_threshold=0.65,
+        exit_threshold=0.25,
     ),
-    "Relative Value Mean Reversion": (
-        "Spread Y/X hedgé qui cherche le retour à la moyenne après divergence."
+    "Pullback continuation": strategy_config(
+        "Mono-actif. Cherche un repli court dans une tendance Kalman deja installee.",
+        "single",
+        "single_pullback",
+        entry_threshold=1.00,
+        secondary_threshold=0.75,
+        exit_threshold=0.20,
+    ),
+    "Shock fade": strategy_config(
+        "Mono-actif. Fade prudent des innovations extremes avec sortie rapide.",
+        "single",
+        "single_shock_fade",
+        entry_threshold=2.80,
+        exit_threshold=0.45,
+        shock_threshold=2.80,
+        confirmation=2,
+        max_holding_seconds=240,
+    ),
+    "Volatility breakout": strategy_config(
+        "Mono-actif. Momentum court quand l'innovation est forte et confirmee par la pente.",
+        "single",
+        "single_vol_breakout",
+        entry_threshold=1.55,
+        secondary_threshold=0.35,
+        exit_threshold=0.35,
+        confirmation=2,
+    ),
+    "HMM directional": strategy_config(
+        "Mono-actif. Le HMM choisit hausse, baisse, bruit ou choc.",
+        "single",
+        "hmm_directional",
+        entry_threshold=0.70,
+        exit_threshold=0.48,
+        secondary_threshold=0.50,
+    ),
+    "HMM risk-off momentum": strategy_config(
+        "Mono-actif. Momentum seulement si le regime est clair et sans choc.",
+        "single",
+        "hmm_risk_off",
+        entry_threshold=0.76,
+        exit_threshold=0.55,
+        secondary_threshold=0.35,
+        confirmation=2,
+    ),
+    "Relative value mean reversion": strategy_config(
+        "Paire Y/X. Vend les exces du spread et cherche le retour a la moyenne.",
+        "pair",
+        "pair_mean_reversion",
+        pair_input="level",
+        replay_minutes=120,
+        entry_threshold=2.00,
+        exit_threshold=0.25,
+        shock_threshold=5.00,
+        z_window=70,
+        sync_ms=1000,
+    ),
+    "Dynamic beta residual momentum": strategy_config(
+        "Paire Y/X. Suit la continuation du residuel apres hedge beta dynamique.",
+        "pair",
+        "pair_residual_momentum",
+        pair_input="returns",
+        replay_minutes=60,
+        entry_threshold=1.25,
+        exit_threshold=0.35,
+        z_window=60,
+    ),
+    "Pair breakout": strategy_config(
+        "Paire Y/X. Cherche une cassure du spread avec continuation.",
+        "pair",
+        "pair_breakout",
+        pair_input="level",
+        replay_minutes=120,
+        entry_threshold=2.25,
+        exit_threshold=0.90,
+        z_window=80,
+    ),
+    "Dispersion widening": strategy_config(
+        "Paire Y/X. Suit un ecartement statistique quand la dispersion s'ouvre.",
+        "pair",
+        "pair_dispersion_widen",
+        pair_input="returns",
+        entry_threshold=1.65,
+        exit_threshold=0.55,
+        z_window=50,
+    ),
+    "Dispersion convergence": strategy_config(
+        "Paire Y/X. Cherche la compression d'une dispersion devenue excessive.",
+        "pair",
+        "pair_convergence",
+        pair_input="level",
+        replay_minutes=120,
+        entry_threshold=2.40,
+        exit_threshold=0.45,
+        z_window=90,
+    ),
+    "Beta-neutral trend": strategy_config(
+        "Paire Y/X. Garde une exposition beta-neutre et suit la tendance residuelle.",
+        "pair",
+        "pair_beta_trend",
+        pair_input="returns",
+        entry_threshold=1.45,
+        exit_threshold=0.40,
+        z_window=70,
+    ),
+    "Stat arb conservative": strategy_config(
+        "Paire Y/X. Version conservatrice : peu de trades, seuils plus stricts.",
+        "pair",
+        "pair_stat_arb",
+        pair_input="level",
+        replay_minutes=240,
+        entry_threshold=2.80,
+        exit_threshold=0.35,
+        confirmation=4,
+        z_window=100,
+    ),
+    "Residual shock fade": strategy_config(
+        "Paire Y/X. Fade les chocs de spread apres hedge dynamique.",
+        "pair",
+        "pair_residual_shock_fade",
+        pair_input="level",
+        replay_minutes=120,
+        entry_threshold=3.00,
+        exit_threshold=0.60,
+        confirmation=2,
+        max_holding_seconds=360,
     ),
 }
+
+RISK_PROFILES = {
+    "Prudent": {
+        "target_leverage": 0.75,
+        "max_session_loss_pct": 0.006,
+        "max_trade_loss_pct": 0.0025,
+        "max_trades": 25,
+        "cooldown_observations": 8,
+    },
+    "Standard": {
+        "target_leverage": 1.50,
+        "max_session_loss_pct": 0.012,
+        "max_trade_loss_pct": 0.005,
+        "max_trades": 60,
+        "cooldown_observations": 4,
+    },
+    "Agressif": {
+        "target_leverage": 3.00,
+        "max_session_loss_pct": 0.025,
+        "max_trade_loss_pct": 0.010,
+        "max_trades": 120,
+        "cooldown_observations": 2,
+    },
+}
+
+FRICTION_PROFILES = {
+    "Faible": {"commission_bps": 0.25, "min_commission": 0.0, "slippage_ticks": 0.10},
+    "Standard": {"commission_bps": 0.75, "min_commission": 0.0, "slippage_ticks": 0.25},
+    "Stress test": {"commission_bps": 2.50, "min_commission": 1.0, "slippage_ticks": 1.00},
+}
+
+MARKET_SESSIONS = {
+    "europe_index": {
+        "label": "Indices Europe",
+        "kind": "regular",
+        "timezone": "Europe/Paris",
+        "open": "09:00",
+        "close": "17:35",
+    },
+    "us_index": {
+        "label": "Indices US",
+        "kind": "regular",
+        "timezone": "America/New_York",
+        "open": "09:30",
+        "close": "16:15",
+    },
+    "commodity_24_5": {
+        "label": "Matieres premieres 24/5",
+        "kind": "weekday",
+        "timezone": "UTC",
+    },
+    "fx_24_5": {
+        "label": "FX 24/5",
+        "kind": "weekday",
+        "timezone": "UTC",
+    },
+    "crypto_24_7": {
+        "label": "Crypto 24/7",
+        "kind": "always",
+        "timezone": "UTC",
+    },
+}
+
+MARKET_SESSION_BY_ASSET = {
+    "CAC 40": "europe_index",
+    "DAX": "europe_index",
+    "Euro Stoxx 50": "europe_index",
+    "Nasdaq 100": "us_index",
+    "S&P 500": "us_index",
+    "Gold": "commodity_24_5",
+    "Brent": "commodity_24_5",
+    "EUR/USD": "fx_24_5",
+    "Bitcoin": "crypto_24_7",
+}
+
+
+def _hhmm_to_minutes(value: str) -> int:
+    hours, minutes = value.split(":", 1)
+    return int(hours) * 60 + int(minutes)
+
+
+def market_session_status(asset_name: str) -> dict[str, Any]:
+    session_key = MARKET_SESSION_BY_ASSET.get(asset_name, "weekday")
+    session = MARKET_SESSIONS.get(session_key, MARKET_SESSIONS["fx_24_5"])
+    kind = session["kind"]
+
+    if kind == "always":
+        return {"open": True, "label": session["label"], "detail": "Ouvert 24/7"}
+
+    now = datetime.now(ZoneInfo(session.get("timezone", "UTC")))
+    weekday = now.weekday()
+
+    if kind == "weekday":
+        is_open = weekday < 5
+        return {
+            "open": is_open,
+            "label": session["label"],
+            "detail": "Ouvert 24/5" if is_open else "Ferme le week-end",
+        }
+
+    minutes = now.hour * 60 + now.minute
+    open_minutes = _hhmm_to_minutes(session["open"])
+    close_minutes = _hhmm_to_minutes(session["close"])
+    is_open = weekday < 5 and open_minutes <= minutes <= close_minutes
+    return {
+        "open": is_open,
+        "label": session["label"],
+        "detail": (
+            f"{session['open']} - {session['close']} "
+            f"{session.get('timezone', 'UTC')}"
+        ),
+    }
+
 
 REPLAY_OPTIONS = {
     "5 minutes": 5,
@@ -7173,7 +7460,7 @@ REPLAY_OPTIONS = {
 }
 
 SYNC_OPTIONS = {
-    "Chaque tick — dernier prix connu": 0,
+    "Chaque tick ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â dernier prix connu": 0,
     "1 seconde": 1000,
     "5 secondes": 5000,
     "15 secondes": 15000,
@@ -7269,51 +7556,15 @@ except Exception:
     default_api_key = os.getenv("LSE_API_KEY", "")
 
 with st.sidebar:
-    st.markdown("### Shadow Trader")
-
-    if default_api_key:
-        api_key = default_api_key
-        st.caption("Clé LSE chargée depuis les secrets du serveur.")
-    else:
-        api_key = st.text_input(
-            "Clé API LSE",
-            type="password",
-            placeholder="lse_live_...",
-            key="paper_api_key",
-        )
-
-if not api_key:
-    st.info("Ajoute la clé LSE dans les secrets du serveur ou dans la sidebar.")
-    st.stop()
-
-try:
-    resolved_symbols, unresolved_markets = resolve_lse_symbols(api_key)
-except Exception as error:
-    st.error(f"Impossible de lire le catalogue LSE : {error}")
-    st.stop()
-
-available_markets = [
-    market
-    for market in MARKETS
-    if market in resolved_symbols
-]
-
-if not available_markets:
-    st.error("Aucun marché compatible trouvé dans le catalogue LSE.")
-    st.stop()
-
-with st.sidebar:
     strategy = st.selectbox(
-        "Stratégie paper",
+        "Strategie",
         options=list(STRATEGIES),
         key="paper_strategy",
     )
-    st.caption(STRATEGIES[strategy])
-
-    is_pair = strategy in {
-        "Dynamic Beta Residual Momentum",
-        "Relative Value Mean Reversion",
-    }
+    strategy_meta = STRATEGIES[strategy]
+    strategy_params = strategy_meta["params"]
+    is_pair = strategy_meta["engine"] == "pair"
+    st.caption(strategy_meta["description"])
 
     default_y = (
         available_markets.index("Nasdaq 100")
@@ -7322,414 +7573,127 @@ with st.sidebar:
     )
 
     asset_y = st.selectbox(
-        "Actif Y",
+        "Actif trade",
         options=available_markets,
         index=default_y,
         key="paper_asset_y",
     )
     symbol_y = resolved_symbols[asset_y]
 
-    preferred_x = "S&P 500" if asset_y != "S&P 500" else "Nasdaq 100"
-    default_x = (
-        available_markets.index(preferred_x)
-        if preferred_x in available_markets
-        else min(1, len(available_markets) - 1)
-    )
-    asset_x = st.selectbox(
-        "Actif X / hedge" if is_pair else "Actif X / comparaison",
-        options=available_markets,
-        index=default_x,
-        key="paper_asset_x",
-    )
-    if asset_x == asset_y and is_pair:
-        st.warning("Choisis deux actifs différents.")
-        st.stop()
-
-    symbol_x = resolved_symbols[asset_x]
-
-    if not is_pair:
-        st.caption(
-            "En mode directionnel, X reste un repere visuel. "
-            "Le signal et le paper trading utilisent Y."
-        )
-
     if is_pair:
-        sync_label = st.selectbox(
-            "Synchronisation",
-            options=list(SYNC_OPTIONS),
-            index=0,
-            key="paper_sync",
+        x_options = [market for market in available_markets if market != asset_y]
+        if not x_options:
+            st.error("Cette strategie a besoin de deux actifs disponibles.")
+            st.stop()
+        preferred_x = "S&P 500" if asset_y != "S&P 500" else "Nasdaq 100"
+        default_x = x_options.index(preferred_x) if preferred_x in x_options else 0
+        asset_x = st.selectbox(
+            "Actif hedge",
+            options=x_options,
+            index=default_x,
+            key="paper_asset_x",
         )
-        sync_ms = SYNC_OPTIONS[sync_label]
+        symbol_x = resolved_symbols[asset_x]
+        st.caption("Mode paire : Y est la jambe active, X est le hedge.")
     else:
-        sync_ms = 0
+        asset_x = None
+        symbol_x = None
+        st.caption("Mode mono-actif : le signal et le P&L utilisent uniquement Y.")
 
-    replay_label = st.selectbox(
-        "Warm-up / replay",
-        options=list(REPLAY_OPTIONS),
-        index=4,
-        key="paper_replay",
-    )
-    replay_minutes = REPLAY_OPTIONS[replay_label]
-
-    trade_replay = st.toggle(
-        "Trader aussi le replay",
-        value=False,
-        help=(
-            "Désactivé : le replay initialise le modèle. "
-            "Activé : le paper P&L commence au début du replay."
-        ),
-        key="paper_trade_replay",
-    )
-
-    terminal_verbose = st.toggle(
-        "Terminal verbose",
-        value=False,
-        help="Affiche aussi les WAIT/HOLD.",
-        key="paper_verbose",
-    )
+    y_status = market_session_status(asset_y)
+    x_status = market_session_status(asset_x) if asset_x else None
+    market_open = y_status["open"] and (x_status["open"] if x_status else True)
+    status_text = f"{asset_y} : {y_status['detail']}"
+    if x_status:
+        status_text += f" | {asset_x} : {x_status['detail']}"
+    if market_open:
+        st.success(f"Marche ouvert - {status_text}")
+    else:
+        st.warning(f"Marche ferme - {status_text}")
 
     st.divider()
-    st.markdown("#### Modèle")
-
-    reactivity = st.slider(
-        "Réactivité Kalman",
-        1,
-        10,
-        5,
-        key="paper_reactivity",
-    )
-    observation_trust = st.slider(
-        "Confiance dans les ticks",
-        1,
-        10,
-        6,
-        key="paper_trust",
-    )
-    confirmation = st.slider(
-        "Confirmations avant entrée",
-        1,
-        10,
-        3,
-        key="paper_confirmation",
-    )
-    norm_window = st.slider(
-        "Fenêtre de normalisation (observations)",
-        200,
-        3000,
-        750,
-        50,
-        help=(
-            "Fenêtre utilisée pour ramener la pente et l’innovation à une vraie "
-            "échelle en σ. Plus elle est courte, plus les seuils s’adaptent vite "
-            "au régime en cours."
-        ),
-        key="paper_norm_window",
-    )
-
-    if strategy == "Kalman Trend":
-        entry_threshold = st.slider(
-            "Seuil de pente d’entrée (σ)",
-            0.10,
-            3.00,
-            1.25,
-            0.05,
-            key="paper_trend_entry",
-        )
-        exit_threshold = st.slider(
-            "Seuil de pente de sortie (σ)",
-            0.00,
-            1.50,
-            0.35,
-            0.05,
-            key="paper_trend_exit",
-        )
-        shock_threshold = st.slider(
-            "Innovation de choc (σ)",
-            1.0,
-            6.0,
-            2.75,
-            0.25,
-            key="paper_trend_shock",
-        )
-        hmm_persistence = 0.92
-        secondary_threshold = 0.50
-
-    elif strategy == "Kalman + HMM Directional":
-        entry_threshold = st.slider(
-            "Probabilité d’entrée",
-            0.50,
-            0.95,
-            0.70,
-            0.05,
-            key="paper_hmm_entry",
-        )
-        exit_threshold = st.slider(
-            "Probabilité minimale de maintien",
-            0.20,
-            0.80,
-            0.48,
-            0.04,
-            key="paper_hmm_hold",
-        )
-        secondary_threshold = st.slider(
-            "Probabilité choc — sortie",
-            0.25,
-            0.90,
-            0.50,
-            0.05,
-            key="paper_hmm_shock",
-        )
-        hmm_persistence = st.slider(
-            "Persistance HMM",
-            0.70,
-            0.99,
-            0.92,
-            0.01,
-            key="paper_hmm_persistence",
-        )
-        shock_threshold = 2.75
-
-    elif strategy == "Dynamic Beta Residual Momentum":
-        entry_threshold = st.slider(
-            "Z-score momentum résiduel — entrée",
-            0.50,
-            4.00,
-            1.25,
-            0.10,
-            key="paper_beta_entry",
-        )
-        exit_threshold = st.slider(
-            "Z-score momentum résiduel — sortie",
-            0.00,
-            2.00,
-            0.35,
-            0.05,
-            key="paper_beta_exit",
-        )
-        shock_threshold = 4.0
-        hmm_persistence = 0.92
-        secondary_threshold = 0.50
-
-    else:
-        entry_threshold = st.slider(
-            "Z-score spread — entrée",
-            0.75,
-            5.00,
-            2.00,
-            0.10,
-            key="paper_rv_entry",
-        )
-        exit_threshold = st.slider(
-            "Z-score spread — sortie",
-            0.00,
-            2.00,
-            0.25,
-            0.05,
-            key="paper_rv_exit",
-        )
-        shock_threshold = 5.0
-        hmm_persistence = 0.92
-        secondary_threshold = 0.50
-
-    z_window = st.slider(
-        "Fenêtre z-score",
-        20,
-        250,
-        60,
-        10,
-        key="paper_z_window",
-    )
-
-    st.divider()
-    st.markdown("#### Exécution et levier")
+    st.markdown("#### Execution papier")
 
     account_currency = st.selectbox(
-        "Devise du compte",
+        "Devise",
         ["EUR", "USD", "GBP", "CHF"],
         index=0,
         key="paper_currency",
     )
     account_equity = st.number_input(
-        "Capital de référence",
+        "Capital de reference",
         min_value=100.0,
         max_value=100_000_000.0,
         value=100_000.0,
         step=10_000.0,
         key="paper_equity",
     )
-    target_leverage = st.slider(
-        "Levier brut cible",
-        0.10,
-        20.00,
-        2.00,
-        0.10,
-        key="paper_leverage",
+    risk_label = st.selectbox(
+        "Profil de risque",
+        options=list(RISK_PROFILES),
+        index=1,
+        key="paper_risk_profile",
     )
-
-    point_value_y = st.number_input(
-        f"Valeur d’un point — {asset_y}",
-        min_value=0.000001,
-        max_value=1_000_000.0,
-        value=float(MARKETS[asset_y]["point_value"]),
-        step=0.1,
-        format="%.6f",
-        key="paper_point_y",
-    )
-    tick_size_y = st.number_input(
-        f"Tick size — {asset_y}",
-        min_value=0.000001,
-        max_value=10_000.0,
-        value=float(MARKETS[asset_y]["tick_size"]),
-        step=float(MARKETS[asset_y]["tick_size"]),
-        format="%.6f",
-        key="paper_tick_y",
-    )
-    fx_y = st.number_input(
-        f"Conversion P&L {asset_y} vers {account_currency}",
-        min_value=0.000001,
-        max_value=1000.0,
-        value=1.0,
-        step=0.01,
-        format="%.6f",
-        key="paper_fx_y",
-    )
-
-    if is_pair:
-        point_value_x = st.number_input(
-            f"Valeur d’un point — {asset_x}",
-            min_value=0.000001,
-            max_value=1_000_000.0,
-            value=float(MARKETS[asset_x]["point_value"]),
-            step=0.1,
-            format="%.6f",
-            key="paper_point_x",
-        )
-        tick_size_x = st.number_input(
-            f"Tick size — {asset_x}",
-            min_value=0.000001,
-            max_value=10_000.0,
-            value=float(MARKETS[asset_x]["tick_size"]),
-            step=float(MARKETS[asset_x]["tick_size"]),
-            format="%.6f",
-            key="paper_tick_x",
-        )
-        fx_x = st.number_input(
-            f"Conversion P&L {asset_x} vers {account_currency}",
-            min_value=0.000001,
-            max_value=1000.0,
-            value=1.0,
-            step=0.01,
-            format="%.6f",
-            key="paper_fx_x",
-        )
-    else:
-        point_value_x = 1.0
-        tick_size_x = 0.1
-        fx_x = 1.0
-
-    quantity_step = st.number_input(
-        "Pas minimal de quantité",
-        min_value=0.0001,
-        max_value=1000.0,
-        value=0.01,
-        step=0.01,
-        format="%.4f",
-        key="paper_qty_step",
-    )
-    commission_bps = st.number_input(
-        "Commission par côté (bps du notionnel)",
-        min_value=0.0,
-        max_value=500.0,
-        value=0.75,
-        step=0.25,
-        format="%.4f",
-        help=(
-            "Coût exprimé en points de base du notionnel exécuté, et non par "
-            "unité. Une commission par unité produit des coûts absurdes dès que "
-            "le prix unitaire est faible (FX, crypto)."
-        ),
-        key="paper_commission_bps",
-    )
-    min_commission = st.number_input(
-        f"Commission minimale par côté ({account_currency})",
-        min_value=0.0,
-        max_value=10_000.0,
-        value=0.0,
-        step=0.5,
-        key="paper_min_commission",
-    )
-    extra_slippage_ticks = st.number_input(
-        "Slippage supplémentaire par exécution (ticks)",
-        min_value=0.0,
-        max_value=100.0,
-        value=0.25,
-        step=0.25,
-        key="paper_slippage",
+    friction_label = st.selectbox(
+        "Friction",
+        options=list(FRICTION_PROFILES),
+        index=1,
+        key="paper_friction_profile",
     )
     allow_short = st.toggle(
         "Autoriser les shorts",
         value=True,
         key="paper_allow_short",
     )
-
-    st.divider()
-    st.markdown("#### Risque")
-
-    max_session_loss = st.number_input(
-        f"Kill switch — perte session ({account_currency})",
-        min_value=0.0,
-        max_value=10_000_000.0,
-        value=1_000.0,
-        step=100.0,
-        key="paper_max_session_loss",
-    )
-    max_trade_loss = st.number_input(
-        f"Stop par trade ({account_currency})",
-        min_value=0.0,
-        max_value=10_000_000.0,
-        value=400.0,
-        step=50.0,
-        key="paper_max_trade_loss",
-    )
-    max_holding_seconds = st.number_input(
-        "Durée maximale d’un trade (secondes, 0 = off)",
-        min_value=0,
-        max_value=86_400,
-        value=600,
-        step=30,
-        key="paper_max_holding",
-    )
-    max_trades = st.number_input(
-        "Nombre maximal de trades",
-        min_value=1,
-        max_value=10_000,
-        value=100,
-        step=10,
-        key="paper_max_trades",
-    )
-    cooldown_observations = st.slider(
-        "Cooldown après sortie (observations)",
-        0,
-        50,
-        3,
-        key="paper_cooldown",
-    )
-
-    st.divider()
-    st.markdown("#### Cockpit")
-
     cockpit_height = st.slider(
-        "Hauteur du cockpit (px)",
+        "Hauteur cockpit",
         620,
         1400,
         820,
         20,
-        help=(
-            "Le cockpit remplit exactement cette hauteur : graphiques, terminal "
-            "et blotter restent visibles ensemble, sans scroll interne."
-        ),
         key="paper_cockpit_height",
+    )
+
+    risk = RISK_PROFILES[risk_label]
+    friction = FRICTION_PROFILES[friction_label]
+
+    replay_minutes = int(strategy_params["replay_minutes"])
+    trade_replay = False
+    terminal_verbose = False
+    sync_ms = int(strategy_params["sync_ms"]) if is_pair else 0
+    reactivity = int(strategy_params["reactivity"])
+    observation_trust = int(strategy_params["observation_trust"])
+    confirmation = int(strategy_params["confirmation"])
+    norm_window = int(strategy_params["norm_window"])
+    entry_threshold = float(strategy_params["entry_threshold"])
+    exit_threshold = float(strategy_params["exit_threshold"])
+    shock_threshold = float(strategy_params["shock_threshold"])
+    secondary_threshold = float(strategy_params["secondary_threshold"])
+    hmm_persistence = float(strategy_params["hmm_persistence"])
+    z_window = int(strategy_params["z_window"])
+
+    target_leverage = float(risk["target_leverage"])
+    max_session_loss = float(account_equity) * float(risk["max_session_loss_pct"])
+    max_trade_loss = float(account_equity) * float(risk["max_trade_loss_pct"])
+    max_holding_seconds = int(strategy_params["max_holding_seconds"])
+    max_trades = int(risk["max_trades"])
+    cooldown_observations = int(risk["cooldown_observations"])
+
+    point_value_y = float(MARKETS[asset_y]["point_value"])
+    tick_size_y = float(MARKETS[asset_y]["tick_size"])
+    fx_y = 1.0
+    point_value_x = float(MARKETS[asset_x]["point_value"]) if asset_x else 1.0
+    tick_size_x = float(MARKETS[asset_x]["tick_size"]) if asset_x else 0.1
+    fx_x = 1.0
+    quantity_step = 0.01
+    commission_bps = float(friction["commission_bps"])
+    min_commission = float(friction["min_commission"])
+    extra_slippage_ticks = float(friction["slippage_ticks"])
+
+    st.caption(
+        f"Preset : replay {replay_minutes} min, levier {target_leverage:.2f}x, "
+        f"stop trade {max_trade_loss:.0f} {account_currency}, "
+        f"kill session {max_session_loss:.0f} {account_currency}."
     )
 
     st.caption(f"Y : `{symbol_y}`")
@@ -7737,18 +7701,28 @@ with st.sidebar:
         st.caption(f"X : `{symbol_x}`")
 
     if unresolved_markets:
-        with st.expander("Marchés non trouvés"):
+        with st.expander("Marches non trouves"):
             st.write(", ".join(unresolved_markets))
-
 
 settings = {
     "apiKey": api_key,
     "strategy": strategy,
+    "strategyEngine": strategy_meta["engine"],
+    "signalModel": strategy_meta["signal_model"],
+    "pairInput": strategy_params.get("pair_input", "level"),
     "assetY": asset_y,
     "assetX": asset_x,
     "symbolY": symbol_y,
     "symbolX": symbol_x,
     "isPair": is_pair,
+    "marketOpen": market_open,
+    "marketStatus": status_text,
+    "marketSessionY": MARKET_SESSIONS[MARKET_SESSION_BY_ASSET.get(asset_y, "fx_24_5")],
+    "marketSessionX": (
+        MARKET_SESSIONS[MARKET_SESSION_BY_ASSET.get(asset_x, "fx_24_5")]
+        if asset_x
+        else None
+    ),
     "replayMinutes": replay_minutes,
     "tradeReplay": trade_replay,
     "terminalVerbose": terminal_verbose,
@@ -7785,10 +7759,10 @@ settings = {
     "cockpitHeight": int(cockpit_height),
 }
 
-# Le cockpit est une iframe : toute modification de `settings` régénère le
-# srcdoc, recrée l’iframe, coupe le WebSocket et remet la session à zéro.
-# Les réglages ne sont donc appliqués que sur demande explicite, ce qui laisse
-# les curseurs libres pendant qu’une session tourne.
+# Le cockpit est une iframe : toute modification de `settings` rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re le
+# srcdoc, recrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e lÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢iframe, coupe le WebSocket et remet la session ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ro.
+# Les rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©glages ne sont donc appliquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s que sur demande explicite, ce qui laisse
+# les curseurs libres pendant quÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢une session tourne.
 LIVE_KEY = "paper_live_settings"
 
 with st.sidebar:
@@ -7806,18 +7780,22 @@ live_settings = st.session_state.get(LIVE_KEY)
 
 if live_settings is None:
     st.info(
-        "Configure la stratégie, l’exécution et le risque dans la sidebar, "
+        "Configure la stratÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gie, lÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢exÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cution et le risque dans la sidebar, "
         "puis clique sur **Appliquer & (re)lancer le cockpit**."
     )
     st.stop()
 
+if "signalModel" not in live_settings:
+    st.session_state[LIVE_KEY] = settings
+    live_settings = settings
+
 if live_settings != settings:
     st.warning(
-        "Des paramètres ont été modifiés mais ne sont pas appliqués. "
-        "Le cockpit tourne toujours avec la configuration précédente. "
+        "Des paramÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨tres ont ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© modifiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s mais ne sont pas appliquÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s. "
+        "Le cockpit tourne toujours avec la configuration prÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©dente. "
         "Clique sur **Appliquer & (re)lancer le cockpit** pour les prendre en "
-        "compte — la session en cours sera réinitialisée.",
-        icon="⚠️",
+        "compte ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â la session en cours sera rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©initialisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e.",
+        icon="ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â",
     )
 
 html_template = r"""
@@ -7880,7 +7858,7 @@ td{padding:6px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}
 <div class="page">
 <div class="topbar">
 <div class="brand" id="brand"></div>
-<div class="connection" id="connection">BOOTING…</div>
+<div class="connection" id="connection">BOOTINGÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦</div>
 <div class="viewgroup" id="viewGroup">
 <button class="view active" data-view="cockpit">COCKPIT</button>
 <button class="view" data-view="charts">CHARTS</button>
@@ -7895,24 +7873,24 @@ td{padding:6px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}
 <div class="metrics">
 <div class="metric"><div class="metric-label">Session</div><div class="metric-value" id="sessionMetric">IDLE</div><div class="metric-sub" id="sessionSub">En attente</div></div>
 <div class="metric"><div class="metric-label">Signal</div><div class="metric-value" id="signalMetric">WAIT</div><div class="metric-sub" id="signalSub">Warm-up</div></div>
-<div class="metric"><div class="metric-label">Position</div><div class="metric-value" id="positionMetric">FLAT</div><div class="metric-sub" id="positionSub">0 unité</div></div>
+<div class="metric"><div class="metric-label">Position</div><div class="metric-value" id="positionMetric">FLAT</div><div class="metric-sub" id="positionSub">0 unitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©</div></div>
 <div class="metric"><div class="metric-label">P&L net</div><div class="metric-value" id="netMetric">0.00</div><div class="metric-sub" id="netSub">0.00 bps</div></div>
 <div class="metric"><div class="metric-label">P&L latent</div><div class="metric-value" id="unrealizedMetric">0.00</div><div class="metric-sub" id="unrealizedSub">Flat</div></div>
-<div class="metric"><div class="metric-label">Ticks capturés</div><div class="metric-value" id="ticksMetric">0.0</div><div class="metric-sub" id="ticksSub">Equivalent Y</div></div>
-<div class="metric"><div class="metric-label">Trades / win rate</div><div class="metric-value" id="tradesMetric">0 / —</div><div class="metric-sub" id="tradesSub">Profit factor —</div></div>
-<div class="metric"><div class="metric-label">Max drawdown</div><div class="metric-value" id="drawdownMetric">0.00</div><div class="metric-sub" id="drawdownSub">Coûts 0.00</div></div>
+<div class="metric"><div class="metric-label">Ticks capturÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s</div><div class="metric-value" id="ticksMetric">0.0</div><div class="metric-sub" id="ticksSub">Equivalent Y</div></div>
+<div class="metric"><div class="metric-label">Trades / win rate</div><div class="metric-value" id="tradesMetric">0 / ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div><div class="metric-sub" id="tradesSub">Profit factor ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div></div>
+<div class="metric"><div class="metric-label">Max drawdown</div><div class="metric-value" id="drawdownMetric">0.00</div><div class="metric-sub" id="drawdownSub">CoÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â»ts 0.00</div></div>
 </div>
 <div class="workspace" id="workspace" data-view="cockpit">
 <div class="panel" data-cell="model">
 <div class="panel-title">MODEL</div>
 <div id="modelChart" class="chart"></div>
 <div class="diagnostics">
-<div class="diag"><div class="diag-label">Prix Y</div><div class="diag-value" id="diagPriceY">—</div></div>
-<div class="diag"><div class="diag-label">Prix X</div><div class="diag-value" id="diagPriceX">—</div></div>
-<div class="diag"><div class="diag-label">Pente / beta</div><div class="diag-value" id="diagPrimary">—</div></div>
-<div class="diag"><div class="diag-label">Innovation / z</div><div class="diag-value" id="diagSecondary">—</div></div>
-<div class="diag"><div class="diag-label">Régime</div><div class="diag-value" id="diagRegime">—</div></div>
-<div class="diag"><div class="diag-label">Levier réel</div><div class="diag-value" id="diagLeverage">0.00×</div></div>
+<div class="diag"><div class="diag-label">Prix Y</div><div class="diag-value" id="diagPriceY">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div></div>
+<div class="diag"><div class="diag-label">Prix X</div><div class="diag-value" id="diagPriceX">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div></div>
+<div class="diag"><div class="diag-label">Pente / beta</div><div class="diag-value" id="diagPrimary">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div></div>
+<div class="diag"><div class="diag-label">Innovation / z</div><div class="diag-value" id="diagSecondary">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div></div>
+<div class="diag"><div class="diag-label">RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gime</div><div class="diag-value" id="diagRegime">ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â</div></div>
+<div class="diag"><div class="diag-label">Levier rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©el</div><div class="diag-value" id="diagLeverage">0.00ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â</div></div>
 </div>
 </div>
 <div class="panel" data-cell="equity">
@@ -7925,35 +7903,38 @@ td{padding:6px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}
 </div>
 <div class="panel" data-cell="blotter">
 <div class="panel-title">TRADE BLOTTER</div>
-<div class="blotter-wrap"><table><thead><tr><th>#</th><th>Direction</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th>Gross</th><th>Coûts</th><th>Net</th><th>Raison</th></tr></thead><tbody id="blotterBody"></tbody></table></div>
+<div class="blotter-wrap"><table><thead><tr><th>#</th><th>Direction</th><th>EntrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e</th><th>Sortie</th><th>DurÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e</th><th>Gross</th><th>CoÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â»ts</th><th>Net</th><th>Raison</th></tr></thead><tbody id="blotterBody"></tbody></table></div>
 </div>
 </div>
 <div class="footer-actions">
 <button id="exportTradesButton">EXPORT TRADES CSV</button>
 <button id="exportDecisionsButton">EXPORT DECISIONS CSV</button>
 <button id="exportSummaryButton">EXPORT SUMMARY CSV</button>
-<div class="session-summary" id="sessionSummary">PAPER ONLY · NO LIVE ORDERS</div>
+<div class="session-summary" id="sessionSummary">PAPER ONLY ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· NO LIVE ORDERS</div>
 </div>
 </div>
 <script>
 const SETTINGS = __SETTINGS__;
 
-const API_KEY=SETTINGS.apiKey,STRATEGY=SETTINGS.strategy,SYMBOL_Y=SETTINGS.symbolY,SYMBOL_X=SETTINGS.symbolX,ASSET_Y=SETTINGS.assetY,ASSET_X=SETTINGS.assetX;
-const IS_PAIR=Boolean(SETTINGS.isPair),HAS_X=Boolean(SYMBOL_X&&SYMBOL_X!==SYMBOL_Y),REPLAY_MINUTES=Number(SETTINGS.replayMinutes),TRADE_REPLAY=Boolean(SETTINGS.tradeReplay),VERBOSE=Boolean(SETTINGS.terminalVerbose),SYNC_MS=Number(SETTINGS.syncMs);
+const API_KEY=SETTINGS.apiKey,STRATEGY=SETTINGS.strategy,SIGNAL_MODEL=SETTINGS.signalModel,PAIR_INPUT=SETTINGS.pairInput||"level",SYMBOL_Y=SETTINGS.symbolY,SYMBOL_X=SETTINGS.symbolX,ASSET_Y=SETTINGS.assetY,ASSET_X=SETTINGS.assetX;
+const IS_PAIR=SETTINGS.strategyEngine==="pair",HAS_X=Boolean(SYMBOL_X&&SYMBOL_X!==SYMBOL_Y),REPLAY_MINUTES=Number(SETTINGS.replayMinutes),TRADE_REPLAY=Boolean(SETTINGS.tradeReplay),VERBOSE=Boolean(SETTINGS.terminalVerbose),SYNC_MS=Number(SETTINGS.syncMs);
 const REACTIVITY=Number(SETTINGS.reactivity),OBSERVATION_TRUST=Number(SETTINGS.observationTrust),CONFIRMATION=Number(SETTINGS.confirmation),ENTRY_THRESHOLD=Number(SETTINGS.entryThreshold),EXIT_THRESHOLD=Number(SETTINGS.exitThreshold),SHOCK_THRESHOLD=Number(SETTINGS.shockThreshold),SECONDARY_THRESHOLD=Number(SETTINGS.secondaryThreshold),HMM_PERSISTENCE=Number(SETTINGS.hmmPersistence),Z_WINDOW=Number(SETTINGS.zWindow);
 const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.accountEquity),TARGET_LEVERAGE=Number(SETTINGS.targetLeverage),POINT_VALUE_Y=Number(SETTINGS.pointValueY),POINT_VALUE_X=Number(SETTINGS.pointValueX),TICK_SIZE_Y=Number(SETTINGS.tickSizeY),TICK_SIZE_X=Number(SETTINGS.tickSizeX),FX_Y=Number(SETTINGS.fxY),FX_X=Number(SETTINGS.fxX),QUANTITY_STEP=Number(SETTINGS.quantityStep),COMMISSION_BPS=Number(SETTINGS.commissionBps),MIN_COMMISSION=Number(SETTINGS.minCommission),EXTRA_SLIPPAGE_TICKS=Number(SETTINGS.extraSlippageTicks),ALLOW_SHORT=Boolean(SETTINGS.allowShort),MAX_SESSION_LOSS=Number(SETTINGS.maxSessionLoss),MAX_TRADE_LOSS=Number(SETTINGS.maxTradeLoss),MAX_HOLDING_SECONDS=Number(SETTINGS.maxHoldingSeconds),MAX_TRADES=Number(SETTINGS.maxTrades),COOLDOWN_OBSERVATIONS=Number(SETTINGS.cooldownObservations);
 
-/* Normalisation : la pente et l'innovation du Kalman sont ramenées à leur
-   propre échelle roulante. Sans ça, "σ" ne veut rien dire : diviser la pente
-   par l'écart-type des différences tick-à-tick donne un slopeZ dont le sd réel
-   vaut ~0.25, donc un seuil d'entrée de 0.65 est à ~2.6 sd dans la queue. */
+/* Normalisation : la pente et l'innovation du Kalman sont ramenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  leur
+   propre ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©chelle roulante. Sans ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â§a, "ÃƒÆ’Ã‚ÂÃƒâ€ Ã¢â‚¬â„¢" ne veut rien dire : diviser la pente
+   par l'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cart-type des diffÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rences tick-ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â -tick donne un slopeZ dont le sd rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©el
+   vaut ~0.25, donc un seuil d'entrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e de 0.65 est ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  ~2.6 sd dans la queue. */
 const NORM_WINDOW=Math.max(120,Number(SETTINGS.normWindow)||750);
 const NORM_MIN=Math.max(60,Math.floor(NORM_WINDOW*0.2));
-const PAIR_WARMUP=STRATEGY==="Relative Value Mean Reversion"?240:60;
+const PAIR_WARMUP=PAIR_INPUT==="level"?240:60;
 const CHART_MIN_INTERVAL_MS=150;
+const MARKET_SESSION_Y=SETTINGS.marketSessionY||null,MARKET_SESSION_X=SETTINGS.marketSessionX||null,INITIAL_MARKET_OPEN=Boolean(SETTINGS.marketOpen),MARKET_STATUS=SETTINGS.marketStatus||"";
+const HMM_MODELS=new Set(["hmm_directional","hmm_risk_off"]);
+const PAIR_MEAN_REVERSION_MODELS=new Set(["pair_mean_reversion","pair_convergence","pair_stat_arb","pair_residual_shock_fade"]);
 
 const COLORS={background:"#050708",grid:"#1b2530",text:"#d9e2ec",muted:"#748192",green:"#28b69f",red:"#ef5b5b",yellow:"#d9b44a",blue:"#76b7e5",purple:"#a28af7",raw:"#d9a36c"};
-const currencyPrefix=({EUR:"€",USD:"$",GBP:"£",CHF:"CHF "}[ACCOUNT_CURRENCY]||`${ACCOUNT_CURRENCY} `);
+const currencyPrefix=({EUR:"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬",USD:"$",GBP:"ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£",CHF:"CHF "}[ACCOUNT_CURRENCY]||`${ACCOUNT_CURRENCY} `);
 const $=id=>document.getElementById(id);
 const DOM={brand:$("brand"),connection:$("connection"),workspace:$("workspace"),startButton:$("startButton"),stopButton:$("stopButton"),resetButton:$("resetButton"),fullscreenButton:$("fullscreenButton"),terminal:$("terminal"),blotterBody:$("blotterBody"),sessionMetric:$("sessionMetric"),sessionSub:$("sessionSub"),signalMetric:$("signalMetric"),signalSub:$("signalSub"),positionMetric:$("positionMetric"),positionSub:$("positionSub"),netMetric:$("netMetric"),netSub:$("netSub"),unrealizedMetric:$("unrealizedMetric"),unrealizedSub:$("unrealizedSub"),ticksMetric:$("ticksMetric"),ticksSub:$("ticksSub"),tradesMetric:$("tradesMetric"),tradesSub:$("tradesSub"),drawdownMetric:$("drawdownMetric"),drawdownSub:$("drawdownSub"),diagPriceY:$("diagPriceY"),diagPriceX:$("diagPriceX"),diagPrimary:$("diagPrimary"),diagSecondary:$("diagSecondary"),diagRegime:$("diagRegime"),diagLeverage:$("diagLeverage"),sessionSummary:$("sessionSummary"),exportTradesButton:$("exportTradesButton"),exportDecisionsButton:$("exportDecisionsButton"),exportSummaryButton:$("exportSummaryButton")};
 DOM.brand.textContent=`SHADOW TRADER :: ${STRATEGY.toUpperCase()} :: ${SYMBOL_Y}${SYMBOL_X?` / ${SYMBOL_X}`:""}`;
@@ -7962,18 +7943,39 @@ const plotConfig={responsive:true,displaylogo:false,scrollZoom:true,doubleClick:
 function commonLayout(title,uirevision){return{template:"plotly_dark",paper_bgcolor:COLORS.background,plot_bgcolor:COLORS.background,autosize:true,margin:{l:32,r:58,t:34,b:26},title:{text:title,x:.01,y:.99,yanchor:"top",font:{size:11,color:COLORS.text,family:"JetBrains Mono, Consolas, monospace"}},hovermode:"x unified",dragmode:"pan",uirevision,legend:{orientation:"h",x:0,y:1.10,font:{size:9,color:COLORS.muted},bgcolor:"rgba(0,0,0,0)"},xaxis:{gridcolor:COLORS.grid,zeroline:false,showspikes:true,spikecolor:COLORS.muted},yaxis:{gridcolor:COLORS.grid,zeroline:false,side:"right",automargin:true}}}
 function finite(value,fallback=null){const n=Number(value);return Number.isFinite(n)?n:fallback}
 function parseTimestamp(value){if(typeof value==="number")return new Date(value<1e12?value*1000:value);const d=new Date(value);return Number.isNaN(d.getTime())?new Date():d}
-function formatNumber(value,decimals=2){return Number.isFinite(value)?value.toLocaleString(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}):"—"}
+function formatNumber(value,decimals=2){return Number.isFinite(value)?value.toLocaleString(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}):"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â"}
 function formatMoney(value){return `${currencyPrefix}${value>0?"+":""}${formatNumber(value,2)}`}
-function formatPrice(value){if(!Number.isFinite(value))return"—";const d=Math.abs(value)<10?5:(Math.abs(value)<100?4:2);return formatNumber(value,d)}
-function signed(value,decimals=2){return Number.isFinite(value)?`${value>=0?"+":""}${value.toFixed(decimals)}`:"—"}
+function formatPrice(value){if(!Number.isFinite(value))return"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";const d=Math.abs(value)<10?5:(Math.abs(value)<100?4:2);return formatNumber(value,d)}
+function signed(value,decimals=2){return Number.isFinite(value)?`${value>=0?"+":""}${value.toFixed(decimals)}`:"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â"}
 function variance(values){const a=values.filter(Number.isFinite);if(a.length<2)return 1e-8;const m=a.reduce((s,v)=>s+v,0)/a.length;return a.reduce((s,v)=>s+(v-m)**2,0)/a.length}
 function rollingZ(values,windowSize){const a=values.slice(-Math.max(10,windowSize));if(a.length<10)return null;const m=a.reduce((s,v)=>s+v,0)/a.length,sd=Math.sqrt(variance(a));return !Number.isFinite(sd)||sd<1e-12?0:(a[a.length-1]-m)/sd}
-/* RMS roulant autour de zéro : contrairement à rollingZ, ne retire pas la
-   moyenne, donc une tendance soutenue reste visible au lieu d'être absorbée. */
+/* RMS roulant autour de zÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ro : contrairement ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  rollingZ, ne retire pas la
+   moyenne, donc une tendance soutenue reste visible au lieu d'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªtre absorbÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e. */
 function rollingRms(values,windowSize){const a=values.length>windowSize?values.slice(values.length-windowSize):values;let s=0,n=0;for(const v of a){if(Number.isFinite(v)){s+=v*v;n++}}return n?Math.sqrt(s/n):null}
 function roundQuantity(value){if(!Number.isFinite(value)||value<=0)return 0;const step=Math.max(QUANTITY_STEP,1e-8);return Math.floor(value/step)*step}
 function canonicalSymbol(symbol){const s=String(symbol||"").toUpperCase();if(s===String(SYMBOL_Y).toUpperCase())return"Y";if(SYMBOL_X&&s===String(SYMBOL_X).toUpperCase())return"X";return null}
 function nowIso(){return new Date().toISOString()}
+function zonedParts(date,timeZone){
+    const parts=new Intl.DateTimeFormat("en-US",{timeZone,weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(date);
+    const map=Object.fromEntries(parts.map(p=>[p.type,p.value]));
+    const days={Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:0};
+    return{day:days[map.weekday]??0,minutes:Number(map.hour)*60+Number(map.minute)}
+}
+function hhmm(value){const [h,m]=String(value||"00:00").split(":").map(Number);return h*60+m}
+function sessionOpen(session,date=new Date()){
+    if(!session)return true;
+    if(session.kind==="always")return true;
+    const p=zonedParts(date,session.timezone||"UTC");
+    if(session.kind==="weekday")return p.day>=1&&p.day<=5;
+    if(session.kind==="regular")return p.day>=1&&p.day<=5&&p.minutes>=hhmm(session.open)&&p.minutes<=hhmm(session.close);
+    return true
+}
+function marketOpenNow(){
+    const yOpen=sessionOpen(MARKET_SESSION_Y);
+    const xOpen=!IS_PAIR||sessionOpen(MARKET_SESSION_X);
+    return yOpen&&xOpen
+}
+function closedMarketReason(){return MARKET_STATUS?`Marche ferme: ${MARKET_STATUS}`:"Marche ferme"}
 function updateComparison(timestamp){
     if(!HAS_X||!market.Y||!market.X)return;
     if(comparison.baseY===null||comparison.baseX===null){
@@ -7997,7 +7999,7 @@ function logLine(type,message,timestamp=new Date()){
 }
 function logVerbose(type,message,timestamp){if(VERBOSE)logLine(type,message,timestamp)}
 function downloadCsv(filename,rows){
-    if(!rows.length){logLine("SYSTEM",`Aucune donnée à exporter pour ${filename}.`);return}
+    if(!rows.length){logLine("SYSTEM",`Aucune donnÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  exporter pour ${filename}.`);return}
     const columns=Array.from(rows.reduce((set,row)=>{Object.keys(row).forEach(k=>set.add(k));return set},new Set()));
     const esc=v=>`"${(v===null||v===undefined?"":String(v)).replaceAll('"','""')}"`;
     const csv=[columns.map(esc).join(","),...rows.map(row=>columns.map(c=>esc(row[c])).join(","))].join("\n");
@@ -8013,7 +8015,7 @@ const portfolio={active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Dat
 
 function resetPortfolioState(){
     Object.assign(portfolio,{active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Date():null,stoppedAt:null,position:0,trade:null,realized:0,grossRealized:0,unrealized:0,costs:0,currentTicks:0,totalTicks:0,currentTarget:0,candidateTarget:0,candidateCount:0,cooldown:0,trades:[],decisions:[],logs:[],equityTimestamps:[],equityNet:[],equityRealized:[],peakNet:0,maxDrawdown:0,observations:0,lastSignalLabel:"WAIT",lastSignalReason:"Warm-up",lastStateFingerprint:null});
-    DOM.terminal.innerHTML="";DOM.blotterBody.innerHTML="";logLine("SYSTEM","Paper engine réinitialisé. Aucun ordre réel ne sera envoyé.");
+    DOM.terminal.innerHTML="";DOM.blotterBody.innerHTML="";logLine("SYSTEM","Paper engine rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©initialisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©. Aucun ordre rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©el ne sera envoyÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©.");
 }
 
 function updateKalman(timestamp,price){
@@ -8049,9 +8051,9 @@ function updateHmm(slopeZ,innovationZ){
     const p=Math.min(Math.max(HMM_PERSISTENCE,.5),.995),m=1-p;
     const tr=[[p,m*.4,m*.4,m*.2],[m*.43,p,m*.05,m*.52],[m*.43,m*.05,p,m*.52],[m*.55,m*.225,m*.225,p]],pred=[0,0,0,0];
     for(let d=0;d<4;d++)for(let o=0;o<4;o++)pred[d]+=hmm.posterior[o]*tr[o][d];
-    /* Émissions recalibrées sur le slopeZ normalisé (sd ≈ 1). Les anciennes
-       supposaient N(±0.9, 0.72) alors que le slopeZ observé valait N(0, 0.25) :
-       l'état NOISE gagnait toujours et `up` n'atteignait jamais le seuil. */
+    /* ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°missions recalibrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©es sur le slopeZ normalisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© (sd ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â°Ãƒâ€¹Ã¢â‚¬Â  1). Les anciennes
+       supposaient N(ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â±0.9, 0.72) alors que le slopeZ observÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© valait N(0, 0.25) :
+       l'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tat NOISE gagnait toujours et `up` n'atteignait jamais le seuil. */
     const ai=Math.abs(innovationZ),em=[gaussianLogPdf(slopeZ,0,.70)+gaussianLogPdf(innovationZ,0,.9),gaussianLogPdf(slopeZ,1.35,.95)+gaussianLogPdf(innovationZ,.1,1.15),gaussianLogPdf(slopeZ,-1.35,.95)+gaussianLogPdf(innovationZ,-.1,1.15),gaussianLogPdf(slopeZ,0,2.2)+gaussianLogPdf(ai,2.8,1.2)];
     hmm.posterior=normalizeLogs(pred.map((q,i)=>Math.log(Math.max(q,1e-15))+em[i]));
     let dominant=0;for(let i=1;i<4;i++)if(hmm.posterior[i]>hmm.posterior[dominant])dominant=i;
@@ -8089,7 +8091,7 @@ function updateRegression(timestamp,y,x,priceY,priceX){
        Mesure sur paire cointegree simulee : corr(z, vrai spread) = 0.04 avant,
        0.55 en ralentissant alpha d'un facteur 5000. Le modele momentum regresse
        des rendements (alpha ~ 0), il garde donc le reglage d'origine. */
-    const isRv=STRATEGY==="Relative Value Mean Reversion";
+    const isRv=PAIR_MEAN_REVERSION_MODELS.has(SIGNAL_MODEL);
     const qA=regression.residualVariance*(isRv?1e-6:.005)*qm,qB=(isRv?regression.residualVariance*1e-8:1e-5)*qm,r=regression.residualVariance*Math.max(rm,1e-4);
     let [alpha,beta]=regression.state,[[p00,p01],[p10,p11]]=regression.covariance;p00+=qA;p11+=qB;
     const predicted=alpha+beta*xc,residual=y-predicted,s=p00+xc*p01+xc*p10+xc*xc*p11+r,k0=(p00+p01*xc)/s,k1=(p10+p11*xc)/s;
@@ -8098,9 +8100,9 @@ function updateRegression(timestamp,y,x,priceY,priceX){
     regression.state=[alpha,beta];regression.covariance=[[Math.max(np00,1e-18),off],[off,Math.max(np11,1e-18)]];
     regression.residuals.push(residual);if(regression.residuals.length>5000)regression.residuals.shift();
 
-    /* Chaque modèle construit sa propre mesure : le RV lit un niveau de spread,
-       le momentum lit une dérive cumulée. Le résidu brut ne sert ni à l'un ni
-       à l'autre. */
+    /* Chaque modÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨le construit sa propre mesure : le RV lit un niveau de spread,
+       le momentum lit une dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rive cumulÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e. Le rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sidu brut ne sert ni ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  l'un ni
+       ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  l'autre. */
     let zscore=null;
     if(isRv){
         // Avec l'intercept ralenti, le residuel a priori EST l'ecart a la relation
@@ -8108,11 +8110,11 @@ function updateRegression(timestamp,y,x,priceY,priceX){
         regression.spread.push(residual);if(regression.spread.length>5000)regression.spread.shift();
         zscore=rollingZ(regression.spread,Z_WINDOW);
     }else{
-        /* Momentum résiduel = somme des rendements résiduels sur Z_WINDOW.
-           Standardisée par son propre RMS roulant, comme la pente du Kalman :
-           diviser par sd(residual)·√W suppose des résidus iid, or ils sont
-           autocorrélés — mesure : sd réel 0.48 au lieu de 1, donc le seuil 1.25
-           se retrouvait à 2.6 sd dans la queue. Même défaut que le bug 1. */
+        /* Momentum rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©siduel = somme des rendements rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©siduels sur Z_WINDOW.
+           StandardisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e par son propre RMS roulant, comme la pente du Kalman :
+           diviser par sd(residual)ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â·ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã¢â‚¬Â Ãƒâ€¦Ã‚Â¡W suppose des rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©sidus iid, or ils sont
+           autocorrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â mesure : sd rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©el 0.48 au lieu de 1, donc le seuil 1.25
+           se retrouvait ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  2.6 sd dans la queue. MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªme dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©faut que le bug 1. */
         regression.cumulativeResidual+=residual;
         regression.cumulativeSeries.push(regression.cumulativeResidual);
         if(regression.cumulativeSeries.length>5000)regression.cumulativeSeries.shift();
@@ -8135,49 +8137,65 @@ function updateRegression(timestamp,y,x,priceY,priceX){
     return{ready:true,alpha,beta,residual,zscore,level:null,slopeZ:null,innovationZ:null,hmm:null}
 }
 
+function flatSignal(label,reason,regime="NEUTRAL",confidence=0){return{target:0,label,reason,confidence,regime}}
+function directionalState(current,measure,label,regimeUp="UP",regimeDown="DOWN"){
+    if(!Number.isFinite(measure))return flatSignal("WARM-UP","Normalisation en cours","WARMUP");
+    if(current>0)return measure<=EXIT_THRESHOLD?flatSignal("EXIT LONG",`${label} retombe ${signed(measure)}`,"NEUTRAL",1):{target:1,label:"HOLD LONG",reason:`${label} ${signed(measure)}`,confidence:Math.min(1,Math.abs(measure)/ENTRY_THRESHOLD),regime:regimeUp};
+    if(current<0)return measure>=-EXIT_THRESHOLD?flatSignal("EXIT SHORT",`${label} remonte ${signed(measure)}`,"NEUTRAL",1):{target:-1,label:"HOLD SHORT",reason:`${label} ${signed(measure)}`,confidence:Math.min(1,Math.abs(measure)/ENTRY_THRESHOLD),regime:regimeDown};
+    if(measure>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`${label} ${signed(measure)}`,confidence:Math.min(1,measure/ENTRY_THRESHOLD),regime:regimeUp};
+    if(ALLOW_SHORT&&measure<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`${label} ${signed(measure)}`,confidence:Math.min(1,Math.abs(measure)/ENTRY_THRESHOLD),regime:regimeDown};
+    return flatSignal("WAIT",`${label} ${signed(measure)} sous seuil ${ENTRY_THRESHOLD.toFixed(2)}`)
+}
+function meanReversionState(current,measure,label){
+    if(!Number.isFinite(measure))return flatSignal("WARM-UP","Normalisation en cours","WARMUP");
+    if(current>0)return(Math.abs(measure)<=EXIT_THRESHOLD||measure>0)?flatSignal("EXIT LONG",`${label} revenu ${signed(measure)}`,"MEAN",1):{target:1,label:"HOLD LONG",reason:`${label} negatif ${signed(measure)}`,confidence:Math.min(1,Math.abs(measure)/ENTRY_THRESHOLD),regime:"CHEAP"};
+    if(current<0)return(Math.abs(measure)<=EXIT_THRESHOLD||measure<0)?flatSignal("EXIT SHORT",`${label} revenu ${signed(measure)}`,"MEAN",1):{target:-1,label:"HOLD SHORT",reason:`${label} positif ${signed(measure)}`,confidence:Math.min(1,Math.abs(measure)/ENTRY_THRESHOLD),regime:"RICH"};
+    if(measure<=-ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`${label} trop bas ${signed(measure)}`,confidence:Math.min(1,Math.abs(measure)/ENTRY_THRESHOLD),regime:"CHEAP"};
+    if(ALLOW_SHORT&&measure>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`${label} trop haut ${signed(measure)}`,confidence:Math.min(1,measure/ENTRY_THRESHOLD),regime:"RICH"};
+    return flatSignal("WAIT",`${label} ${signed(measure)} sous seuil ${ENTRY_THRESHOLD.toFixed(2)}`,"MEAN")
+}
 function strategySignal(features){
-    const current=portfolio.position;
-    if(STRATEGY==="Kalman Trend"){
-        const slope=features.slopeZ,innovation=features.innovationZ;
-        if(!Number.isFinite(slope))return{target:0,label:"WARM-UP",reason:"Normalisation en cours",confidence:0,regime:"WARMUP"};
-        if(Number.isFinite(innovation)&&Math.abs(innovation)>=SHOCK_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Innovation choc ${signed(innovation)}σ`,confidence:Math.min(1,Math.abs(innovation)/SHOCK_THRESHOLD),regime:"CHOC"};
-        if(current>0)return slope<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG",reason:`Pente retombée ${signed(slope)}σ`,confidence:1,regime:"BRUIT"}:{target:1,label:"HOLD LONG",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,slope/ENTRY_THRESHOLD),regime:"UP"};
-        if(current<0)return slope>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT",reason:`Pente remontée ${signed(slope)}σ`,confidence:1,regime:"BRUIT"}:{target:-1,label:"HOLD SHORT",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,Math.abs(slope)/ENTRY_THRESHOLD),regime:"DOWN"};
-        if(slope>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,slope/ENTRY_THRESHOLD),regime:"UP"};
-        if(ALLOW_SHORT&&slope<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,Math.abs(slope)/ENTRY_THRESHOLD),regime:"DOWN"};
-        return{target:0,label:"WAIT",reason:`Pente ${signed(slope)}σ sous seuil ${ENTRY_THRESHOLD.toFixed(2)}σ`,confidence:0,regime:"BRUIT"};
+    const current=portfolio.position,slope=features.slopeZ,innovation=features.innovationZ,z=features.zscore;
+    if(SIGNAL_MODEL==="single_trend"){
+        if(Number.isFinite(innovation)&&Math.abs(innovation)>=SHOCK_THRESHOLD)return flatSignal("RISK OFF",`Innovation choc ${signed(innovation)}`,"CHOC",Math.min(1,Math.abs(innovation)/SHOCK_THRESHOLD));
+        return directionalState(current,slope,"Pente")
     }
-    if(STRATEGY==="Kalman + HMM Directional"){
-        if(!features.hmm)return{target:0,label:"WARM-UP",reason:"Normalisation en cours",confidence:0,regime:"WARMUP"};
+    if(SIGNAL_MODEL==="single_mean_reversion")return meanReversionState(current,innovation,"Innovation");
+    if(SIGNAL_MODEL==="single_breakout"){
+        if(!Number.isFinite(slope)||!Number.isFinite(innovation))return flatSignal("WARM-UP","Normalisation en cours","WARMUP");
+        const impulse=(Math.abs(innovation)>=SECONDARY_THRESHOLD&&Math.sign(slope)===Math.sign(innovation))?slope:0;
+        return directionalState(current,impulse,"Breakout")
+    }
+    if(SIGNAL_MODEL==="single_pullback"){
+        if(!Number.isFinite(slope)||!Number.isFinite(innovation))return flatSignal("WARM-UP","Normalisation en cours","WARMUP");
+        let score=0;
+        if(slope>=ENTRY_THRESHOLD&&innovation<=-SECONDARY_THRESHOLD)score=slope;
+        if(slope<=-ENTRY_THRESHOLD&&innovation>=SECONDARY_THRESHOLD)score=slope;
+        if(current!==0)score=slope;
+        return directionalState(current,score,"Pullback")
+    }
+    if(SIGNAL_MODEL==="single_shock_fade")return meanReversionState(current,innovation,"Shock");
+    if(SIGNAL_MODEL==="single_vol_breakout"){
+        if(!Number.isFinite(slope)||!Number.isFinite(innovation))return flatSignal("WARM-UP","Normalisation en cours","WARMUP");
+        const score=(Math.abs(innovation)>=ENTRY_THRESHOLD&&Math.abs(slope)>=SECONDARY_THRESHOLD)?Math.sign(innovation)*Math.max(Math.abs(innovation),Math.abs(slope)):0;
+        return directionalState(current,score,"Vol breakout")
+    }
+    if(SIGNAL_MODEL==="hmm_directional"||SIGNAL_MODEL==="hmm_risk_off"){
+        if(!features.hmm)return flatSignal("WARM-UP","HMM en calibration","WARMUP");
         const p=features.hmm.posterior,noise=p[0],up=p[1],down=p[2],shock=p[3];
-        if(shock>=SECONDARY_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Choc ${(shock*100).toFixed(0)}%`,confidence:shock,regime:"CHOC"};
-        if(current>0){
-            if(up<EXIT_THRESHOLD||noise>=ENTRY_THRESHOLD)return{target:0,label:"EXIT LONG",reason:`Up ${(up*100).toFixed(0)}% · noise ${(noise*100).toFixed(0)}%`,confidence:Math.max(noise,1-up),regime:"BRUIT"};
-            return{target:1,label:"HOLD LONG",reason:`Up ${(up*100).toFixed(0)}%`,confidence:up,regime:"UP"};
-        }
-        if(current<0){
-            if(down<EXIT_THRESHOLD||noise>=ENTRY_THRESHOLD)return{target:0,label:"EXIT SHORT",reason:`Down ${(down*100).toFixed(0)}% · noise ${(noise*100).toFixed(0)}%`,confidence:Math.max(noise,1-down),regime:"BRUIT"};
-            return{target:-1,label:"HOLD SHORT",reason:`Down ${(down*100).toFixed(0)}%`,confidence:down,regime:"DOWN"};
-        }
-        if(up>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Régime hausse ${(up*100).toFixed(0)}%`,confidence:up,regime:"UP"};
-        if(ALLOW_SHORT&&down>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Régime baisse ${(down*100).toFixed(0)}%`,confidence:down,regime:"DOWN"};
-        return{target:0,label:"WAIT",reason:`Noise ${(noise*100).toFixed(0)}% · up ${(up*100).toFixed(0)}% vs seuil ${(ENTRY_THRESHOLD*100).toFixed(0)}%`,confidence:noise,regime:"BRUIT"};
+        const shockLimit=SIGNAL_MODEL==="hmm_risk_off"?SECONDARY_THRESHOLD:SECONDARY_THRESHOLD;
+        if(shock>=shockLimit)return flatSignal("RISK OFF",`Choc ${(shock*100).toFixed(0)}%`,"CHOC",shock);
+        if(SIGNAL_MODEL==="hmm_risk_off"&&noise>=ENTRY_THRESHOLD)return flatSignal("WAIT",`Noise ${(noise*100).toFixed(0)}%`,"BRUIT",noise);
+        if(current>0){if(up<EXIT_THRESHOLD||noise>=ENTRY_THRESHOLD)return flatSignal("EXIT LONG",`Up ${(up*100).toFixed(0)}% / noise ${(noise*100).toFixed(0)}%`,"BRUIT",Math.max(noise,1-up));return{target:1,label:"HOLD LONG",reason:`Regime hausse ${(up*100).toFixed(0)}%`,confidence:up,regime:"UP"}}
+        if(current<0){if(down<EXIT_THRESHOLD||noise>=ENTRY_THRESHOLD)return flatSignal("EXIT SHORT",`Down ${(down*100).toFixed(0)}% / noise ${(noise*100).toFixed(0)}%`,"BRUIT",Math.max(noise,1-down));return{target:-1,label:"HOLD SHORT",reason:`Regime baisse ${(down*100).toFixed(0)}%`,confidence:down,regime:"DOWN"}}
+        if(up>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Regime hausse ${(up*100).toFixed(0)}%`,confidence:up,regime:"UP"};
+        if(ALLOW_SHORT&&down>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Regime baisse ${(down*100).toFixed(0)}%`,confidence:down,regime:"DOWN"};
+        return flatSignal("WAIT",`Noise ${(noise*100).toFixed(0)}% / up ${(up*100).toFixed(0)}% / down ${(down*100).toFixed(0)}%`,"BRUIT",noise)
     }
-    const z=features.zscore;
-    if(!Number.isFinite(z))return{target:0,label:"WARM-UP",reason:"Z-score indisponible",confidence:0,regime:"WARMUP"};
-    if(STRATEGY==="Dynamic Beta Residual Momentum"){
-        if(current>0)return z<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:1,label:"HOLD LONG SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
-        if(current<0)return z>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
-        if(z>=ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Dérive résiduelle ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
-        if(ALLOW_SHORT&&z<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT SPREAD CANDIDATE",reason:`Dérive résiduelle ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
-        return{target:0,label:"WAIT",reason:`Momentum résiduel ${signed(z)} sous seuil ${ENTRY_THRESHOLD.toFixed(2)}`,confidence:0,regime:"NEUTRAL"};
-    }
-    // Relative Value Mean Reversion.
-    if(current>0)return(Math.abs(z)<=EXIT_THRESHOLD||z>0)?{target:0,label:"EXIT LONG SPREAD",reason:`Spread revenu ${signed(z)}σ`,confidence:1,regime:"MEAN"}:{target:1,label:"HOLD LONG SPREAD",reason:`Y décoté ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y CHEAP"};
-    if(current<0)return(Math.abs(z)<=EXIT_THRESHOLD||z<0)?{target:0,label:"EXIT SHORT SPREAD",reason:`Spread revenu ${signed(z)}σ`,confidence:1,regime:"MEAN"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Y riche ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y RICH"};
-    if(z<=-ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Y décoté ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y CHEAP"};
-    if(ALLOW_SHORT&&z>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT SPREAD CANDIDATE",reason:`Y riche ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"Y RICH"};
-    return{target:0,label:"WAIT",reason:`Spread z ${signed(z)} sous seuil ${ENTRY_THRESHOLD.toFixed(2)}σ`,confidence:0,regime:"MEAN"};
+    if(!Number.isFinite(z))return flatSignal("WARM-UP","Z-score indisponible","WARMUP");
+    if(SIGNAL_MODEL==="pair_mean_reversion"||SIGNAL_MODEL==="pair_convergence"||SIGNAL_MODEL==="pair_stat_arb"||SIGNAL_MODEL==="pair_residual_shock_fade")return meanReversionState(current,z,"Spread z");
+    if(SIGNAL_MODEL==="pair_residual_momentum"||SIGNAL_MODEL==="pair_breakout"||SIGNAL_MODEL==="pair_dispersion_widen"||SIGNAL_MODEL==="pair_beta_trend")return directionalState(current,z,"Residuel z","RESIDUAL UP","RESIDUAL DOWN");
+    return flatSignal("WAIT","Mode non reconnu")
 }
 
 function executablePrice(tick,side,tickSize){
@@ -8186,9 +8204,9 @@ function executablePrice(tick,side,tickSize){
     return Number.isFinite(base)?base+side*EXTRA_SLIPPAGE_TICKS*tickSize:null
 }
 function markPrice(tick,positionSide,tickSize){return executablePrice(tick,-positionSide,tickSize)}
-/* Commission en bps du notionnel. Une commission par unité donnait 92 592 €
-   d'entrée sur EUR/USD (185 185 unités × 0.50) contre 5 € sur le Nasdaq :
-   le même défaut couvrait quatre ordres de grandeur. */
+/* Commission en bps du notionnel. Une commission par unitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© donnait 92 592 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬
+   d'entrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e sur EUR/USD (185 185 unitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â 0.50) contre 5 ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ sur le Nasdaq :
+   le mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªme dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©faut couvrait quatre ordres de grandeur. */
 function notionalFor(quantityY,priceY,quantityX,priceX){
     let notional=Math.abs(quantityY)*Math.abs(finite(priceY,0))*POINT_VALUE_Y*FX_Y;
     if(IS_PAIR&&Number.isFinite(priceX))notional+=Math.abs(quantityX)*Math.abs(priceX)*POINT_VALUE_X*FX_X;
@@ -8232,7 +8250,7 @@ function openPosition(direction,signal,timestamp,features){
     if(portfolio.locked)return;
     if(portfolio.trades.length>=MAX_TRADES){portfolio.locked=true;portfolio.active=false;logLine("KILL",`Nombre maximal de trades atteint (${MAX_TRADES}).`,timestamp);return}
     const sizing=sizePosition(finite(features.beta,1));
-    if(!sizing||sizing.quantityY<=0||(IS_PAIR&&sizing.quantityX<=0)){logLine("RISK","Taille nulle. Vérifie point value, FX et capital.",timestamp);return}
+    if(!sizing||sizing.quantityY<=0||(IS_PAIR&&sizing.quantityX<=0)){logLine("RISK","Taille nulle. VÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©rifie point value, FX et capital.",timestamp);return}
     const entryY=executablePrice(market.Y,direction,TICK_SIZE_Y),entryX=IS_PAIR?executablePrice(market.X,-direction,TICK_SIZE_X):null;
     if(!Number.isFinite(entryY)||(IS_PAIR&&!Number.isFinite(entryX)))return;
     const entryNotional=notionalFor(sizing.quantityY,entryY,sizing.quantityX,entryX);
@@ -8240,7 +8258,7 @@ function openPosition(direction,signal,timestamp,features){
     portfolio.realized-=entryCommission;portfolio.costs+=entryCommission;portfolio.position=direction;
     portfolio.trade={id:portfolio.trades.length+1,isPair:IS_PAIR,direction,openedAt:timestamp,entryY,entryX,quantityY:sizing.quantityY,quantityX:sizing.quantityX,beta:finite(features.beta,1),leverage:sizing.leverage,grossNotional:sizing.grossNotional,entryNotional,entryCommission,signal:signal.label,entryReason:signal.reason};
     portfolio.cooldown=0;
-    logLine(direction>0?"BUY":"SHORT",`${IS_PAIR?"SPREAD ":""}${direction>0?"LONG":"SHORT"} | Y ${sizing.quantityY.toFixed(4)} @ ${formatPrice(entryY)}${IS_PAIR?` | X ${sizing.quantityX.toFixed(4)} @ ${formatPrice(entryX)}`:""} | levier ${sizing.leverage.toFixed(2)}× | frais ${formatMoney(-entryCommission)} | ${signal.reason}`,timestamp);
+    logLine(direction>0?"BUY":"SHORT",`${IS_PAIR?"SPREAD ":""}${direction>0?"LONG":"SHORT"} | Y ${sizing.quantityY.toFixed(4)} @ ${formatPrice(entryY)}${IS_PAIR?` | X ${sizing.quantityX.toFixed(4)} @ ${formatPrice(entryX)}`:""} | levier ${sizing.leverage.toFixed(2)}ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â | frais ${formatMoney(-entryCommission)} | ${signal.reason}`,timestamp);
 }
 
 function closePosition(reason,timestamp,exitType="EXIT"){
@@ -8256,17 +8274,19 @@ function closePosition(reason,timestamp,exitType="EXIT"){
     portfolio.totalTicks+=tickEq;
     portfolio.trades.push({trade_id:trade.id,strategy:STRATEGY,direction:trade.direction>0?(trade.isPair?"LONG_SPREAD":"LONG"):(trade.isPair?"SHORT_SPREAD":"SHORT"),opened_at:trade.openedAt.toISOString(),closed_at:timestamp.toISOString(),duration_seconds:duration,symbol_y:SYMBOL_Y,quantity_y:trade.quantityY,entry_y:trade.entryY,exit_y:exitY,symbol_x:trade.isPair?SYMBOL_X:"",quantity_x:trade.quantityX,entry_x:trade.isPair?trade.entryX:"",exit_x:trade.isPair?exitX:"",beta_entry:trade.beta,entry_notional:trade.entryNotional,exit_notional:exitNotional,gross_pnl:gross,commission_bps:COMMISSION_BPS,entry_commission:trade.entryCommission,exit_commission:exitCommission,total_costs:totalCosts,net_pnl:net,equivalent_y_ticks:tickEq,leverage:trade.leverage,entry_reason:trade.entryReason,exit_reason:reason});
     portfolio.position=0;portfolio.trade=null;portfolio.unrealized=0;portfolio.currentTicks=0;portfolio.cooldown=COOLDOWN_OBSERVATIONS;portfolio.candidateTarget=0;portfolio.candidateCount=0;
-    logLine(net>=0?"PROFIT":"LOSS",`${exitType} | gross ${formatMoney(gross)} | coûts ${formatMoney(-totalCosts)} | net ${formatMoney(net)} | ${signed(tickEq,1)} ticks Y-eq | ${reason}`,timestamp);
+    logLine(net>=0?"PROFIT":"LOSS",`${exitType} | gross ${formatMoney(gross)} | coÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â»ts ${formatMoney(-totalCosts)} | net ${formatMoney(net)} | ${signed(tickEq,1)} ticks Y-eq | ${reason}`,timestamp);
     updateBlotter()
 }
 
 function applyTarget(signal,timestamp,features,isReplay){
     portfolio.lastSignalLabel=signal.label;portfolio.lastSignalReason=signal.reason;portfolio.currentTarget=signal.target;
+    const marketOpen=marketOpenNow();
+    if(!marketOpen){portfolio.candidateTarget=0;portfolio.candidateCount=0;logVerbose("WAIT",`${signal.label} | marche ferme`,timestamp);return}
     const eligible=portfolio.active&&!portfolio.locked&&(TRADE_REPLAY||!isReplay);
     if(!eligible){portfolio.candidateTarget=0;portfolio.candidateCount=0;logVerbose("WAIT",`${signal.label} | ${signal.reason} | session non active`,timestamp);return}
     if(portfolio.position!==0&&signal.target===0){closePosition(signal.reason,timestamp,"MODEL EXIT");return}
     if(portfolio.position!==0&&signal.target===portfolio.position){logVerbose("HOLD",`${signal.label} | ${signal.reason} | uPnL ${formatMoney(portfolio.unrealized)}`,timestamp);return}
-    if(portfolio.position!==0&&signal.target===-portfolio.position){closePosition(`Signal opposé : ${signal.reason}`,timestamp,"REVERSAL EXIT");return}
+    if(portfolio.position!==0&&signal.target===-portfolio.position){closePosition(`Signal opposÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© : ${signal.reason}`,timestamp,"REVERSAL EXIT");return}
     if(portfolio.cooldown>0){portfolio.cooldown--;logVerbose("WAIT",`Cooldown ${portfolio.cooldown} | ${signal.reason}`,timestamp);return}
     if(portfolio.position===0&&signal.target!==0){
         if(signal.target===portfolio.candidateTarget)portfolio.candidateCount++;else{portfolio.candidateTarget=signal.target;portfolio.candidateCount=1}
@@ -8278,6 +8298,11 @@ function applyTarget(signal,timestamp,features,isReplay){
 }
 
 function updateRisk(timestamp){
+    if(portfolio.active&&!marketOpenNow()){
+        if(portfolio.trade)closePosition(closedMarketReason(),timestamp,"MARKET CLOSE");
+        portfolio.active=false;
+        logLine("RISK",closedMarketReason(),timestamp);
+    }
     if(portfolio.trade){
         const trade=portfolio.trade;
         const gross=currentGrossPnl(trade),exitCost=estimatedExitCommission(trade);
@@ -8286,15 +8311,15 @@ function updateRisk(timestamp){
         if(MAX_TRADE_LOSS>0&&tradeNet<=-MAX_TRADE_LOSS)closePosition(`Stop trade ${formatMoney(tradeNet)}`,timestamp,"STOP");
         else if(MAX_HOLDING_SECONDS>0&&(timestamp-trade.openedAt)/1000>=MAX_HOLDING_SECONDS)closePosition(`Time stop ${((timestamp-trade.openedAt)/1000).toFixed(0)}s`,timestamp,"TIME STOP");
     }else{portfolio.unrealized=0;portfolio.currentTicks=0}
-    /* Le kill switch session était enfermé derrière `if(!portfolio.trade)return`,
-       donc inatteignable à plat : une perte réalisée massive ne verrouillait
-       jamais la session, qui réouvrait jusqu'à MAX_TRADES. */
+    /* Le kill switch session ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©tait enfermÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© derriÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re `if(!portfolio.trade)return`,
+       donc inatteignable ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  plat : une perte rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©alisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e massive ne verrouillait
+       jamais la session, qui rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ouvrait jusqu'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  MAX_TRADES. */
     if(portfolio.locked||MAX_SESSION_LOSS<=0)return;
     const net=portfolio.realized+portfolio.unrealized;
     if(net<=-MAX_SESSION_LOSS){
         if(portfolio.trade)closePosition(`Kill switch session ${formatMoney(net)}`,timestamp,"KILL");
         portfolio.locked=true;portfolio.active=false;
-        logLine("KILL",`Session verrouillée après la perte maximale (${formatMoney(portfolio.realized+portfolio.unrealized)}). Utilise RESET.`,timestamp)
+        logLine("KILL",`Session verrouillÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e aprÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s la perte maximale (${formatMoney(portfolio.realized+portfolio.unrealized)}). Utilise RESET.`,timestamp)
     }
 }
 
@@ -8319,19 +8344,19 @@ function processModelObservation(timestamp,features,isReplay){
 function processSingleTick(tick,isReplay){
     const features=updateKalman(tick.timestamp,tick.price);
     if(!features.ready){renderAll(features,{target:0,label:"WARM-UP",reason:`Calibration ${features.warmup}/${NORM_MIN} obs`,confidence:0,regime:"WARMUP"});return}
-    if(STRATEGY==="Kalman + HMM Directional")features.hmm=updateHmm(features.slopeZ,features.innovationZ);
+    if(HMM_MODELS.has(SIGNAL_MODEL))features.hmm=updateHmm(features.slopeZ,features.innovationZ);
     processModelObservation(tick.timestamp,features,isReplay)
 }
 function processPairPrices(timestamp,priceY,priceX,isReplay){
     if(market.previousY===null||market.previousX===null){market.previousY=priceY;market.previousX=priceX;return}
     let y,x;
-    if(STRATEGY==="Dynamic Beta Residual Momentum"){y=Math.log(priceY/market.previousY);x=Math.log(priceX/market.previousX)}
+    if(PAIR_INPUT==="returns"){y=Math.log(priceY/market.previousY);x=Math.log(priceX/market.previousX)}
     else{y=Math.log(priceY);x=Math.log(priceX)}
     market.previousY=priceY;market.previousX=priceX;
     if(!Number.isFinite(y)||!Number.isFinite(x))return;
-    if(STRATEGY==="Dynamic Beta Residual Momentum"&&Math.abs(y)<1e-14&&Math.abs(x)<1e-14)return;
+    if(PAIR_INPUT==="returns"&&Math.abs(y)<1e-14&&Math.abs(x)<1e-14)return;
     const result=updateRegression(timestamp,y,x,priceY,priceX);
-    if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/${PAIR_WARMUP}`;renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`Régression ${result.warmup||0}/${PAIR_WARMUP}`,regime:"WARMUP"});return}
+    if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/${PAIR_WARMUP}`;renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©gression ${result.warmup||0}/${PAIR_WARMUP}`,regime:"WARMUP"});return}
     processModelObservation(timestamp,result,isReplay)
 }
 function processPairTick(side,tick,isReplay){
@@ -8361,24 +8386,24 @@ function updateBlotter(){
 
 function renderMetrics(features,signal){
     const net=portfolio.realized+portfolio.unrealized,bps=net/ACCOUNT_EQUITY*10000,wins=portfolio.trades.filter(t=>t.net_pnl>0).length,losses=portfolio.trades.filter(t=>t.net_pnl<0).length,winRate=portfolio.trades.length?wins/portfolio.trades.length*100:null,grossWins=portfolio.trades.filter(t=>t.net_pnl>0).reduce((s,t)=>s+t.net_pnl,0),grossLosses=Math.abs(portfolio.trades.filter(t=>t.net_pnl<0).reduce((s,t)=>s+t.net_pnl,0)),pf=grossLosses>0?grossWins/grossLosses:(grossWins>0?Infinity:null);
-    DOM.sessionMetric.textContent=portfolio.locked?"LOCKED":(portfolio.active?"ACTIVE":"IDLE");DOM.sessionMetric.style.color=portfolio.locked?COLORS.red:(portfolio.active?COLORS.green:COLORS.muted);DOM.sessionSub.textContent=TRADE_REPLAY?"Replay + live":(market.liveSeen?"Live":"Replay warm-up");
+    DOM.sessionMetric.textContent=portfolio.locked?"LOCKED":(portfolio.active?"ACTIVE":"IDLE");DOM.sessionMetric.style.color=portfolio.locked?COLORS.red:(portfolio.active?COLORS.green:COLORS.muted);DOM.sessionSub.textContent=!marketOpenNow()?"Market closed":(TRADE_REPLAY?"Replay + live":(market.liveSeen?"Live":"Replay warm-up"));
     DOM.signalMetric.textContent=signal.label;DOM.signalMetric.style.color=signal.target>0?COLORS.green:(signal.target<0?COLORS.red:(signal.regime==="CHOC"?COLORS.yellow:COLORS.text));DOM.signalSub.textContent=signal.reason;
     const pLabel=portfolio.position>0?(IS_PAIR?"LONG SPREAD":"LONG"):(portfolio.position<0?(IS_PAIR?"SHORT SPREAD":"SHORT"):"FLAT");
-    DOM.positionMetric.textContent=pLabel;DOM.positionMetric.style.color=portfolio.position>0?COLORS.green:(portfolio.position<0?COLORS.red:COLORS.muted);DOM.positionSub.textContent=portfolio.trade?`Y ${portfolio.trade.quantityY.toFixed(4)}${IS_PAIR?` · X ${portfolio.trade.quantityX.toFixed(4)}`:""}`:"0 unité";
+    DOM.positionMetric.textContent=pLabel;DOM.positionMetric.style.color=portfolio.position>0?COLORS.green:(portfolio.position<0?COLORS.red:COLORS.muted);DOM.positionSub.textContent=portfolio.trade?`Y ${portfolio.trade.quantityY.toFixed(4)}${IS_PAIR?` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${portfolio.trade.quantityX.toFixed(4)}`:""}`:"0 unitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©";
     DOM.netMetric.textContent=formatMoney(net);DOM.netMetric.style.color=net>0?COLORS.green:(net<0?COLORS.red:COLORS.text);DOM.netSub.textContent=`${signed(bps,2)} bps sur capital`;
-    DOM.unrealizedMetric.textContent=formatMoney(portfolio.unrealized);DOM.unrealizedMetric.style.color=portfolio.unrealized>0?COLORS.green:(portfolio.unrealized<0?COLORS.red:COLORS.text);DOM.unrealizedSub.textContent=portfolio.trade?`Entrée ${formatPrice(portfolio.trade.entryY)}`:"Flat";
-    const totalTicks=portfolio.totalTicks+portfolio.currentTicks;DOM.ticksMetric.textContent=signed(totalTicks,1);DOM.ticksMetric.style.color=totalTicks>0?COLORS.green:(totalTicks<0?COLORS.red:COLORS.text);DOM.ticksSub.textContent=`Réalisés ${signed(portfolio.totalTicks,1)}`;
-    DOM.tradesMetric.textContent=`${portfolio.trades.length} / ${winRate===null?"—":`${winRate.toFixed(1)}%`}`;DOM.tradesSub.textContent=`PF ${pf===Infinity?"∞":pf===null?"—":pf.toFixed(2)} · W ${wins} / L ${losses}`;
-    DOM.drawdownMetric.textContent=formatMoney(-portfolio.maxDrawdown);DOM.drawdownMetric.style.color=portfolio.maxDrawdown>0?COLORS.red:COLORS.text;DOM.drawdownSub.textContent=`Coûts ${formatMoney(-portfolio.costs)}`;
-    DOM.diagPriceY.textContent=market.Y?`${formatPrice(market.Y.price)}${Number.isFinite(market.Y.bid)&&Number.isFinite(market.Y.ask)?` [${formatPrice(market.Y.bid)} / ${formatPrice(market.Y.ask)}]`:""}`:"—";
+    DOM.unrealizedMetric.textContent=formatMoney(portfolio.unrealized);DOM.unrealizedMetric.style.color=portfolio.unrealized>0?COLORS.green:(portfolio.unrealized<0?COLORS.red:COLORS.text);DOM.unrealizedSub.textContent=portfolio.trade?`EntrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e ${formatPrice(portfolio.trade.entryY)}`:"Flat";
+    const totalTicks=portfolio.totalTicks+portfolio.currentTicks;DOM.ticksMetric.textContent=signed(totalTicks,1);DOM.ticksMetric.style.color=totalTicks>0?COLORS.green:(totalTicks<0?COLORS.red:COLORS.text);DOM.ticksSub.textContent=`RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©alisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s ${signed(portfolio.totalTicks,1)}`;
+    DOM.tradesMetric.textContent=`${portfolio.trades.length} / ${winRate===null?"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â":`${winRate.toFixed(1)}%`}`;DOM.tradesSub.textContent=`PF ${pf===Infinity?"ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã¢â‚¬Â Ãƒâ€¦Ã‚Â¾":pf===null?"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â":pf.toFixed(2)} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· W ${wins} / L ${losses}`;
+    DOM.drawdownMetric.textContent=formatMoney(-portfolio.maxDrawdown);DOM.drawdownMetric.style.color=portfolio.maxDrawdown>0?COLORS.red:COLORS.text;DOM.drawdownSub.textContent=`CoÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â»ts ${formatMoney(-portfolio.costs)}`;
+    DOM.diagPriceY.textContent=market.Y?`${formatPrice(market.Y.price)}${Number.isFinite(market.Y.bid)&&Number.isFinite(market.Y.ask)?` [${formatPrice(market.Y.bid)} / ${formatPrice(market.Y.ask)}]`:""}`:"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â";
     DOM.diagPriceX.textContent=market.X?`${formatPrice(market.X.price)}${Number.isFinite(market.X.bid)&&Number.isFinite(market.X.ask)?` [${formatPrice(market.X.bid)} / ${formatPrice(market.X.ask)}]`:""}`:"N/A";
-    // Le seuil est affiché à côté de la mesure : on voit tout de suite si le
-    // modèle attend parce qu'il est loin du seuil ou parce qu'il vient de rater.
-    DOM.diagPrimary.textContent=Number.isFinite(features.beta)?`β ${features.beta.toFixed(4)}`:(Number.isFinite(features.slopeZ)?`${signed(features.slopeZ,2)}σ / ${ENTRY_THRESHOLD.toFixed(2)}`:"—");
-    DOM.diagSecondary.textContent=Number.isFinite(features.zscore)?`z ${signed(features.zscore,2)} / ${ENTRY_THRESHOLD.toFixed(2)}`:(Number.isFinite(features.innovationZ)?`${signed(features.innovationZ,2)}σ / ${SHOCK_THRESHOLD.toFixed(2)}`:"—");
+    // Le seuil est affichÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© de la mesure : on voit tout de suite si le
+    // modÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨le attend parce qu'il est loin du seuil ou parce qu'il vient de rater.
+    DOM.diagPrimary.textContent=Number.isFinite(features.beta)?`ÃƒÆ’Ã…Â½Ãƒâ€šÃ‚Â² ${features.beta.toFixed(4)}`:(Number.isFinite(features.slopeZ)?`${signed(features.slopeZ,2)}ÃƒÆ’Ã‚ÂÃƒâ€ Ã¢â‚¬â„¢ / ${ENTRY_THRESHOLD.toFixed(2)}`:"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â");
+    DOM.diagSecondary.textContent=Number.isFinite(features.zscore)?`z ${signed(features.zscore,2)} / ${ENTRY_THRESHOLD.toFixed(2)}`:(Number.isFinite(features.innovationZ)?`${signed(features.innovationZ,2)}ÃƒÆ’Ã‚ÂÃƒâ€ Ã¢â‚¬â„¢ / ${SHOCK_THRESHOLD.toFixed(2)}`:"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â");
     if(features.hmm){const labels=["NOISE","UP","DOWN","SHOCK"];let d=0;for(let i=1;i<4;i++)if(features.hmm.posterior[i]>features.hmm.posterior[d])d=i;DOM.diagRegime.textContent=`${labels[d]} ${(features.hmm.posterior[d]*100).toFixed(0)}%`}else DOM.diagRegime.textContent=signal.regime;
-    DOM.diagLeverage.textContent=portfolio.trade?`${portfolio.trade.leverage.toFixed(2)}×`:"0.00×";
-    DOM.sessionSummary.textContent=`OBS ${portfolio.observations} · REALIZED ${formatMoney(portfolio.realized)} · GROSS ${formatMoney(portfolio.grossRealized)} · PAPER ONLY`
+    DOM.diagLeverage.textContent=portfolio.trade?`${portfolio.trade.leverage.toFixed(2)}ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â`:"0.00ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â";
+    DOM.sessionSummary.textContent=`OBS ${portfolio.observations} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· REALIZED ${formatMoney(portfolio.realized)} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· GROSS ${formatMoney(portfolio.grossRealized)} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· PAPER ONLY`
 }
 
 function renderModelChart(){
@@ -8389,21 +8414,22 @@ function renderModelChart(){
             traces.push({x:comparison.timestamps,y:comparison.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,yaxis:"y2",line:{color:COLORS.green,width:1.3,dash:"dot"}});
             traces.push({x:comparison.timestamps,y:comparison.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,yaxis:"y2",line:{color:COLORS.purple,width:1.5}});
         }
-        if(portfolio.trade&&Number.isFinite(portfolio.trade.entryY))traces.push({x:[portfolio.trade.openedAt,kalman.timestamps[kalman.timestamps.length-1]],y:[portfolio.trade.entryY,portfolio.trade.entryY],type:"scatter",mode:"lines",name:"Prix d’entrée",line:{color:portfolio.trade.direction>0?COLORS.green:COLORS.red,width:1.2,dash:"dot"}});
-        layout=commonLayout(`${ASSET_Y} · Kalman${HAS_X?` · comparaison ${ASSET_X}`:""}`,`shadow-single-${SYMBOL_Y}-${SYMBOL_X||"none"}`);
+        if(portfolio.trade&&Number.isFinite(portfolio.trade.entryY))traces.push({x:[portfolio.trade.openedAt,kalman.timestamps[kalman.timestamps.length-1]],y:[portfolio.trade.entryY,portfolio.trade.entryY],type:"scatter",mode:"lines",name:"Prix dÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢entrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e",line:{color:portfolio.trade.direction>0?COLORS.green:COLORS.red,width:1.2,dash:"dot"}});
+        layout=commonLayout(`${ASSET_Y} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Kalman${HAS_X?` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· comparaison ${ASSET_X}`:""}`,`shadow-single-${SYMBOL_Y}-${SYMBOL_X||"none"}`);
         if(HAS_X&&comparison.timestamps.length)layout.yaxis2={title:"base 100",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:false,automargin:true};
     }else{
-        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:STRATEGY==="Relative Value Mean Reversion"?"Spread z (niveau)":"Momentum résiduel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
-        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
+        const zName=PAIR_MEAN_REVERSION_MODELS.has(SIGNAL_MODEL)?"Spread z":"Residuel z";
+        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:zName,yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
+        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
     }
     Plotly.react("modelChart",traces,layout,plotConfig)
 }
 function renderEquityChart(){
-    const layout=commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity");layout.yaxis.ticksuffix=` ${ACCOUNT_CURRENCY}`;layout.shapes=[{type:"line",xref:"paper",x0:0,x1:1,y0:0,y1:0,line:{color:COLORS.muted,width:1}}];
-    Plotly.react("equityChart",[{x:portfolio.equityTimestamps,y:portfolio.equityNet,type:"scattergl",mode:"lines",name:"Net liquidation P&L",fill:"tozeroy",fillcolor:"rgba(40,182,159,0.08)",line:{color:COLORS.green,width:2}},{x:portfolio.equityTimestamps,y:portfolio.equityRealized,type:"scattergl",mode:"lines",name:"Réalisé net",line:{color:COLORS.blue,width:1.5,dash:"dot"}}],layout,plotConfig)
+    const layout=commonLayout(`Session P&L ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${ACCOUNT_CURRENCY}`,"shadow-equity");layout.yaxis.ticksuffix=` ${ACCOUNT_CURRENCY}`;layout.shapes=[{type:"line",xref:"paper",x0:0,x1:1,y0:0,y1:0,line:{color:COLORS.muted,width:1}}];
+    Plotly.react("equityChart",[{x:portfolio.equityTimestamps,y:portfolio.equityNet,type:"scattergl",mode:"lines",name:"Net liquidation P&L",fill:"tozeroy",fillcolor:"rgba(40,182,159,0.08)",line:{color:COLORS.green,width:2}},{x:portfolio.equityTimestamps,y:portfolio.equityRealized,type:"scattergl",mode:"lines",name:"RÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©alisÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© net",line:{color:COLORS.blue,width:1.5,dash:"dot"}}],layout,plotConfig)
 }
-/* Les métriques suivent le rAF, les charts sont limités à ~7 Hz : un Plotly.react
-   sur 5 000 points à chaque tick fige l'onglet dès que le flux accélère. */
+/* Les mÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©triques suivent le rAF, les charts sont limitÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  ~7 Hz : un Plotly.react
+   sur 5 000 points ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  chaque tick fige l'onglet dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨s que le flux accÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©lÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨re. */
 let metricsQueued=false,chartTimer=null,lastChartRender=0,lastFeatures={},lastSignal={target:0,label:"WAIT",reason:"Warm-up",regime:"WARMUP"};
 function renderCharts(){lastChartRender=performance.now();chartTimer=null;renderModelChart();renderEquityChart()}
 function scheduleCharts(){if(chartTimer!==null)return;const wait=Math.max(0,CHART_MIN_INTERVAL_MS-(performance.now()-lastChartRender));chartTimer=setTimeout(renderCharts,wait)}
@@ -8414,16 +8440,17 @@ function renderAll(features=lastFeatures,signal=lastSignal){
 }
 
 function startSession(){
-    if(portfolio.locked){logLine("RISK","Session verrouillée. Utilise RESET.");return}
-    if(portfolio.active){logLine("SYSTEM","La session est déjà active.");return}
+    if(portfolio.locked){logLine("RISK","Session verrouillÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e. Utilise RESET.");return}
+    if(portfolio.active){logLine("SYSTEM","La session est dÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©jÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â  active.");return}
+    if(!marketOpenNow()){DOM.connection.textContent="MARKET CLOSED";logLine("RISK",closedMarketReason());renderAll();return}
     portfolio.active=true;portfolio.startedAt=new Date();portfolio.stoppedAt=null;
-    logLine("SYSTEM",`SESSION START | capital ${formatMoney(ACCOUNT_EQUITY)} | levier cible ${TARGET_LEVERAGE.toFixed(2)}× | commission ${COMMISSION_BPS} bps/côté | ${STRATEGY}`);renderAll()
+    logLine("SYSTEM",`SESSION START | capital ${formatMoney(ACCOUNT_EQUITY)} | levier cible ${TARGET_LEVERAGE.toFixed(2)}ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â | commission ${COMMISSION_BPS} bps/cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© | ${STRATEGY}`);renderAll()
 }
 function stopSession(){
-    const t=new Date();if(portfolio.trade)closePosition("Arrêt manuel de la session",t,"SESSION CLOSE");portfolio.active=false;portfolio.stoppedAt=t;
+    const t=new Date();if(portfolio.trade)closePosition("ArrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âªt manuel de la session",t,"SESSION CLOSE");portfolio.active=false;portfolio.stoppedAt=t;
     logLine("SYSTEM",`SESSION STOP | net ${formatMoney(portfolio.realized)} | trades ${portfolio.trades.length} | ticks ${signed(portfolio.totalTicks,1)}`,t);renderAll()
 }
-function resetSession(){if(portfolio.trade)closePosition("Reset demandé",new Date(),"RESET CLOSE");resetPortfolioState();renderAll()}
+function resetSession(){if(portfolio.trade)closePosition("Reset demandÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©",new Date(),"RESET CLOSE");resetPortfolioState();renderAll()}
 function sessionSummaryRows(){
     const net=portfolio.realized+portfolio.unrealized,wins=portfolio.trades.filter(t=>t.net_pnl>0).length,losses=portfolio.trades.filter(t=>t.net_pnl<0).length;
     return[{generated_at:nowIso(),strategy:STRATEGY,symbol_y:SYMBOL_Y,symbol_x:SYMBOL_X||"",account_currency:ACCOUNT_CURRENCY,account_equity:ACCOUNT_EQUITY,target_leverage:TARGET_LEVERAGE,session_started_at:portfolio.startedAt?portfolio.startedAt.toISOString():"",session_stopped_at:portfolio.stoppedAt?portfolio.stoppedAt.toISOString():"",observations:portfolio.observations,trades:portfolio.trades.length,winning_trades:wins,losing_trades:losses,realized_pnl:portfolio.realized,unrealized_pnl:portfolio.unrealized,net_liquidation_pnl:net,session_bps:net/ACCOUNT_EQUITY*10000,gross_realized_pnl:portfolio.grossRealized,total_costs:portfolio.costs,commission_bps:COMMISSION_BPS,min_commission:MIN_COMMISSION,norm_window:NORM_WINDOW,entry_threshold:ENTRY_THRESHOLD,exit_threshold:EXIT_THRESHOLD,equivalent_y_ticks:portfolio.totalTicks+portfolio.currentTicks,max_drawdown:portfolio.maxDrawdown,point_value_y:POINT_VALUE_Y,tick_size_y:TICK_SIZE_Y,point_value_x:POINT_VALUE_X,tick_size_x:TICK_SIZE_X,trade_replay:TRADE_REPLAY}]
@@ -8438,7 +8465,7 @@ function setView(view){
 $("viewGroup").addEventListener("click",event=>{const b=event.target.closest("button.view");if(b)setView(b.dataset.view)});
 
 DOM.startButton.addEventListener("click",startSession);DOM.stopButton.addEventListener("click",stopSession);DOM.resetButton.addEventListener("click",resetSession);
-DOM.fullscreenButton.addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(error){logLine("SYSTEM",`Fullscreen indisponible depuis l’iframe (${error.message}). Utilise les vues COCKPIT / CHARTS / TERMINAL / BLOTTER.`)}});
+DOM.fullscreenButton.addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(error){logLine("SYSTEM",`Fullscreen indisponible depuis lÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢iframe (${error.message}). Utilise les vues COCKPIT / CHARTS / TERMINAL / BLOTTER.`)}});
 DOM.exportTradesButton.addEventListener("click",()=>downloadCsv("shadow_trader_trades.csv",portfolio.trades));
 DOM.exportDecisionsButton.addEventListener("click",()=>downloadCsv("shadow_trader_decisions.csv",portfolio.decisions));
 DOM.exportSummaryButton.addEventListener("click",()=>downloadCsv("shadow_trader_summary.csv",sessionSummaryRows()));
@@ -8450,13 +8477,13 @@ function handleTick(message){
     const tick={timestamp,price,bid:finite(message.bid),ask:finite(message.ask),volume:finite(message.volume),replay:Boolean(message.replay)};
     market[side]=tick;if(!tick.replay)market.liveSeen=true;
     updateComparison(timestamp);
-    DOM.connection.textContent=`${tick.replay?"REPLAY":"LIVE"} · ${timestamp.toLocaleTimeString([],{hour12:false})} · Y ${market.Y?formatPrice(market.Y.price):"—"}${HAS_X?` · X ${market.X?formatPrice(market.X.price):"—"}`:""}`;
+    DOM.connection.textContent=`${tick.replay?"REPLAY":"LIVE"} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${timestamp.toLocaleTimeString([],{hour12:false})} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Y ${market.Y?formatPrice(market.Y.price):"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â"}${HAS_X?` ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· X ${market.X?formatPrice(market.X.price):"ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â"}`:""}`;
     if(IS_PAIR)processPairTick(side,tick,tick.replay);
     else if(side==="Y")processSingleTick(tick,tick.replay);
     else renderAll()
 }
 function connect(){
-    clearTimeout(reconnectTimer);DOM.connection.textContent="CONNECTING TO LSE WEBSOCKET…";socket=new WebSocket("wss://data-ws.londonstrategicedge.com");
+    clearTimeout(reconnectTimer);DOM.connection.textContent="CONNECTING TO LSE WEBSOCKETÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";socket=new WebSocket("wss://data-ws.londonstrategicedge.com");
     socket.onmessage=event=>{
         const message=JSON.parse(event.data);
         if(message.type==="welcome"){socket.send(JSON.stringify({action:"auth",api_key:API_KEY}));return}
@@ -8464,26 +8491,26 @@ function connect(){
             const start=(Date.now()-REPLAY_MINUTES*60000)/1000,symbols=[SYMBOL_Y];
             if(HAS_X)symbols.push(SYMBOL_X);
             for(const symbol of symbols)socket.send(JSON.stringify({action:"subscribe",symbol,start}));
-            DOM.connection.textContent=`AUTHENTICATED · REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connecté | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradé":"replay warm-up uniquement"}`);return
+            DOM.connection.textContent=`AUTHENTICATED ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connectÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â© | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©":"replay warm-up uniquement"}`);return
         }
-        if(message.type==="replay_started"){DOM.connection.textContent="REPLAY WARM-UP…";return}
-        if(message.type==="replay_complete"){DOM.connection.textContent="REPLAY COMPLETE · WAITING LIVE";return}
+        if(message.type==="replay_started"){DOM.connection.textContent="REPLAY WARM-UPÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";return}
+        if(message.type==="replay_complete"){DOM.connection.textContent="REPLAY COMPLETE ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· WAITING LIVE";return}
         if(message.type==="tick"){handleTick(message);return}
-        if(message.type==="error"){const e=message.message||message.code||"Unknown error";DOM.connection.textContent=`ERROR · ${e}`;logLine("RISK",`Erreur LSE : ${e}`)}
+        if(message.type==="error"){const e=message.message||message.code||"Unknown error";DOM.connection.textContent=`ERROR ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${e}`;logLine("RISK",`Erreur LSE : ${e}`)}
     };
     socket.onerror=()=>{DOM.connection.textContent="WEBSOCKET ERROR";logLine("RISK","Erreur de connexion WebSocket.")};
-    socket.onclose=()=>{DOM.connection.textContent="DISCONNECTED · RECONNECTING…";logLine("SYSTEM","Connexion perdue. Reconnexion dans 2.5 secondes.");reconnectTimer=setTimeout(connect,2500)}
+    socket.onclose=()=>{DOM.connection.textContent="DISCONNECTED ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· RECONNECTINGÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦";logLine("SYSTEM","Connexion perdue. Reconnexion dans 2.5 secondes.");reconnectTimer=setTimeout(connect,2500)}
 }
 window.addEventListener("beforeunload",()=>{if(socket)socket.close()});
 if(typeof ResizeObserver!=="undefined"){const ro=new ResizeObserver(()=>resizeCharts());ro.observe($("modelChart"));ro.observe($("equityChart"))}
 window.addEventListener("resize",resizeCharts);
 
 resetPortfolioState();
-Plotly.newPlot("modelChart",[],commonLayout("Waiting for model observations…","shadow-model-empty"),plotConfig);
-Plotly.newPlot("equityChart",[],commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity-empty"),plotConfig);
+Plotly.newPlot("modelChart",[],commonLayout("Waiting for model observationsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦","shadow-model-empty"),plotConfig);
+Plotly.newPlot("equityChart",[],commonLayout(`Session P&L ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· ${ACCOUNT_CURRENCY}`,"shadow-equity-empty"),plotConfig);
 requestAnimationFrame(resizeCharts);
-logLine("SYSTEM",`Normalisation sur ${NORM_WINDOW} obs (min ${NORM_MIN}) · seuil entrée ${ENTRY_THRESHOLD} · commission ${COMMISSION_BPS} bps/côté.`);
-logLine("SYSTEM",TRADE_REPLAY?"AUTO START · le replay sera inclus dans le paper P&L.":"Le replay initialise le modèle. Clique START SESSION pour commencer le P&L live.");
+logLine("SYSTEM",`Normalisation sur ${NORM_WINDOW} obs (min ${NORM_MIN}) ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· seuil entrÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©e ${ENTRY_THRESHOLD} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· commission ${COMMISSION_BPS} bps/cÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©.`);
+logLine("SYSTEM",TRADE_REPLAY?"AUTO START ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· le replay sera inclus dans le paper P&L.":"Le replay initialise le modÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¨le. Clique START SESSION pour commencer le P&L live.");
 connect();
 </script>
 </body>
@@ -8502,9 +8529,9 @@ components.html(
 )
 
 st.caption(
-    "Exécution paper au bid/ask lorsqu’ils sont fournis, sinon au dernier prix "
+    "ExÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©cution paper au bid/ask lorsquÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ils sont fournis, sinon au dernier prix "
     "avec slippage. Adapte la valeur du point, le tick size et la conversion FX "
-    "au produit réellement tradable que tu souhaites simuler."
+    "au produit rÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©ellement tradable que tu souhaites simuler."
 )
 
 '''
