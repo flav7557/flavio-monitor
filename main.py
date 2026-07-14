@@ -7359,6 +7359,40 @@ except Exception:
 
 with st.sidebar:
     st.markdown("### Shadow Trader")
+
+    if default_api_key:
+        api_key = default_api_key
+        st.caption("Clé LSE chargée depuis les secrets du serveur.")
+    else:
+        api_key = st.text_input(
+            "Clé API LSE",
+            type="password",
+            placeholder="lse_live_...",
+            key="paper_api_key",
+        )
+
+if not api_key:
+    st.info("Ajoute la clé LSE dans les secrets du serveur ou dans la sidebar.")
+    st.stop()
+
+try:
+    resolved_symbols, unresolved_markets = resolve_lse_symbols(api_key)
+except Exception as error:
+    st.error(f"Impossible de lire le catalogue LSE : {error}")
+    st.stop()
+
+available_markets = [
+    market
+    for market in MARKETS
+    if market in resolved_symbols
+]
+
+if not available_markets:
+    st.error("Aucun marché compatible trouvé dans le catalogue LSE.")
+    st.stop()
+
+with st.sidebar:
+    st.divider()
     st.caption("1. Choisis d'abord l'actif principal X, puis le modele.")
 
     default_primary = (
