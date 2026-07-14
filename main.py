@@ -6821,7 +6821,7 @@ function connect() {
 
         if (message.type === "authenticated") {
             connectedAt = new Date();
-            const start = new Date(Date.now() - REPLAY_MINUTES * 60000).toISOString();
+            const start = (Date.now() - REPLAY_MINUTES * 60000) / 1000;
             const symbols = IS_SINGLE ? [SYMBOL_Y] : [SYMBOL_Y, SYMBOL_X];
 
             for (const symbol of symbols) {
@@ -7284,20 +7284,10 @@ with st.sidebar:
 
 if not api_key:
     st.info("Ajoute la clé LSE dans les secrets du serveur ou dans la sidebar.")
-    pass
+    st.stop()
 
 try:
-    resolved_symbols, unresolved_markets = (
-        resolve_lse_symbols(api_key)
-        if api_key
-        else (
-            {
-                market_name: market_settings["candidates"][0]
-                for market_name, market_settings in MARKETS.items()
-            },
-            [],
-        )
-    )
+    resolved_symbols, unresolved_markets = resolve_lse_symbols(api_key)
 except Exception as error:
     st.error(f"Impossible de lire le catalogue LSE : {error}")
     st.stop()
@@ -7417,13 +7407,26 @@ with st.sidebar:
         3,
         key="paper_confirmation",
     )
+    norm_window = st.slider(
+        "Fenêtre de normalisation (observations)",
+        200,
+        3000,
+        750,
+        50,
+        help=(
+            "Fenêtre utilisée pour ramener la pente et l’innovation à une vraie "
+            "échelle en σ. Plus elle est courte, plus les seuils s’adaptent vite "
+            "au régime en cours."
+        ),
+        key="paper_norm_window",
+    )
 
     if strategy == "Kalman Trend":
         entry_threshold = st.slider(
             "Seuil de pente d’entrée (σ)",
             0.10,
             3.00,
-            0.65,
+            1.25,
             0.05,
             key="paper_trend_entry",
         )
@@ -7431,7 +7434,7 @@ with st.sidebar:
             "Seuil de pente de sortie (σ)",
             0.00,
             1.50,
-            0.15,
+            0.35,
             0.05,
             key="paper_trend_exit",
         )
@@ -7483,7 +7486,7 @@ with st.sidebar:
 
     elif strategy == "Dynamic Beta Residual Momentum":
         entry_threshold = st.slider(
-            "Z-score résiduel — entrée",
+            "Z-score momentum résiduel — entrée",
             0.50,
             4.00,
             1.25,
@@ -7491,7 +7494,7 @@ with st.sidebar:
             key="paper_beta_entry",
         )
         exit_threshold = st.slider(
-            "Z-score résiduel — sortie",
+            "Z-score momentum résiduel — sortie",
             0.00,
             2.00,
             0.35,
@@ -7628,13 +7631,27 @@ with st.sidebar:
         format="%.4f",
         key="paper_qty_step",
     )
-    commission_per_unit = st.number_input(
-        f"Commission par unité et par côté ({account_currency})",
+    commission_bps = st.number_input(
+        "Commission par côté (bps du notionnel)",
+        min_value=0.0,
+        max_value=500.0,
+        value=0.75,
+        step=0.25,
+        format="%.4f",
+        help=(
+            "Coût exprimé en points de base du notionnel exécuté, et non par "
+            "unité. Une commission par unité produit des coûts absurdes dès que "
+            "le prix unitaire est faible (FX, crypto)."
+        ),
+        key="paper_commission_bps",
+    )
+    min_commission = st.number_input(
+        f"Commission minimale par côté ({account_currency})",
         min_value=0.0,
         max_value=10_000.0,
-        value=0.50,
-        step=0.10,
-        key="paper_commission",
+        value=0.0,
+        step=0.5,
+        key="paper_min_commission",
     )
     extra_slippage_ticks = st.number_input(
         "Slippage supplémentaire par exécution (ticks)",
@@ -7692,10 +7709,21 @@ with st.sidebar:
         3,
         key="paper_cooldown",
     )
-    full_height = st.toggle(
-        "Vue terminal haute",
-        value=True,
-        key="paper_tall",
+
+    st.divider()
+    st.markdown("#### Cockpit")
+
+    cockpit_height = st.slider(
+        "Hauteur du cockpit (px)",
+        620,
+        1400,
+        820,
+        20,
+        help=(
+            "Le cockpit remplit exactement cette hauteur : graphiques, terminal "
+            "et blotter restent visibles ensemble, sans scroll interne."
+        ),
+        key="paper_cockpit_height",
     )
 
     st.caption(f"Y : `{symbol_y}`")
@@ -7722,6 +7750,7 @@ settings = {
     "reactivity": reactivity,
     "observationTrust": observation_trust,
     "confirmation": confirmation,
+    "normWindow": int(norm_window),
     "entryThreshold": entry_threshold,
     "exitThreshold": exit_threshold,
     "shockThreshold": shock_threshold,
@@ -7738,7 +7767,8 @@ settings = {
     "fxY": fx_y,
     "fxX": fx_x,
     "quantityStep": quantity_step,
-    "commissionPerUnit": commission_per_unit,
+    "commissionBps": commission_bps,
+    "minCommission": min_commission,
     "extraSlippageTicks": extra_slippage_ticks,
     "allowShort": allow_short,
     "maxSessionLoss": max_session_loss,
@@ -7746,7 +7776,43 @@ settings = {
     "maxHoldingSeconds": max_holding_seconds,
     "maxTrades": int(max_trades),
     "cooldownObservations": cooldown_observations,
+    "cockpitHeight": int(cockpit_height),
 }
+
+# Le cockpit est une iframe : toute modification de `settings` régénère le
+# srcdoc, recrée l’iframe, coupe le WebSocket et remet la session à zéro.
+# Les réglages ne sont donc appliqués que sur demande explicite, ce qui laisse
+# les curseurs libres pendant qu’une session tourne.
+LIVE_KEY = "paper_live_settings"
+
+with st.sidebar:
+    apply_clicked = st.button(
+        "Appliquer & (re)lancer le cockpit",
+        type="primary",
+        use_container_width=True,
+        key="paper_apply",
+    )
+
+if apply_clicked:
+    st.session_state[LIVE_KEY] = settings
+
+live_settings = st.session_state.get(LIVE_KEY)
+
+if live_settings is None:
+    st.info(
+        "Configure la stratégie, l’exécution et le risque dans la sidebar, "
+        "puis clique sur **Appliquer & (re)lancer le cockpit**."
+    )
+    st.stop()
+
+if live_settings != settings:
+    st.warning(
+        "Des paramètres ont été modifiés mais ne sont pas appliqués. "
+        "Le cockpit tourne toujours avec la configuration précédente. "
+        "Clique sur **Appliquer & (re)lancer le cockpit** pour les prendre en "
+        "compte — la session en cours sera réinitialisée.",
+        icon="⚠️",
+    )
 
 html_template = r"""
 <!doctype html>
@@ -7756,27 +7822,70 @@ html_template = r"""
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
 :root{color-scheme:dark;--bg:#050708;--panel:#0a0f15;--panel2:#0d131b;--border:#202a36;--text:#edf2f7;--muted:#788596;--green:#28b69f;--red:#ef5b5b;--yellow:#d9b44a;--blue:#76b7e5;--purple:#a28af7}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;overflow-x:hidden}
-button{border:1px solid var(--border);background:#111923;color:var(--text);border-radius:7px;padding:8px 12px;cursor:pointer;font-weight:650;font-size:12px}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+button{border:1px solid var(--border);background:#111923;color:var(--text);border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:650;font-size:11px}
 button:hover{border-color:#425267;background:#17212d}button.primary{background:#12392f;border-color:#1f6c59;color:#b9f4e4}button.danger{background:#38191b;border-color:#6d292d;color:#ffc6c6}
-.page{min-height:100vh;padding:10px}.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--border);background:var(--panel);border-radius:10px;padding:9px 11px;margin-bottom:9px}
+button.view{padding:5px 9px;font-size:10px;letter-spacing:.06em;background:#0b1119;color:var(--muted)}button.view.active{background:#17212d;border-color:#425267;color:var(--text)}
+.viewgroup{display:flex;gap:4px}
+.page{height:100vh;display:flex;flex-direction:column;gap:6px;padding:7px}
+.topbar{flex:0 0 auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--border);background:var(--panel);border-radius:10px;padding:7px 9px}
 .brand,.connection,.metric-value,.diag-value,.terminal,table,.session-summary{font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace}
-.brand{font-size:13px;font-weight:800;letter-spacing:.04em;margin-right:auto}.connection{color:var(--muted);font-size:11px;min-width:260px}
-.metrics{display:grid;grid-template-columns:repeat(8,minmax(120px,1fr));gap:7px;margin-bottom:9px}.metric{border:1px solid var(--border);background:var(--panel2);border-radius:9px;padding:9px 10px;min-height:74px}
-.metric-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}.metric-value{font-size:16px;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.metric-sub{color:var(--muted);font-size:10px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.charts{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:8px;margin-bottom:8px}.panel{border:1px solid #334155;background:var(--panel);border-radius:10px;overflow:hidden}.chart{position:relative;width:100%;height:480px;min-height:480px;background:#050708}
-.chart-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;color:#9aa7b8;font-family:"JetBrains Mono",Consolas,monospace;font-size:13px;line-height:1.5;background:linear-gradient(180deg,rgba(13,19,27,.85),rgba(5,7,8,.95));z-index:0}
-.diagnostics{display:grid;grid-template-columns:repeat(6,minmax(110px,1fr));gap:7px;padding:8px;border-top:1px solid var(--border)}.diag{background:#0d131b;border:1px solid #1c2733;border-radius:7px;padding:7px 8px}.diag-label{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.07em}.diag-value{font-size:12px;font-weight:700;margin-top:4px}
-.lower{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:8px}.panel-title{height:34px;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--border);color:#cbd5e1;font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;font-weight:780;letter-spacing:.05em}
-.terminal{height:355px;overflow-y:auto;padding:9px 11px;background:#030506;font-size:11px;line-height:1.55;white-space:pre-wrap}.line{color:#9da9b8}.line.BUY,.line.LONG,.line.PROFIT{color:#67dabf}.line.SELL,.line.SHORT,.line.LOSS,.line.KILL{color:#ff8585}.line.EXIT,.line.RISK,.line.SHOCK{color:#e4c462}.line.SYSTEM{color:#77b9eb}.line.WAIT,.line.HOLD{color:#7b8796}
-.blotter-wrap{height:355px;overflow:auto;background:#050708}table{width:100%;border-collapse:collapse;font-size:10px}th{position:sticky;top:0;z-index:2;background:#101720;color:#8f9aaa;font-weight:650;text-align:left;padding:7px;border-bottom:1px solid var(--border)}td{padding:7px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}.positive{color:var(--green)!important}.negative{color:var(--red)!important}
-.footer-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.session-summary{margin-left:auto;color:var(--muted);font-size:10px;align-self:center}
-@media(max-width:1200px){.metrics{grid-template-columns:repeat(4,minmax(120px,1fr))}.charts,.lower{grid-template-columns:1fr}}@media(max-width:680px){.metrics{grid-template-columns:repeat(2,minmax(120px,1fr))}.diagnostics{grid-template-columns:repeat(3,minmax(100px,1fr))}}
+.brand{font-size:12px;font-weight:800;letter-spacing:.04em}.connection{color:var(--muted);font-size:10px;min-width:200px;margin-right:auto}
+.metrics{flex:0 0 auto;display:grid;grid-template-columns:repeat(8,minmax(96px,1fr));gap:6px}
+.metric{border:1px solid var(--border);background:var(--panel2);border-radius:8px;padding:6px 8px}
+.metric-label{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.metric-value{font-size:14px;font-weight:760;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric-sub{color:var(--muted);font-size:9px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Le workspace remplit exactement la hauteur restante de l'iframe : charts,
+   terminal et blotter sont visibles ensemble, sans scroll de page. */
+.workspace{flex:1 1 auto;min-height:0;display:grid;gap:6px}
+.workspace[data-view="cockpit"]{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:minmax(0,1.06fr) minmax(0,1fr)}
+.workspace[data-view="cockpit"] [data-cell="model"]{grid-row:1;grid-column:1}
+.workspace[data-view="cockpit"] [data-cell="equity"]{grid-row:1;grid-column:2}
+.workspace[data-view="cockpit"] [data-cell="terminal"]{grid-row:2;grid-column:1}
+.workspace[data-view="cockpit"] [data-cell="blotter"]{grid-row:2;grid-column:2}
+.workspace[data-view="charts"]{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.workspace[data-view="charts"] [data-cell="terminal"],.workspace[data-view="charts"] [data-cell="blotter"]{display:none}
+.workspace[data-view="terminal"]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.workspace[data-view="terminal"] [data-cell="model"],.workspace[data-view="terminal"] [data-cell="equity"],.workspace[data-view="terminal"] [data-cell="blotter"]{display:none}
+.workspace[data-view="blotter"]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.workspace[data-view="blotter"] [data-cell="model"],.workspace[data-view="blotter"] [data-cell="equity"],.workspace[data-view="blotter"] [data-cell="terminal"]{display:none}
+.panel{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;border:1px solid var(--border);background:var(--panel);border-radius:10px}
+.panel-title{flex:0 0 28px;display:flex;align-items:center;gap:8px;padding:0 9px;border-bottom:1px solid var(--border);color:#cbd5e1;font-family:"JetBrains Mono",Consolas,monospace;font-size:10px;font-weight:780;letter-spacing:.05em}
+.chart{flex:1 1 auto;min-height:0;width:100%}
+.diagnostics{flex:0 0 auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding:6px;border-top:1px solid var(--border)}
+.diag{background:#0d131b;border:1px solid #1c2733;border-radius:6px;padding:5px 6px;min-width:0}
+.diag-label{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.06em}
+.diag-value{font-size:11px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.terminal{flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 10px;background:#030506;font-size:11px;line-height:1.5;white-space:pre-wrap}
+.line{color:#9da9b8}.line.BUY,.line.LONG,.line.PROFIT{color:#67dabf}.line.SELL,.line.SHORT,.line.LOSS,.line.KILL{color:#ff8585}.line.EXIT,.line.RISK,.line.SHOCK{color:#e4c462}.line.SYSTEM{color:#77b9eb}.line.WAIT,.line.HOLD{color:#7b8796}
+.blotter-wrap{flex:1 1 auto;min-height:0;overflow:auto;background:#050708}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{position:sticky;top:0;z-index:2;background:#101720;color:#8f9aaa;font-weight:650;text-align:left;padding:6px;border-bottom:1px solid var(--border)}
+td{padding:6px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}
+.positive{color:var(--green)!important}.negative{color:var(--red)!important}
+.footer-actions{flex:0 0 auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.session-summary{margin-left:auto;color:var(--muted);font-size:9px}
+@media(max-width:1200px){.metrics{grid-template-columns:repeat(4,minmax(96px,1fr))}}
+@media(max-width:820px){.metrics{grid-template-columns:repeat(2,minmax(96px,1fr))}.workspace[data-view="cockpit"],.workspace[data-view="charts"]{grid-template-columns:minmax(0,1fr)}.diagnostics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 </head>
 <body>
 <div class="page">
-<div class="topbar"><div class="brand" id="brand"></div><div class="connection" id="connection">BOOTING…</div><button class="primary" id="startButton">START SESSION</button><button class="danger" id="stopButton">STOP & FLATTEN</button><button id="resetButton">RESET</button><button id="fullscreenButton">FULLSCREEN</button></div>
+<div class="topbar">
+<div class="brand" id="brand"></div>
+<div class="connection" id="connection">BOOTING…</div>
+<div class="viewgroup" id="viewGroup">
+<button class="view active" data-view="cockpit">COCKPIT</button>
+<button class="view" data-view="charts">CHARTS</button>
+<button class="view" data-view="terminal">TERMINAL</button>
+<button class="view" data-view="blotter">BLOTTER</button>
+</div>
+<button class="primary" id="startButton">START SESSION</button>
+<button class="danger" id="stopButton">STOP &amp; FLATTEN</button>
+<button id="resetButton">RESET</button>
+<button id="fullscreenButton">FULLSCREEN</button>
+</div>
 <div class="metrics">
 <div class="metric"><div class="metric-label">Session</div><div class="metric-value" id="sessionMetric">IDLE</div><div class="metric-sub" id="sessionSub">En attente</div></div>
 <div class="metric"><div class="metric-label">Signal</div><div class="metric-value" id="signalMetric">WAIT</div><div class="metric-sub" id="signalSub">Warm-up</div></div>
@@ -7787,22 +7896,38 @@ button:hover{border-color:#425267;background:#17212d}button.primary{background:#
 <div class="metric"><div class="metric-label">Trades / win rate</div><div class="metric-value" id="tradesMetric">0 / —</div><div class="metric-sub" id="tradesSub">Profit factor —</div></div>
 <div class="metric"><div class="metric-label">Max drawdown</div><div class="metric-value" id="drawdownMetric">0.00</div><div class="metric-sub" id="drawdownSub">Coûts 0.00</div></div>
 </div>
-<div class="charts">
-<div class="panel"><div class="panel-title">GRAPHIQUE MODELE / TICKS</div><div id="modelChart" class="chart"><div class="chart-fallback">Graphique modele en attente<br>Ajoute la cle LSE pour recevoir les ticks.</div></div><div class="diagnostics">
+<div class="workspace" id="workspace" data-view="cockpit">
+<div class="panel" data-cell="model">
+<div class="panel-title">MODEL</div>
+<div id="modelChart" class="chart"></div>
+<div class="diagnostics">
 <div class="diag"><div class="diag-label">Prix Y</div><div class="diag-value" id="diagPriceY">—</div></div>
 <div class="diag"><div class="diag-label">Prix X</div><div class="diag-value" id="diagPriceX">—</div></div>
 <div class="diag"><div class="diag-label">Pente / beta</div><div class="diag-value" id="diagPrimary">—</div></div>
 <div class="diag"><div class="diag-label">Innovation / z</div><div class="diag-value" id="diagSecondary">—</div></div>
 <div class="diag"><div class="diag-label">Régime</div><div class="diag-value" id="diagRegime">—</div></div>
 <div class="diag"><div class="diag-label">Levier réel</div><div class="diag-value" id="diagLeverage">0.00×</div></div>
-</div></div>
-<div class="panel"><div class="panel-title">GRAPHIQUE P&L SESSION</div><div id="equityChart" class="chart"><div class="chart-fallback">Graphique P&L en attente<br>Le paper P&L apparaitra apres les premieres observations.</div></div></div>
 </div>
-<div class="lower">
-<div class="panel"><div class="panel-title">LIVE DECISION TERMINAL</div><div id="terminal" class="terminal"></div></div>
-<div class="panel"><div class="panel-title">TRADE BLOTTER</div><div class="blotter-wrap"><table><thead><tr><th>#</th><th>Direction</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th>Gross</th><th>Coûts</th><th>Net</th><th>Raison</th></tr></thead><tbody id="blotterBody"></tbody></table></div></div>
 </div>
-<div class="footer-actions"><button id="exportTradesButton">EXPORT TRADES CSV</button><button id="exportDecisionsButton">EXPORT DECISIONS CSV</button><button id="exportSummaryButton">EXPORT SUMMARY CSV</button><div class="session-summary" id="sessionSummary">PAPER ONLY · NO LIVE ORDERS</div></div>
+<div class="panel" data-cell="equity">
+<div class="panel-title">SESSION P&L</div>
+<div id="equityChart" class="chart"></div>
+</div>
+<div class="panel" data-cell="terminal">
+<div class="panel-title">LIVE DECISION TERMINAL</div>
+<div id="terminal" class="terminal"></div>
+</div>
+<div class="panel" data-cell="blotter">
+<div class="panel-title">TRADE BLOTTER</div>
+<div class="blotter-wrap"><table><thead><tr><th>#</th><th>Direction</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th>Gross</th><th>Coûts</th><th>Net</th><th>Raison</th></tr></thead><tbody id="blotterBody"></tbody></table></div>
+</div>
+</div>
+<div class="footer-actions">
+<button id="exportTradesButton">EXPORT TRADES CSV</button>
+<button id="exportDecisionsButton">EXPORT DECISIONS CSV</button>
+<button id="exportSummaryButton">EXPORT SUMMARY CSV</button>
+<div class="session-summary" id="sessionSummary">PAPER ONLY · NO LIVE ORDERS</div>
+</div>
 </div>
 <script>
 const SETTINGS = __SETTINGS__;
@@ -7810,16 +7935,25 @@ const SETTINGS = __SETTINGS__;
 const API_KEY=SETTINGS.apiKey,STRATEGY=SETTINGS.strategy,SYMBOL_Y=SETTINGS.symbolY,SYMBOL_X=SETTINGS.symbolX,ASSET_Y=SETTINGS.assetY,ASSET_X=SETTINGS.assetX;
 const IS_PAIR=Boolean(SETTINGS.isPair),REPLAY_MINUTES=Number(SETTINGS.replayMinutes),TRADE_REPLAY=Boolean(SETTINGS.tradeReplay),VERBOSE=Boolean(SETTINGS.terminalVerbose),SYNC_MS=Number(SETTINGS.syncMs);
 const REACTIVITY=Number(SETTINGS.reactivity),OBSERVATION_TRUST=Number(SETTINGS.observationTrust),CONFIRMATION=Number(SETTINGS.confirmation),ENTRY_THRESHOLD=Number(SETTINGS.entryThreshold),EXIT_THRESHOLD=Number(SETTINGS.exitThreshold),SHOCK_THRESHOLD=Number(SETTINGS.shockThreshold),SECONDARY_THRESHOLD=Number(SETTINGS.secondaryThreshold),HMM_PERSISTENCE=Number(SETTINGS.hmmPersistence),Z_WINDOW=Number(SETTINGS.zWindow);
-const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.accountEquity),TARGET_LEVERAGE=Number(SETTINGS.targetLeverage),POINT_VALUE_Y=Number(SETTINGS.pointValueY),POINT_VALUE_X=Number(SETTINGS.pointValueX),TICK_SIZE_Y=Number(SETTINGS.tickSizeY),TICK_SIZE_X=Number(SETTINGS.tickSizeX),FX_Y=Number(SETTINGS.fxY),FX_X=Number(SETTINGS.fxX),QUANTITY_STEP=Number(SETTINGS.quantityStep),COMMISSION_PER_UNIT=Number(SETTINGS.commissionPerUnit),EXTRA_SLIPPAGE_TICKS=Number(SETTINGS.extraSlippageTicks),ALLOW_SHORT=Boolean(SETTINGS.allowShort),MAX_SESSION_LOSS=Number(SETTINGS.maxSessionLoss),MAX_TRADE_LOSS=Number(SETTINGS.maxTradeLoss),MAX_HOLDING_SECONDS=Number(SETTINGS.maxHoldingSeconds),MAX_TRADES=Number(SETTINGS.maxTrades),COOLDOWN_OBSERVATIONS=Number(SETTINGS.cooldownObservations);
+const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.accountEquity),TARGET_LEVERAGE=Number(SETTINGS.targetLeverage),POINT_VALUE_Y=Number(SETTINGS.pointValueY),POINT_VALUE_X=Number(SETTINGS.pointValueX),TICK_SIZE_Y=Number(SETTINGS.tickSizeY),TICK_SIZE_X=Number(SETTINGS.tickSizeX),FX_Y=Number(SETTINGS.fxY),FX_X=Number(SETTINGS.fxX),QUANTITY_STEP=Number(SETTINGS.quantityStep),COMMISSION_BPS=Number(SETTINGS.commissionBps),MIN_COMMISSION=Number(SETTINGS.minCommission),EXTRA_SLIPPAGE_TICKS=Number(SETTINGS.extraSlippageTicks),ALLOW_SHORT=Boolean(SETTINGS.allowShort),MAX_SESSION_LOSS=Number(SETTINGS.maxSessionLoss),MAX_TRADE_LOSS=Number(SETTINGS.maxTradeLoss),MAX_HOLDING_SECONDS=Number(SETTINGS.maxHoldingSeconds),MAX_TRADES=Number(SETTINGS.maxTrades),COOLDOWN_OBSERVATIONS=Number(SETTINGS.cooldownObservations);
+
+/* Normalisation : la pente et l'innovation du Kalman sont ramenées à leur
+   propre échelle roulante. Sans ça, "σ" ne veut rien dire : diviser la pente
+   par l'écart-type des différences tick-à-tick donne un slopeZ dont le sd réel
+   vaut ~0.25, donc un seuil d'entrée de 0.65 est à ~2.6 sd dans la queue. */
+const NORM_WINDOW=Math.max(120,Number(SETTINGS.normWindow)||750);
+const NORM_MIN=Math.max(60,Math.floor(NORM_WINDOW*0.2));
+const PAIR_WARMUP=STRATEGY==="Relative Value Mean Reversion"?240:60;
+const CHART_MIN_INTERVAL_MS=150;
 
 const COLORS={background:"#050708",grid:"#1b2530",text:"#d9e2ec",muted:"#748192",green:"#28b69f",red:"#ef5b5b",yellow:"#d9b44a",blue:"#76b7e5",purple:"#a28af7",raw:"#d9a36c"};
 const currencyPrefix=({EUR:"€",USD:"$",GBP:"£",CHF:"CHF "}[ACCOUNT_CURRENCY]||`${ACCOUNT_CURRENCY} `);
 const $=id=>document.getElementById(id);
-const DOM={brand:$("brand"),connection:$("connection"),startButton:$("startButton"),stopButton:$("stopButton"),resetButton:$("resetButton"),fullscreenButton:$("fullscreenButton"),terminal:$("terminal"),blotterBody:$("blotterBody"),sessionMetric:$("sessionMetric"),sessionSub:$("sessionSub"),signalMetric:$("signalMetric"),signalSub:$("signalSub"),positionMetric:$("positionMetric"),positionSub:$("positionSub"),netMetric:$("netMetric"),netSub:$("netSub"),unrealizedMetric:$("unrealizedMetric"),unrealizedSub:$("unrealizedSub"),ticksMetric:$("ticksMetric"),ticksSub:$("ticksSub"),tradesMetric:$("tradesMetric"),tradesSub:$("tradesSub"),drawdownMetric:$("drawdownMetric"),drawdownSub:$("drawdownSub"),diagPriceY:$("diagPriceY"),diagPriceX:$("diagPriceX"),diagPrimary:$("diagPrimary"),diagSecondary:$("diagSecondary"),diagRegime:$("diagRegime"),diagLeverage:$("diagLeverage"),sessionSummary:$("sessionSummary"),exportTradesButton:$("exportTradesButton"),exportDecisionsButton:$("exportDecisionsButton"),exportSummaryButton:$("exportSummaryButton")};
+const DOM={brand:$("brand"),connection:$("connection"),workspace:$("workspace"),startButton:$("startButton"),stopButton:$("stopButton"),resetButton:$("resetButton"),fullscreenButton:$("fullscreenButton"),terminal:$("terminal"),blotterBody:$("blotterBody"),sessionMetric:$("sessionMetric"),sessionSub:$("sessionSub"),signalMetric:$("signalMetric"),signalSub:$("signalSub"),positionMetric:$("positionMetric"),positionSub:$("positionSub"),netMetric:$("netMetric"),netSub:$("netSub"),unrealizedMetric:$("unrealizedMetric"),unrealizedSub:$("unrealizedSub"),ticksMetric:$("ticksMetric"),ticksSub:$("ticksSub"),tradesMetric:$("tradesMetric"),tradesSub:$("tradesSub"),drawdownMetric:$("drawdownMetric"),drawdownSub:$("drawdownSub"),diagPriceY:$("diagPriceY"),diagPriceX:$("diagPriceX"),diagPrimary:$("diagPrimary"),diagSecondary:$("diagSecondary"),diagRegime:$("diagRegime"),diagLeverage:$("diagLeverage"),sessionSummary:$("sessionSummary"),exportTradesButton:$("exportTradesButton"),exportDecisionsButton:$("exportDecisionsButton"),exportSummaryButton:$("exportSummaryButton")};
 DOM.brand.textContent=`SHADOW TRADER :: ${STRATEGY.toUpperCase()} :: ${SYMBOL_Y}${SYMBOL_X?` / ${SYMBOL_X}`:""}`;
 
 const plotConfig={responsive:true,displaylogo:false,scrollZoom:true,doubleClick:"reset+autosize",modeBarButtonsToAdd:["pan2d","zoomIn2d","zoomOut2d","autoScale2d","resetScale2d"],modeBarButtonsToRemove:["lasso2d","select2d"]};
-function commonLayout(title,uirevision){return{template:"plotly_dark",paper_bgcolor:COLORS.background,plot_bgcolor:COLORS.background,height:420,margin:{l:34,r:66,t:48,b:32},title:{text:title,x:.01,font:{size:13,color:COLORS.text,family:"JetBrains Mono, Consolas, monospace"}},hovermode:"x unified",dragmode:"pan",uirevision,legend:{orientation:"h",x:0,y:1.06,font:{size:9,color:COLORS.muted},bgcolor:"rgba(0,0,0,0)"},xaxis:{gridcolor:COLORS.grid,zeroline:false,showspikes:true,spikecolor:COLORS.muted},yaxis:{gridcolor:COLORS.grid,zeroline:false,side:"right",automargin:true}}}
+function commonLayout(title,uirevision){return{template:"plotly_dark",paper_bgcolor:COLORS.background,plot_bgcolor:COLORS.background,autosize:true,margin:{l:32,r:58,t:34,b:26},title:{text:title,x:.01,y:.99,yanchor:"top",font:{size:11,color:COLORS.text,family:"JetBrains Mono, Consolas, monospace"}},hovermode:"x unified",dragmode:"pan",uirevision,legend:{orientation:"h",x:0,y:1.10,font:{size:9,color:COLORS.muted},bgcolor:"rgba(0,0,0,0)"},xaxis:{gridcolor:COLORS.grid,zeroline:false,showspikes:true,spikecolor:COLORS.muted},yaxis:{gridcolor:COLORS.grid,zeroline:false,side:"right",automargin:true}}}
 function finite(value,fallback=null){const n=Number(value);return Number.isFinite(n)?n:fallback}
 function parseTimestamp(value){if(typeof value==="number")return new Date(value<1e12?value*1000:value);const d=new Date(value);return Number.isNaN(d.getTime())?new Date():d}
 function formatNumber(value,decimals=2){return Number.isFinite(value)?value.toLocaleString(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}):"—"}
@@ -7828,6 +7962,9 @@ function formatPrice(value){if(!Number.isFinite(value))return"—";const d=Math.
 function signed(value,decimals=2){return Number.isFinite(value)?`${value>=0?"+":""}${value.toFixed(decimals)}`:"—"}
 function variance(values){const a=values.filter(Number.isFinite);if(a.length<2)return 1e-8;const m=a.reduce((s,v)=>s+v,0)/a.length;return a.reduce((s,v)=>s+(v-m)**2,0)/a.length}
 function rollingZ(values,windowSize){const a=values.slice(-Math.max(10,windowSize));if(a.length<10)return null;const m=a.reduce((s,v)=>s+v,0)/a.length,sd=Math.sqrt(variance(a));return !Number.isFinite(sd)||sd<1e-12?0:(a[a.length-1]-m)/sd}
+/* RMS roulant autour de zéro : contrairement à rollingZ, ne retire pas la
+   moyenne, donc une tendance soutenue reste visible au lieu d'être absorbée. */
+function rollingRms(values,windowSize){const a=values.length>windowSize?values.slice(values.length-windowSize):values;let s=0,n=0;for(const v of a){if(Number.isFinite(v)){s+=v*v;n++}}return n?Math.sqrt(s/n):null}
 function roundQuantity(value){if(!Number.isFinite(value)||value<=0)return 0;const step=Math.max(QUANTITY_STEP,1e-8);return Math.floor(value/step)*step}
 function canonicalSymbol(symbol){const s=String(symbol||"").toUpperCase();if(s===String(SYMBOL_Y).toUpperCase())return"Y";if(SYMBOL_X&&s===String(SYMBOL_X).toUpperCase())return"X";return null}
 function nowIso(){return new Date().toISOString()}
@@ -7850,9 +7987,9 @@ function downloadCsv(filename,rows){
 }
 
 const market={Y:null,X:null,previousY:null,previousX:null,bucket:null,bucketY:null,bucketX:null,lastPairSignature:null,liveSeen:false};
-const kalman={state:null,covariance:null,differences:[],timestamps:[],observed:[],filtered:[],slopeZ:[],innovationZ:[]};
+const kalman={state:null,covariance:null,differences:[],trendBuffer:[],innovationBuffer:[],timestamps:[],observed:[],filtered:[],slopeZ:[],innovationZ:[]};
 const hmm={posterior:[.82,.06,.06,.06],candidate:0,candidateCount:0,confirmedState:0,duration:0};
-const regression={state:null,covariance:null,warmup:[],residualVariance:1e-8,residuals:[],timestamps:[],beta:[],zscore:[],normalizedY:[],normalizedX:[],baseY:null,baseX:null};
+const regression={state:null,covariance:null,warmup:[],xBar:0,residualVariance:1e-8,residuals:[],spread:[],momentum:[],cumulativeResidual:0,cumulativeSeries:[],timestamps:[],beta:[],zscore:[],normalizedY:[],normalizedX:[],baseY:null,baseX:null};
 const portfolio={active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Date():null,stoppedAt:null,position:0,trade:null,realized:0,grossRealized:0,unrealized:0,costs:0,currentTicks:0,totalTicks:0,currentTarget:0,candidateTarget:0,candidateCount:0,cooldown:0,trades:[],decisions:[],logs:[],equityTimestamps:[],equityNet:[],equityRealized:[],peakNet:0,maxDrawdown:0,observations:0,lastSignalLabel:"WAIT",lastSignalReason:"Warm-up",lastStateFingerprint:null};
 
 function resetPortfolioState(){
@@ -7874,10 +8011,17 @@ function updateKalman(timestamp,price){
         const np00=(1-k0)*pp00,np01=(1-k0)*pp01,np10=pp10-k1*pp00,np11=pp11-k1*pp01,off=(np01+np10)/2;
         kalman.state=[level,trend];kalman.covariance=[[Math.max(np00,1e-14),off],[off,Math.max(np11,1e-14)]];
     }
-    const level=kalman.state[0],trend=kalman.state[1],slopeZ=trend/Math.sqrt(Math.max(baseVariance,1e-14)),innovationZ=innovation/Math.sqrt(Math.max(innovationVariance,1e-14));
+    const level=kalman.state[0],trend=kalman.state[1];
+    kalman.trendBuffer.push(trend);kalman.innovationBuffer.push(innovation);
+    if(kalman.trendBuffer.length>NORM_WINDOW)kalman.trendBuffer.splice(0,kalman.trendBuffer.length-NORM_WINDOW);
+    if(kalman.innovationBuffer.length>NORM_WINDOW)kalman.innovationBuffer.splice(0,kalman.innovationBuffer.length-NORM_WINDOW);
+    const ready=kalman.trendBuffer.length>=NORM_MIN;
+    const trendRms=rollingRms(kalman.trendBuffer,NORM_WINDOW),innovationRms=rollingRms(kalman.innovationBuffer,NORM_WINDOW);
+    const slopeZ=(ready&&Number.isFinite(trendRms)&&trendRms>1e-15)?trend/trendRms:null;
+    const innovationZ=(ready&&Number.isFinite(innovationRms)&&innovationRms>1e-15)?innovation/innovationRms:null;
     kalman.timestamps.push(timestamp);kalman.observed.push(price);kalman.filtered.push(level);kalman.slopeZ.push(slopeZ);kalman.innovationZ.push(innovationZ);
     for(const a of [kalman.timestamps,kalman.observed,kalman.filtered,kalman.slopeZ,kalman.innovationZ])if(a.length>5000)a.splice(0,a.length-5000);
-    return{timestamp,price,level,trend,slopeZ,innovationZ,beta:null,zscore:null,hmm:null}
+    return{timestamp,price,level,trend,slopeZ,innovationZ,ready,warmup:kalman.trendBuffer.length,beta:null,zscore:null,hmm:null}
 }
 
 function gaussianLogPdf(value,mean,sd){const s=Math.max(sd,1e-6),d=(value-mean)/s;return-Math.log(s*Math.sqrt(2*Math.PI))-.5*d*d}
@@ -7886,7 +8030,10 @@ function updateHmm(slopeZ,innovationZ){
     const p=Math.min(Math.max(HMM_PERSISTENCE,.5),.995),m=1-p;
     const tr=[[p,m*.4,m*.4,m*.2],[m*.43,p,m*.05,m*.52],[m*.43,m*.05,p,m*.52],[m*.55,m*.225,m*.225,p]],pred=[0,0,0,0];
     for(let d=0;d<4;d++)for(let o=0;o<4;o++)pred[d]+=hmm.posterior[o]*tr[o][d];
-    const ai=Math.abs(innovationZ),em=[gaussianLogPdf(slopeZ,0,.48)+gaussianLogPdf(innovationZ,0,.9),gaussianLogPdf(slopeZ,.9,.72)+gaussianLogPdf(innovationZ,.1,1.25),gaussianLogPdf(slopeZ,-.9,.72)+gaussianLogPdf(innovationZ,-.1,1.25),gaussianLogPdf(slopeZ,0,1.8)+gaussianLogPdf(ai,2.6,1.35)];
+    /* Émissions recalibrées sur le slopeZ normalisé (sd ≈ 1). Les anciennes
+       supposaient N(±0.9, 0.72) alors que le slopeZ observé valait N(0, 0.25) :
+       l'état NOISE gagnait toujours et `up` n'atteignait jamais le seuil. */
+    const ai=Math.abs(innovationZ),em=[gaussianLogPdf(slopeZ,0,.70)+gaussianLogPdf(innovationZ,0,.9),gaussianLogPdf(slopeZ,1.35,.95)+gaussianLogPdf(innovationZ,.1,1.15),gaussianLogPdf(slopeZ,-1.35,.95)+gaussianLogPdf(innovationZ,-.1,1.15),gaussianLogPdf(slopeZ,0,2.2)+gaussianLogPdf(ai,2.8,1.2)];
     hmm.posterior=normalizeLogs(pred.map((q,i)=>Math.log(Math.max(q,1e-15))+em[i]));
     let dominant=0;for(let i=1;i<4;i++)if(hmm.posterior[i]>hmm.posterior[dominant])dominant=i;
     if(dominant===hmm.candidate)hmm.candidateCount++;else{hmm.candidate=dominant;hmm.candidateCount=1}
@@ -7895,27 +8042,73 @@ function updateHmm(slopeZ,innovationZ){
     return{posterior:[...hmm.posterior],dominant,confirmed:hmm.confirmedState,duration:hmm.duration}
 }
 
+/* x est centre sur sa moyenne de warm-up. Avec x = log(prix) ~ 8.5, intercept et
+   pente sont quasi colineaires et la covariance initiale de beta ([[rv,0],[0,0.1]],
+   soit sd(beta) = 0.32 sur un beta vrai de ~0.7) rend le gain aberrant. Une fois
+   x centre, la covariance OLS exacte est diagonale : var(alpha)=rv/n, var(beta)=rv/Sxx. */
 function initializeRegression(obs){
     const n=obs.length;if(n<20)return null;
-    let sx=0,sy=0,sxx=0,sxy=0;for(const v of obs){sx+=v.x;sy+=v.y;sxx+=v.x*v.x;sxy+=v.x*v.y}
-    const den=n*sxx-sx*sx,beta=Math.abs(den)<1e-14?1:(n*sxy-sx*sy)/den,alpha=(sy-beta*sx)/n,res=obs.map(v=>v.y-alpha-beta*v.x),rv=Math.max(variance(res),1e-10);
-    return{state:[alpha,beta],covariance:[[rv,0],[0,.1]],residualVariance:rv}
+    let sx=0,sy=0;for(const v of obs){sx+=v.x;sy+=v.y}
+    const xBar=sx/n;
+    let sxx=0,sxy=0;for(const v of obs){const xc=v.x-xBar;sxx+=xc*xc;sxy+=xc*v.y}
+    if(!(sxx>1e-18))return null;
+    const beta=sxy/sxx,alpha=sy/n,res=obs.map(v=>v.y-alpha-beta*(v.x-xBar)),rv=Math.max(variance(res),1e-14);
+    return{state:[alpha,beta],covariance:[[rv/n,0],[0,rv/sxx]],residualVariance:rv,xBar}
 }
 function updateRegression(timestamp,y,x,priceY,priceX){
     if(regression.state===null){
         regression.warmup.push({y,x});
-        if(regression.warmup.length<30)return{ready:false,warmup:regression.warmup.length};
+        if(regression.warmup.length<PAIR_WARMUP)return{ready:false,warmup:regression.warmup.length};
         const init=initializeRegression(regression.warmup);if(!init)return{ready:false,warmup:regression.warmup.length};
-        regression.state=init.state;regression.covariance=init.covariance;regression.residualVariance=init.residualVariance;
+        regression.state=init.state;regression.covariance=init.covariance;regression.residualVariance=init.residualVariance;regression.xBar=init.xBar;
     }
-    const qm=10**((REACTIVITY-5)/2),rm=10**((6-OBSERVATION_TRUST)/2),qA=regression.residualVariance*.005*qm,qB=1e-5*qm,r=regression.residualVariance*Math.max(rm,1e-4);
+    const xc=x-regression.xBar;
+    const qm=10**((REACTIVITY-5)/2),rm=10**((6-OBSERVATION_TRUST)/2);
+    /* Pour le RV, l'intercept EST le niveau d'equilibre du spread. Avec l'ancien
+       qA = rv*5e-3, alpha avait une memoire de ~14 ticks : il ramenait le spread
+       a zero en permanence, donc un spread ne pouvait jamais PARAITRE etire.
+       Mesure sur paire cointegree simulee : corr(z, vrai spread) = 0.04 avant,
+       0.55 en ralentissant alpha d'un facteur 5000. Le modele momentum regresse
+       des rendements (alpha ~ 0), il garde donc le reglage d'origine. */
+    const isRv=STRATEGY==="Relative Value Mean Reversion";
+    const qA=regression.residualVariance*(isRv?1e-6:.005)*qm,qB=(isRv?regression.residualVariance*1e-8:1e-5)*qm,r=regression.residualVariance*Math.max(rm,1e-4);
     let [alpha,beta]=regression.state,[[p00,p01],[p10,p11]]=regression.covariance;p00+=qA;p11+=qB;
-    const predicted=alpha+beta*x,residual=y-predicted,s=p00+x*p01+x*p10+x*x*p11+r,k0=(p00+p01*x)/s,k1=(p10+p11*x)/s;
+    const predicted=alpha+beta*xc,residual=y-predicted,s=p00+xc*p01+xc*p10+xc*xc*p11+r,k0=(p00+p01*xc)/s,k1=(p10+p11*xc)/s;
     alpha+=k0*residual;beta+=k1*residual;
-    const np00=p00-k0*(p00+x*p10),np01=p01-k0*(p01+x*p11),np10=p10-k1*(p00+x*p10),np11=p11-k1*(p01+x*p11),off=(np01+np10)/2;
-    regression.state=[alpha,beta];regression.covariance=[[Math.max(np00,1e-12),off],[off,Math.max(np11,1e-12)]];
+    const np00=p00-k0*(p00+xc*p10),np01=p01-k0*(p01+xc*p11),np10=p10-k1*(p00+xc*p10),np11=p11-k1*(p01+xc*p11),off=(np01+np10)/2;
+    regression.state=[alpha,beta];regression.covariance=[[Math.max(np00,1e-18),off],[off,Math.max(np11,1e-18)]];
     regression.residuals.push(residual);if(regression.residuals.length>5000)regression.residuals.shift();
-    const zscore=rollingZ(regression.residuals,Z_WINDOW);
+
+    /* Chaque modèle construit sa propre mesure : le RV lit un niveau de spread,
+       le momentum lit une dérive cumulée. Le résidu brut ne sert ni à l'un ni
+       à l'autre. */
+    let zscore=null;
+    if(isRv){
+        // Avec l'intercept ralenti, le residuel a priori EST l'ecart a la relation
+        // de long terme : c'est lui le spread, z-score sur Z_WINDOW.
+        regression.spread.push(residual);if(regression.spread.length>5000)regression.spread.shift();
+        zscore=rollingZ(regression.spread,Z_WINDOW);
+    }else{
+        /* Momentum résiduel = somme des rendements résiduels sur Z_WINDOW.
+           Standardisée par son propre RMS roulant, comme la pente du Kalman :
+           diviser par sd(residual)·√W suppose des résidus iid, or ils sont
+           autocorrélés — mesure : sd réel 0.48 au lieu de 1, donc le seuil 1.25
+           se retrouvait à 2.6 sd dans la queue. Même défaut que le bug 1. */
+        regression.cumulativeResidual+=residual;
+        regression.cumulativeSeries.push(regression.cumulativeResidual);
+        if(regression.cumulativeSeries.length>5000)regression.cumulativeSeries.shift();
+        const w=Math.max(10,Math.min(Z_WINDOW,regression.cumulativeSeries.length-1));
+        if(regression.cumulativeSeries.length>w){
+            const drift=regression.cumulativeResidual-regression.cumulativeSeries[regression.cumulativeSeries.length-1-w];
+            regression.momentum.push(drift);
+            if(regression.momentum.length>NORM_WINDOW)regression.momentum.splice(0,regression.momentum.length-NORM_WINDOW);
+            if(regression.momentum.length>=NORM_MIN){
+                const rms=rollingRms(regression.momentum,NORM_WINDOW);
+                zscore=(Number.isFinite(rms)&&rms>1e-18)?drift/rms:0;
+            }
+        }
+    }
+
     regression.timestamps.push(timestamp);regression.beta.push(beta);regression.zscore.push(zscore);
     if(regression.baseY===null){regression.baseY=priceY;regression.baseX=priceX}
     regression.normalizedY.push(priceY/regression.baseY*100);regression.normalizedX.push(priceX/regression.baseX*100);
@@ -7927,14 +8120,16 @@ function strategySignal(features){
     const current=portfolio.position;
     if(STRATEGY==="Kalman Trend"){
         const slope=features.slopeZ,innovation=features.innovationZ;
-        if(Math.abs(innovation)>=SHOCK_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Innovation choc ${signed(innovation)}σ`,confidence:Math.min(1,Math.abs(innovation)/SHOCK_THRESHOLD),regime:"CHOC"};
+        if(!Number.isFinite(slope))return{target:0,label:"WARM-UP",reason:"Normalisation en cours",confidence:0,regime:"WARMUP"};
+        if(Number.isFinite(innovation)&&Math.abs(innovation)>=SHOCK_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Innovation choc ${signed(innovation)}σ`,confidence:Math.min(1,Math.abs(innovation)/SHOCK_THRESHOLD),regime:"CHOC"};
         if(current>0)return slope<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG",reason:`Pente retombée ${signed(slope)}σ`,confidence:1,regime:"BRUIT"}:{target:1,label:"HOLD LONG",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,slope/ENTRY_THRESHOLD),regime:"UP"};
         if(current<0)return slope>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT",reason:`Pente remontée ${signed(slope)}σ`,confidence:1,regime:"BRUIT"}:{target:-1,label:"HOLD SHORT",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,Math.abs(slope)/ENTRY_THRESHOLD),regime:"DOWN"};
         if(slope>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,slope/ENTRY_THRESHOLD),regime:"UP"};
         if(ALLOW_SHORT&&slope<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Pente ${signed(slope)}σ`,confidence:Math.min(1,Math.abs(slope)/ENTRY_THRESHOLD),regime:"DOWN"};
-        return{target:0,label:"WAIT",reason:`Pente ${signed(slope)}σ sous seuil`,confidence:0,regime:"BRUIT"};
+        return{target:0,label:"WAIT",reason:`Pente ${signed(slope)}σ sous seuil ${ENTRY_THRESHOLD.toFixed(2)}σ`,confidence:0,regime:"BRUIT"};
     }
     if(STRATEGY==="Kalman + HMM Directional"){
+        if(!features.hmm)return{target:0,label:"WARM-UP",reason:"Normalisation en cours",confidence:0,regime:"WARMUP"};
         const p=features.hmm.posterior,noise=p[0],up=p[1],down=p[2],shock=p[3];
         if(shock>=SECONDARY_THRESHOLD)return{target:0,label:"RISK OFF",reason:`Choc ${(shock*100).toFixed(0)}%`,confidence:shock,regime:"CHOC"};
         if(current>0){
@@ -7947,23 +8142,23 @@ function strategySignal(features){
         }
         if(up>=ENTRY_THRESHOLD)return{target:1,label:"LONG CANDIDATE",reason:`Régime hausse ${(up*100).toFixed(0)}%`,confidence:up,regime:"UP"};
         if(ALLOW_SHORT&&down>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT CANDIDATE",reason:`Régime baisse ${(down*100).toFixed(0)}%`,confidence:down,regime:"DOWN"};
-        return{target:0,label:"WAIT",reason:`Noise ${(noise*100).toFixed(0)}%`,confidence:noise,regime:"BRUIT"};
+        return{target:0,label:"WAIT",reason:`Noise ${(noise*100).toFixed(0)}% · up ${(up*100).toFixed(0)}% vs seuil ${(ENTRY_THRESHOLD*100).toFixed(0)}%`,confidence:noise,regime:"BRUIT"};
     }
     const z=features.zscore;
     if(!Number.isFinite(z))return{target:0,label:"WARM-UP",reason:"Z-score indisponible",confidence:0,regime:"WARMUP"};
     if(STRATEGY==="Dynamic Beta Residual Momentum"){
-        if(current>0)return z<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG SPREAD",reason:`Residual z ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:1,label:"HOLD LONG SPREAD",reason:`Residual momentum ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
-        if(current<0)return z>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT SPREAD",reason:`Residual z ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Residual momentum ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
-        if(z>=ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Residual breakout ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
-        if(ALLOW_SHORT&&z<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT SPREAD CANDIDATE",reason:`Residual breakout ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
-        return{target:0,label:"WAIT",reason:`Residual z ${signed(z)}`,confidence:0,regime:"NEUTRAL"};
+        if(current>0)return z<=EXIT_THRESHOLD?{target:0,label:"EXIT LONG SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:1,label:"HOLD LONG SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
+        if(current<0)return z>=-EXIT_THRESHOLD?{target:0,label:"EXIT SHORT SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:1,regime:"NORMALISATION"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Momentum résiduel ${signed(z)}`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
+        if(z>=ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Dérive résiduelle ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"RESIDUAL UP"};
+        if(ALLOW_SHORT&&z<=-ENTRY_THRESHOLD)return{target:-1,label:"SHORT SPREAD CANDIDATE",reason:`Dérive résiduelle ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"RESIDUAL DOWN"};
+        return{target:0,label:"WAIT",reason:`Momentum résiduel ${signed(z)} sous seuil ${ENTRY_THRESHOLD.toFixed(2)}`,confidence:0,regime:"NEUTRAL"};
     }
     // Relative Value Mean Reversion.
     if(current>0)return(Math.abs(z)<=EXIT_THRESHOLD||z>0)?{target:0,label:"EXIT LONG SPREAD",reason:`Spread revenu ${signed(z)}σ`,confidence:1,regime:"MEAN"}:{target:1,label:"HOLD LONG SPREAD",reason:`Y décoté ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y CHEAP"};
     if(current<0)return(Math.abs(z)<=EXIT_THRESHOLD||z<0)?{target:0,label:"EXIT SHORT SPREAD",reason:`Spread revenu ${signed(z)}σ`,confidence:1,regime:"MEAN"}:{target:-1,label:"HOLD SHORT SPREAD",reason:`Y riche ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y RICH"};
     if(z<=-ENTRY_THRESHOLD)return{target:1,label:"LONG SPREAD CANDIDATE",reason:`Y décoté ${signed(z)}σ`,confidence:Math.min(1,Math.abs(z)/ENTRY_THRESHOLD),regime:"Y CHEAP"};
     if(ALLOW_SHORT&&z>=ENTRY_THRESHOLD)return{target:-1,label:"SHORT SPREAD CANDIDATE",reason:`Y riche ${signed(z)}σ`,confidence:Math.min(1,z/ENTRY_THRESHOLD),regime:"Y RICH"};
-    return{target:0,label:"WAIT",reason:`Spread z ${signed(z)}`,confidence:0,regime:"MEAN"};
+    return{target:0,label:"WAIT",reason:`Spread z ${signed(z)} sous seuil ${ENTRY_THRESHOLD.toFixed(2)}σ`,confidence:0,regime:"MEAN"};
 }
 
 function executablePrice(tick,side,tickSize){
@@ -7972,7 +8167,23 @@ function executablePrice(tick,side,tickSize){
     return Number.isFinite(base)?base+side*EXTRA_SLIPPAGE_TICKS*tickSize:null
 }
 function markPrice(tick,positionSide,tickSize){return executablePrice(tick,-positionSide,tickSize)}
-function commissionFor(qy,qx=0){return(Math.abs(qy)+Math.abs(qx))*COMMISSION_PER_UNIT}
+/* Commission en bps du notionnel. Une commission par unité donnait 92 592 €
+   d'entrée sur EUR/USD (185 185 unités × 0.50) contre 5 € sur le Nasdaq :
+   le même défaut couvrait quatre ordres de grandeur. */
+function notionalFor(quantityY,priceY,quantityX,priceX){
+    let notional=Math.abs(quantityY)*Math.abs(finite(priceY,0))*POINT_VALUE_Y*FX_Y;
+    if(IS_PAIR&&Number.isFinite(priceX))notional+=Math.abs(quantityX)*Math.abs(priceX)*POINT_VALUE_X*FX_X;
+    return notional
+}
+function commissionForNotional(notional){
+    if(!Number.isFinite(notional)||notional<=0)return MIN_COMMISSION;
+    return Math.max(notional*COMMISSION_BPS/10000,MIN_COMMISSION)
+}
+function estimatedExitCommission(trade){
+    const exitY=markPrice(market.Y,trade.direction,TICK_SIZE_Y),exitX=trade.isPair?markPrice(market.X,-trade.direction,TICK_SIZE_X):null;
+    const py=Number.isFinite(exitY)?exitY:trade.entryY,px=Number.isFinite(exitX)?exitX:trade.entryX;
+    return commissionForNotional(notionalFor(trade.quantityY,py,trade.quantityX,px))
+}
 function sizePosition(betaValue){
     if(!market.Y)return null;
     const grossTarget=ACCOUNT_EQUITY*TARGET_LEVERAGE;
@@ -7999,16 +8210,18 @@ function currentEquivalentTicks(trade){
 
 function openPosition(direction,signal,timestamp,features){
     if(direction<0&&!ALLOW_SHORT)return;
+    if(portfolio.locked)return;
     if(portfolio.trades.length>=MAX_TRADES){portfolio.locked=true;portfolio.active=false;logLine("KILL",`Nombre maximal de trades atteint (${MAX_TRADES}).`,timestamp);return}
     const sizing=sizePosition(finite(features.beta,1));
     if(!sizing||sizing.quantityY<=0||(IS_PAIR&&sizing.quantityX<=0)){logLine("RISK","Taille nulle. Vérifie point value, FX et capital.",timestamp);return}
     const entryY=executablePrice(market.Y,direction,TICK_SIZE_Y),entryX=IS_PAIR?executablePrice(market.X,-direction,TICK_SIZE_X):null;
     if(!Number.isFinite(entryY)||(IS_PAIR&&!Number.isFinite(entryX)))return;
-    const entryCommission=commissionFor(sizing.quantityY,sizing.quantityX);
+    const entryNotional=notionalFor(sizing.quantityY,entryY,sizing.quantityX,entryX);
+    const entryCommission=commissionForNotional(entryNotional);
     portfolio.realized-=entryCommission;portfolio.costs+=entryCommission;portfolio.position=direction;
-    portfolio.trade={id:portfolio.trades.length+1,isPair:IS_PAIR,direction,openedAt:timestamp,entryY,entryX,quantityY:sizing.quantityY,quantityX:sizing.quantityX,beta:finite(features.beta,1),leverage:sizing.leverage,grossNotional:sizing.grossNotional,entryCommission,signal:signal.label,entryReason:signal.reason};
+    portfolio.trade={id:portfolio.trades.length+1,isPair:IS_PAIR,direction,openedAt:timestamp,entryY,entryX,quantityY:sizing.quantityY,quantityX:sizing.quantityX,beta:finite(features.beta,1),leverage:sizing.leverage,grossNotional:sizing.grossNotional,entryNotional,entryCommission,signal:signal.label,entryReason:signal.reason};
     portfolio.cooldown=0;
-    logLine(direction>0?"BUY":"SHORT",`${IS_PAIR?"SPREAD ":""}${direction>0?"LONG":"SHORT"} | Y ${sizing.quantityY.toFixed(4)} @ ${formatPrice(entryY)}${IS_PAIR?` | X ${sizing.quantityX.toFixed(4)} @ ${formatPrice(entryX)}`:""} | levier ${sizing.leverage.toFixed(2)}× | ${signal.reason}`,timestamp);
+    logLine(direction>0?"BUY":"SHORT",`${IS_PAIR?"SPREAD ":""}${direction>0?"LONG":"SHORT"} | Y ${sizing.quantityY.toFixed(4)} @ ${formatPrice(entryY)}${IS_PAIR?` | X ${sizing.quantityX.toFixed(4)} @ ${formatPrice(entryX)}`:""} | levier ${sizing.leverage.toFixed(2)}× | frais ${formatMoney(-entryCommission)} | ${signal.reason}`,timestamp);
 }
 
 function closePosition(reason,timestamp,exitType="EXIT"){
@@ -8017,11 +8230,12 @@ function closePosition(reason,timestamp,exitType="EXIT"){
     if(!Number.isFinite(exitY)||(trade.isPair&&!Number.isFinite(exitX)))return;
     let gross=trade.direction*(exitY-trade.entryY)*trade.quantityY*POINT_VALUE_Y*FX_Y;
     if(trade.isPair){const xd=-trade.direction;gross+=xd*(exitX-trade.entryX)*trade.quantityX*POINT_VALUE_X*FX_X}
-    const exitCommission=commissionFor(trade.quantityY,trade.quantityX),totalCosts=trade.entryCommission+exitCommission,net=gross-totalCosts;
+    const exitNotional=notionalFor(trade.quantityY,exitY,trade.quantityX,exitX);
+    const exitCommission=commissionForNotional(exitNotional),totalCosts=trade.entryCommission+exitCommission,net=gross-totalCosts;
     portfolio.grossRealized+=gross;portfolio.realized+=gross-exitCommission;portfolio.costs+=exitCommission;
     const duration=Math.max(0,(timestamp-trade.openedAt)/1000),tickValue=Math.max(TICK_SIZE_Y*POINT_VALUE_Y*FX_Y*trade.quantityY,1e-12),tickEq=gross/tickValue;
     portfolio.totalTicks+=tickEq;
-    portfolio.trades.push({trade_id:trade.id,strategy:STRATEGY,direction:trade.direction>0?(trade.isPair?"LONG_SPREAD":"LONG"):(trade.isPair?"SHORT_SPREAD":"SHORT"),opened_at:trade.openedAt.toISOString(),closed_at:timestamp.toISOString(),duration_seconds:duration,symbol_y:SYMBOL_Y,quantity_y:trade.quantityY,entry_y:trade.entryY,exit_y:exitY,symbol_x:trade.isPair?SYMBOL_X:"",quantity_x:trade.quantityX,entry_x:trade.isPair?trade.entryX:"",exit_x:trade.isPair?exitX:"",beta_entry:trade.beta,gross_pnl:gross,entry_commission:trade.entryCommission,exit_commission:exitCommission,total_costs:totalCosts,net_pnl:net,equivalent_y_ticks:tickEq,leverage:trade.leverage,entry_reason:trade.entryReason,exit_reason:reason});
+    portfolio.trades.push({trade_id:trade.id,strategy:STRATEGY,direction:trade.direction>0?(trade.isPair?"LONG_SPREAD":"LONG"):(trade.isPair?"SHORT_SPREAD":"SHORT"),opened_at:trade.openedAt.toISOString(),closed_at:timestamp.toISOString(),duration_seconds:duration,symbol_y:SYMBOL_Y,quantity_y:trade.quantityY,entry_y:trade.entryY,exit_y:exitY,symbol_x:trade.isPair?SYMBOL_X:"",quantity_x:trade.quantityX,entry_x:trade.isPair?trade.entryX:"",exit_x:trade.isPair?exitX:"",beta_entry:trade.beta,entry_notional:trade.entryNotional,exit_notional:exitNotional,gross_pnl:gross,commission_bps:COMMISSION_BPS,entry_commission:trade.entryCommission,exit_commission:exitCommission,total_costs:totalCosts,net_pnl:net,equivalent_y_ticks:tickEq,leverage:trade.leverage,entry_reason:trade.entryReason,exit_reason:reason});
     portfolio.position=0;portfolio.trade=null;portfolio.unrealized=0;portfolio.currentTicks=0;portfolio.cooldown=COOLDOWN_OBSERVATIONS;portfolio.candidateTarget=0;portfolio.candidateCount=0;
     logLine(net>=0?"PROFIT":"LOSS",`${exitType} | gross ${formatMoney(gross)} | coûts ${formatMoney(-totalCosts)} | net ${formatMoney(net)} | ${signed(tickEq,1)} ticks Y-eq | ${reason}`,timestamp);
     updateBlotter()
@@ -8031,10 +8245,10 @@ function applyTarget(signal,timestamp,features,isReplay){
     portfolio.lastSignalLabel=signal.label;portfolio.lastSignalReason=signal.reason;portfolio.currentTarget=signal.target;
     const eligible=portfolio.active&&!portfolio.locked&&(TRADE_REPLAY||!isReplay);
     if(!eligible){portfolio.candidateTarget=0;portfolio.candidateCount=0;logVerbose("WAIT",`${signal.label} | ${signal.reason} | session non active`,timestamp);return}
-    if(portfolio.cooldown>0){portfolio.cooldown--;logVerbose("WAIT",`Cooldown ${portfolio.cooldown} | ${signal.reason}`,timestamp);return}
     if(portfolio.position!==0&&signal.target===0){closePosition(signal.reason,timestamp,"MODEL EXIT");return}
     if(portfolio.position!==0&&signal.target===portfolio.position){logVerbose("HOLD",`${signal.label} | ${signal.reason} | uPnL ${formatMoney(portfolio.unrealized)}`,timestamp);return}
     if(portfolio.position!==0&&signal.target===-portfolio.position){closePosition(`Signal opposé : ${signal.reason}`,timestamp,"REVERSAL EXIT");return}
+    if(portfolio.cooldown>0){portfolio.cooldown--;logVerbose("WAIT",`Cooldown ${portfolio.cooldown} | ${signal.reason}`,timestamp);return}
     if(portfolio.position===0&&signal.target!==0){
         if(signal.target===portfolio.candidateTarget)portfolio.candidateCount++;else{portfolio.candidateTarget=signal.target;portfolio.candidateCount=1}
         if(portfolio.candidateCount>=CONFIRMATION){openPosition(signal.target,signal,timestamp,features);portfolio.candidateTarget=0;portfolio.candidateCount=0}
@@ -8045,15 +8259,23 @@ function applyTarget(signal,timestamp,features,isReplay){
 }
 
 function updateRisk(timestamp){
-    if(!portfolio.trade)return;
-    const gross=currentGrossPnl(portfolio.trade),exitCost=commissionFor(portfolio.trade.quantityY,portfolio.trade.quantityX);
-    portfolio.unrealized=gross-exitCost;portfolio.currentTicks=currentEquivalentTicks(portfolio.trade);
-    const tradeNet=gross-portfolio.trade.entryCommission-exitCost;
-    if(MAX_TRADE_LOSS>0&&tradeNet<=-MAX_TRADE_LOSS){closePosition(`Stop trade ${formatMoney(tradeNet)}`,timestamp,"STOP");return}
-    if(MAX_HOLDING_SECONDS>0&&(timestamp-portfolio.trade.openedAt)/1000>=MAX_HOLDING_SECONDS){closePosition(`Time stop ${((timestamp-portfolio.trade.openedAt)/1000).toFixed(0)}s`,timestamp,"TIME STOP");return}
+    if(portfolio.trade){
+        const trade=portfolio.trade;
+        const gross=currentGrossPnl(trade),exitCost=estimatedExitCommission(trade);
+        portfolio.unrealized=gross-exitCost;portfolio.currentTicks=currentEquivalentTicks(trade);
+        const tradeNet=gross-trade.entryCommission-exitCost;
+        if(MAX_TRADE_LOSS>0&&tradeNet<=-MAX_TRADE_LOSS)closePosition(`Stop trade ${formatMoney(tradeNet)}`,timestamp,"STOP");
+        else if(MAX_HOLDING_SECONDS>0&&(timestamp-trade.openedAt)/1000>=MAX_HOLDING_SECONDS)closePosition(`Time stop ${((timestamp-trade.openedAt)/1000).toFixed(0)}s`,timestamp,"TIME STOP");
+    }else{portfolio.unrealized=0;portfolio.currentTicks=0}
+    /* Le kill switch session était enfermé derrière `if(!portfolio.trade)return`,
+       donc inatteignable à plat : une perte réalisée massive ne verrouillait
+       jamais la session, qui réouvrait jusqu'à MAX_TRADES. */
+    if(portfolio.locked||MAX_SESSION_LOSS<=0)return;
     const net=portfolio.realized+portfolio.unrealized;
-    if(MAX_SESSION_LOSS>0&&net<=-MAX_SESSION_LOSS){
-        closePosition(`Kill switch session ${formatMoney(net)}`,timestamp,"KILL");portfolio.locked=true;portfolio.active=false;logLine("KILL","Session verrouillée après la perte maximale.",timestamp)
+    if(net<=-MAX_SESSION_LOSS){
+        if(portfolio.trade)closePosition(`Kill switch session ${formatMoney(net)}`,timestamp,"KILL");
+        portfolio.locked=true;portfolio.active=false;
+        logLine("KILL",`Session verrouillée après la perte maximale (${formatMoney(portfolio.realized+portfolio.unrealized)}). Utilise RESET.`,timestamp)
     }
 }
 
@@ -8077,6 +8299,7 @@ function processModelObservation(timestamp,features,isReplay){
 
 function processSingleTick(tick,isReplay){
     const features=updateKalman(tick.timestamp,tick.price);
+    if(!features.ready){renderAll(features,{target:0,label:"WARM-UP",reason:`Calibration ${features.warmup}/${NORM_MIN} obs`,confidence:0,regime:"WARMUP"});return}
     if(STRATEGY==="Kalman + HMM Directional")features.hmm=updateHmm(features.slopeZ,features.innovationZ);
     processModelObservation(tick.timestamp,features,isReplay)
 }
@@ -8089,7 +8312,7 @@ function processPairPrices(timestamp,priceY,priceX,isReplay){
     if(!Number.isFinite(y)||!Number.isFinite(x))return;
     if(STRATEGY==="Dynamic Beta Residual Momentum"&&Math.abs(y)<1e-14&&Math.abs(x)<1e-14)return;
     const result=updateRegression(timestamp,y,x,priceY,priceX);
-    if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/30`;renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`Régression ${result.warmup||0}/30`,regime:"WARMUP"});return}
+    if(!result.ready){DOM.connection.textContent=`PAIR WARM-UP ${result.warmup||0}/${PAIR_WARMUP}`;renderAll({beta:null,zscore:null},{target:0,label:"WARM-UP",reason:`Régression ${result.warmup||0}/${PAIR_WARMUP}`,regime:"WARMUP"});return}
     processModelObservation(timestamp,result,isReplay)
 }
 function processPairTick(side,tick,isReplay){
@@ -8130,68 +8353,47 @@ function renderMetrics(features,signal){
     DOM.drawdownMetric.textContent=formatMoney(-portfolio.maxDrawdown);DOM.drawdownMetric.style.color=portfolio.maxDrawdown>0?COLORS.red:COLORS.text;DOM.drawdownSub.textContent=`Coûts ${formatMoney(-portfolio.costs)}`;
     DOM.diagPriceY.textContent=market.Y?`${formatPrice(market.Y.price)}${Number.isFinite(market.Y.bid)&&Number.isFinite(market.Y.ask)?` [${formatPrice(market.Y.bid)} / ${formatPrice(market.Y.ask)}]`:""}`:"—";
     DOM.diagPriceX.textContent=market.X?`${formatPrice(market.X.price)}${Number.isFinite(market.X.bid)&&Number.isFinite(market.X.ask)?` [${formatPrice(market.X.bid)} / ${formatPrice(market.X.ask)}]`:""}`:"N/A";
-    DOM.diagPrimary.textContent=Number.isFinite(features.beta)?`β ${features.beta.toFixed(4)}`:(Number.isFinite(features.slopeZ)?`${signed(features.slopeZ,3)}σ`:"—");
-    DOM.diagSecondary.textContent=Number.isFinite(features.zscore)?`z ${signed(features.zscore,3)}`:(Number.isFinite(features.innovationZ)?`${signed(features.innovationZ,3)}σ`:"—");
+    // Le seuil est affiché à côté de la mesure : on voit tout de suite si le
+    // modèle attend parce qu'il est loin du seuil ou parce qu'il vient de rater.
+    DOM.diagPrimary.textContent=Number.isFinite(features.beta)?`β ${features.beta.toFixed(4)}`:(Number.isFinite(features.slopeZ)?`${signed(features.slopeZ,2)}σ / ${ENTRY_THRESHOLD.toFixed(2)}`:"—");
+    DOM.diagSecondary.textContent=Number.isFinite(features.zscore)?`z ${signed(features.zscore,2)} / ${ENTRY_THRESHOLD.toFixed(2)}`:(Number.isFinite(features.innovationZ)?`${signed(features.innovationZ,2)}σ / ${SHOCK_THRESHOLD.toFixed(2)}`:"—");
     if(features.hmm){const labels=["NOISE","UP","DOWN","SHOCK"];let d=0;for(let i=1;i<4;i++)if(features.hmm.posterior[i]>features.hmm.posterior[d])d=i;DOM.diagRegime.textContent=`${labels[d]} ${(features.hmm.posterior[d]*100).toFixed(0)}%`}else DOM.diagRegime.textContent=signal.regime;
     DOM.diagLeverage.textContent=portfolio.trade?`${portfolio.trade.leverage.toFixed(2)}×`:"0.00×";
     DOM.sessionSummary.textContent=`OBS ${portfolio.observations} · REALIZED ${formatMoney(portfolio.realized)} · GROSS ${formatMoney(portfolio.grossRealized)} · PAPER ONLY`
 }
 
-function placeholderTrace(name,color=COLORS.muted){
-    const now=new Date(),then=new Date(now.getTime()-Math.max(REPLAY_MINUTES,1)*60000);
-    return{x:[then,now],y:[0,0],type:"scatter",mode:"lines",name,line:{color,width:1.2,dash:"dot"},hoverinfo:"skip"}
-}
-function placeholderLayout(title,uirevision,message){
-    const layout=commonLayout(title,uirevision);
-    layout.annotations=[{text:message,xref:"paper",yref:"paper",x:.5,y:.52,showarrow:false,font:{size:13,color:COLORS.muted,family:"JetBrains Mono, Consolas, monospace"},align:"center"}];
-    return layout
-}
-function renderModelPlaceholder(message){
-    const title=IS_PAIR?`${ASSET_Y} / ${ASSET_X} - Pair model`:`${ASSET_Y} - Ticks et prix latent`;
-    Plotly.react("modelChart",[placeholderTrace("En attente",COLORS.raw)],placeholderLayout(title,"shadow-model-empty",message),plotConfig)
-}
-function renderEquityPlaceholder(message){
-    Plotly.react("equityChart",[placeholderTrace("Net liquidation P&L",COLORS.green)],placeholderLayout(`Session P&L - ${ACCOUNT_CURRENCY}`,"shadow-equity-empty",message),plotConfig)
-}
-function prepareChart(id){
-    const node=$(id);
-    if(node)node.querySelectorAll(".chart-fallback").forEach(child=>child.remove());
-}
-
 function renderModelChart(){
     let traces,layout;
-    prepareChart("modelChart");
-    if((!IS_PAIR&&kalman.timestamps.length===0)||(IS_PAIR&&regression.timestamps.length===0)){
-        renderModelPlaceholder(API_KEY?"En attente des ticks LSE...":"Ajoute une cle LSE pour recevoir les ticks.");
-        return
-    }
     if(!IS_PAIR){
         traces=[{x:kalman.timestamps,y:kalman.observed,type:"scattergl",mode:"markers",name:"Ticks",marker:{size:3,color:COLORS.raw,opacity:.55}},{x:kalman.timestamps,y:kalman.filtered,type:"scattergl",mode:"lines",name:"Prix latent Kalman",line:{color:COLORS.blue,width:2.2}}];
         if(portfolio.trade&&Number.isFinite(portfolio.trade.entryY))traces.push({x:[portfolio.trade.openedAt,kalman.timestamps[kalman.timestamps.length-1]],y:[portfolio.trade.entryY,portfolio.trade.entryY],type:"scatter",mode:"lines",name:"Prix d’entrée",line:{color:portfolio.trade.direction>0?COLORS.green:COLORS.red,width:1.2,dash:"dot"}});
         layout=commonLayout(`${ASSET_Y} · Ticks et prix latent`,`shadow-single-${SYMBOL_Y}`)
     }else{
-        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:"Residual / spread z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
-        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-2,0,2].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
+        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:STRATEGY==="Relative Value Mean Reversion"?"Spread z (niveau)":"Momentum résiduel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
+        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
     }
     Plotly.react("modelChart",traces,layout,plotConfig)
 }
 function renderEquityChart(){
-    prepareChart("equityChart");
-    if(portfolio.equityTimestamps.length===0){
-        renderEquityPlaceholder(API_KEY?"Le P&L apparaitra apres les premieres observations.":"Ajoute une cle LSE pour demarrer le paper trading.");
-        return
-    }
     const layout=commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity");layout.yaxis.ticksuffix=` ${ACCOUNT_CURRENCY}`;layout.shapes=[{type:"line",xref:"paper",x0:0,x1:1,y0:0,y1:0,line:{color:COLORS.muted,width:1}}];
     Plotly.react("equityChart",[{x:portfolio.equityTimestamps,y:portfolio.equityNet,type:"scattergl",mode:"lines",name:"Net liquidation P&L",fill:"tozeroy",fillcolor:"rgba(40,182,159,0.08)",line:{color:COLORS.green,width:2}},{x:portfolio.equityTimestamps,y:portfolio.equityRealized,type:"scattergl",mode:"lines",name:"Réalisé net",line:{color:COLORS.blue,width:1.5,dash:"dot"}}],layout,plotConfig)
 }
-let renderQueued=false,lastFeatures={},lastSignal={target:0,label:"WAIT",reason:"Warm-up",regime:"WARMUP"};
-function renderAll(features=lastFeatures,signal=lastSignal){lastFeatures=features;lastSignal=signal;if(renderQueued)return;renderQueued=true;requestAnimationFrame(()=>{renderQueued=false;renderMetrics(lastFeatures,lastSignal);renderModelChart();renderEquityChart()})}
+/* Les métriques suivent le rAF, les charts sont limités à ~7 Hz : un Plotly.react
+   sur 5 000 points à chaque tick fige l'onglet dès que le flux accélère. */
+let metricsQueued=false,chartTimer=null,lastChartRender=0,lastFeatures={},lastSignal={target:0,label:"WAIT",reason:"Warm-up",regime:"WARMUP"};
+function renderCharts(){lastChartRender=performance.now();chartTimer=null;renderModelChart();renderEquityChart()}
+function scheduleCharts(){if(chartTimer!==null)return;const wait=Math.max(0,CHART_MIN_INTERVAL_MS-(performance.now()-lastChartRender));chartTimer=setTimeout(renderCharts,wait)}
+function renderAll(features=lastFeatures,signal=lastSignal){
+    lastFeatures=features;lastSignal=signal;
+    if(!metricsQueued){metricsQueued=true;requestAnimationFrame(()=>{metricsQueued=false;renderMetrics(lastFeatures,lastSignal)})}
+    scheduleCharts()
+}
 
 function startSession(){
     if(portfolio.locked){logLine("RISK","Session verrouillée. Utilise RESET.");return}
     if(portfolio.active){logLine("SYSTEM","La session est déjà active.");return}
     portfolio.active=true;portfolio.startedAt=new Date();portfolio.stoppedAt=null;
-    logLine("SYSTEM",`SESSION START | capital ${formatMoney(ACCOUNT_EQUITY)} | levier cible ${TARGET_LEVERAGE.toFixed(2)}× | ${STRATEGY}`);renderAll()
+    logLine("SYSTEM",`SESSION START | capital ${formatMoney(ACCOUNT_EQUITY)} | levier cible ${TARGET_LEVERAGE.toFixed(2)}× | commission ${COMMISSION_BPS} bps/côté | ${STRATEGY}`);renderAll()
 }
 function stopSession(){
     const t=new Date();if(portfolio.trade)closePosition("Arrêt manuel de la session",t,"SESSION CLOSE");portfolio.active=false;portfolio.stoppedAt=t;
@@ -8200,11 +8402,19 @@ function stopSession(){
 function resetSession(){if(portfolio.trade)closePosition("Reset demandé",new Date(),"RESET CLOSE");resetPortfolioState();renderAll()}
 function sessionSummaryRows(){
     const net=portfolio.realized+portfolio.unrealized,wins=portfolio.trades.filter(t=>t.net_pnl>0).length,losses=portfolio.trades.filter(t=>t.net_pnl<0).length;
-    return[{generated_at:nowIso(),strategy:STRATEGY,symbol_y:SYMBOL_Y,symbol_x:SYMBOL_X||"",account_currency:ACCOUNT_CURRENCY,account_equity:ACCOUNT_EQUITY,target_leverage:TARGET_LEVERAGE,session_started_at:portfolio.startedAt?portfolio.startedAt.toISOString():"",session_stopped_at:portfolio.stoppedAt?portfolio.stoppedAt.toISOString():"",observations:portfolio.observations,trades:portfolio.trades.length,winning_trades:wins,losing_trades:losses,realized_pnl:portfolio.realized,unrealized_pnl:portfolio.unrealized,net_liquidation_pnl:net,session_bps:net/ACCOUNT_EQUITY*10000,gross_realized_pnl:portfolio.grossRealized,total_costs:portfolio.costs,equivalent_y_ticks:portfolio.totalTicks+portfolio.currentTicks,max_drawdown:portfolio.maxDrawdown,point_value_y:POINT_VALUE_Y,tick_size_y:TICK_SIZE_Y,point_value_x:POINT_VALUE_X,tick_size_x:TICK_SIZE_X,trade_replay:TRADE_REPLAY}]
+    return[{generated_at:nowIso(),strategy:STRATEGY,symbol_y:SYMBOL_Y,symbol_x:SYMBOL_X||"",account_currency:ACCOUNT_CURRENCY,account_equity:ACCOUNT_EQUITY,target_leverage:TARGET_LEVERAGE,session_started_at:portfolio.startedAt?portfolio.startedAt.toISOString():"",session_stopped_at:portfolio.stoppedAt?portfolio.stoppedAt.toISOString():"",observations:portfolio.observations,trades:portfolio.trades.length,winning_trades:wins,losing_trades:losses,realized_pnl:portfolio.realized,unrealized_pnl:portfolio.unrealized,net_liquidation_pnl:net,session_bps:net/ACCOUNT_EQUITY*10000,gross_realized_pnl:portfolio.grossRealized,total_costs:portfolio.costs,commission_bps:COMMISSION_BPS,min_commission:MIN_COMMISSION,norm_window:NORM_WINDOW,entry_threshold:ENTRY_THRESHOLD,exit_threshold:EXIT_THRESHOLD,equivalent_y_ticks:portfolio.totalTicks+portfolio.currentTicks,max_drawdown:portfolio.maxDrawdown,point_value_y:POINT_VALUE_Y,tick_size_y:TICK_SIZE_Y,point_value_x:POINT_VALUE_X,tick_size_x:TICK_SIZE_X,trade_replay:TRADE_REPLAY}]
 }
 
+function resizeCharts(){for(const id of ["modelChart","equityChart"]){const el=$(id);if(el&&el.clientWidth>0&&el.clientHeight>0){try{Plotly.Plots.resize(el)}catch(error){}}}}
+function setView(view){
+    DOM.workspace.dataset.view=view;
+    document.querySelectorAll("button.view").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+    requestAnimationFrame(resizeCharts);
+}
+$("viewGroup").addEventListener("click",event=>{const b=event.target.closest("button.view");if(b)setView(b.dataset.view)});
+
 DOM.startButton.addEventListener("click",startSession);DOM.stopButton.addEventListener("click",stopSession);DOM.resetButton.addEventListener("click",resetSession);
-DOM.fullscreenButton.addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(error){logLine("SYSTEM",`Fullscreen indisponible : ${error.message}`)}});
+DOM.fullscreenButton.addEventListener("click",async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen()}catch(error){logLine("SYSTEM",`Fullscreen indisponible depuis l’iframe (${error.message}). Utilise les vues COCKPIT / CHARTS / TERMINAL / BLOTTER.`)}});
 DOM.exportTradesButton.addEventListener("click",()=>downloadCsv("shadow_trader_trades.csv",portfolio.trades));
 DOM.exportDecisionsButton.addEventListener("click",()=>downloadCsv("shadow_trader_decisions.csv",portfolio.decisions));
 DOM.exportSummaryButton.addEventListener("click",()=>downloadCsv("shadow_trader_summary.csv",sessionSummaryRows()));
@@ -8237,25 +8447,16 @@ function connect(){
     socket.onclose=()=>{DOM.connection.textContent="DISCONNECTED · RECONNECTING…";logLine("SYSTEM","Connexion perdue. Reconnexion dans 2.5 secondes.");reconnectTimer=setTimeout(connect,2500)}
 }
 window.addEventListener("beforeunload",()=>{if(socket)socket.close()});
-window.addEventListener("resize",()=>{Plotly.Plots.resize($("modelChart"));Plotly.Plots.resize($("equityChart"))});
-
-const connectToLse=connect;
-connect=function(){
-    if(!API_KEY){
-        DOM.connection.textContent="CLE LSE REQUISE";
-        logLine("SYSTEM","Ajoute une cle LSE dans la sidebar pour recevoir les ticks et remplir les graphiques.");
-        return
-    }
-    connectToLse()
-};
+if(typeof ResizeObserver!=="undefined"){const ro=new ResizeObserver(()=>resizeCharts());ro.observe($("modelChart"));ro.observe($("equityChart"))}
+window.addEventListener("resize",resizeCharts);
 
 resetPortfolioState();
-renderAll();
 Plotly.newPlot("modelChart",[],commonLayout("Waiting for model observations…","shadow-model-empty"),plotConfig);
 Plotly.newPlot("equityChart",[],commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity-empty"),plotConfig);
+requestAnimationFrame(resizeCharts);
+logLine("SYSTEM",`Normalisation sur ${NORM_WINDOW} obs (min ${NORM_MIN}) · seuil entrée ${ENTRY_THRESHOLD} · commission ${COMMISSION_BPS} bps/côté.`);
 logLine("SYSTEM",TRADE_REPLAY?"AUTO START · le replay sera inclus dans le paper P&L.":"Le replay initialise le modèle. Clique START SESSION pour commencer le P&L live.");
 connect();
-setTimeout(()=>renderAll(),50);
 </script>
 </body>
 </html>
@@ -8263,12 +8464,12 @@ setTimeout(()=>renderAll(),50);
 
 html = html_template.replace(
     "__SETTINGS__",
-    json.dumps(settings),
+    json.dumps(live_settings),
 )
 
 components.html(
     html,
-    height=1380 if full_height else 1120,
+    height=int(live_settings["cockpitHeight"]),
     scrolling=False,
 )
 
@@ -8279,6 +8480,7 @@ st.caption(
 )
 
 '''
+
 
 if selected_page == "Workspace":
     execute_embedded_page(

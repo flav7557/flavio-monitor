@@ -43,12 +43,36 @@ Le moteur utilise :
 - l'ask pour acheter et le bid pour vendre, lorsqu'ils existent ;
 - sinon le dernier prix ;
 - un slippage supplémentaire configurable ;
-- une commission par unité et par côté ;
+- une commission en points de base du notionnel exécuté, par côté,
+  avec plancher optionnel ;
 - une valeur du point et un tick size configurables ;
 - un facteur de conversion FX vers la devise du compte ;
 - un levier brut cible ;
 - un sizing automatique ;
 - deux jambes pour les modèles pair.
+
+### Cockpit
+
+Le cockpit occupe une hauteur fixe, réglable dans la sidebar, et se répartit en
+quatre panneaux visibles simultanément : modèle, P&L de session, terminal de
+décision et blotter. Quatre vues permettent d'en isoler un :
+
+- `COCKPIT` : les quatre panneaux en 2×2 ;
+- `CHARTS` : les deux graphiques en pleine hauteur ;
+- `TERMINAL` : le terminal seul ;
+- `BLOTTER` : le blotter seul.
+
+Le cockpit est une iframe : modifier un réglage la recrée et remet la session à
+zéro. Les réglages ne sont donc appliqués qu'au clic sur **Appliquer &
+(re)lancer le cockpit**, ce qui permet de déplacer les curseurs sans couper une
+session en cours.
+
+### Échelle des seuils
+
+La pente du Kalman, l'innovation, le spread et le momentum résiduel sont
+normalisés par leur propre RMS roulant sur une fenêtre configurable. Un seuil
+exprimé en σ correspond donc à un vrai σ de la grandeur mesurée, quelle que
+soit la réactivité, la confiance dans les ticks ou l'actif.
 
 ### Suivi de session
 
@@ -106,7 +130,7 @@ du produit réellement tradable :
 - tick size ;
 - devise ;
 - conversion FX ;
-- commissions ;
+- commissions, en bps du notionnel ;
 - slippage ;
 - produit cash, CFD, future ou ETF réellement exécuté.
 

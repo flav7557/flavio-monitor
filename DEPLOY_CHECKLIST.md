@@ -19,6 +19,10 @@
 - [ ] STOP & FLATTEN ramène la position à FLAT
 - [ ] RESET fonctionne
 - [ ] Les exports CSV fonctionnent
-- [ ] Le kill switch fonctionne
+- [ ] Le bouton « Appliquer & (re)lancer le cockpit » lance le cockpit
+- [ ] Graphiques et terminal visibles ensemble, sans scroll interne
+- [ ] Les vues COCKPIT / CHARTS / TERMINAL / BLOTTER redimensionnent les graphiques
+- [ ] Le kill switch fonctionne position ouverte
+- [ ] Le kill switch verrouille aussi la session à plat
 - [ ] Le site reste privé / authentifié
 - [ ] Commit, build et URL finale communiqués
