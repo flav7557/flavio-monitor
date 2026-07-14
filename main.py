@@ -7329,23 +7329,31 @@ with st.sidebar:
     )
     symbol_y = resolved_symbols[asset_y]
 
-    if is_pair:
-        default_x = (
-            available_markets.index("S&P 500")
-            if "S&P 500" in available_markets
-            else min(1, len(available_markets) - 1)
-        )
-        asset_x = st.selectbox(
-            "Actif X / hedge",
-            options=available_markets,
-            index=default_x,
-            key="paper_asset_x",
-        )
-        if asset_x == asset_y:
-            st.warning("Choisis deux actifs différents.")
-            st.stop()
+    preferred_x = "S&P 500" if asset_y != "S&P 500" else "Nasdaq 100"
+    default_x = (
+        available_markets.index(preferred_x)
+        if preferred_x in available_markets
+        else min(1, len(available_markets) - 1)
+    )
+    asset_x = st.selectbox(
+        "Actif X / hedge" if is_pair else "Actif X / comparaison",
+        options=available_markets,
+        index=default_x,
+        key="paper_asset_x",
+    )
+    if asset_x == asset_y and is_pair:
+        st.warning("Choisis deux actifs différents.")
+        st.stop()
 
-        symbol_x = resolved_symbols[asset_x]
+    symbol_x = resolved_symbols[asset_x]
+
+    if not is_pair:
+        st.caption(
+            "En mode directionnel, X reste un repere visuel. "
+            "Le signal et le paper trading utilisent Y."
+        )
+
+    if is_pair:
         sync_label = st.selectbox(
             "Synchronisation",
             options=list(SYNC_OPTIONS),
@@ -7354,8 +7362,6 @@ with st.sidebar:
         )
         sync_ms = SYNC_OPTIONS[sync_label]
     else:
-        asset_x = None
-        symbol_x = None
         sync_ms = 0
 
     replay_label = st.selectbox(
@@ -7933,7 +7939,7 @@ td{padding:6px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}
 const SETTINGS = __SETTINGS__;
 
 const API_KEY=SETTINGS.apiKey,STRATEGY=SETTINGS.strategy,SYMBOL_Y=SETTINGS.symbolY,SYMBOL_X=SETTINGS.symbolX,ASSET_Y=SETTINGS.assetY,ASSET_X=SETTINGS.assetX;
-const IS_PAIR=Boolean(SETTINGS.isPair),REPLAY_MINUTES=Number(SETTINGS.replayMinutes),TRADE_REPLAY=Boolean(SETTINGS.tradeReplay),VERBOSE=Boolean(SETTINGS.terminalVerbose),SYNC_MS=Number(SETTINGS.syncMs);
+const IS_PAIR=Boolean(SETTINGS.isPair),HAS_X=Boolean(SYMBOL_X&&SYMBOL_X!==SYMBOL_Y),REPLAY_MINUTES=Number(SETTINGS.replayMinutes),TRADE_REPLAY=Boolean(SETTINGS.tradeReplay),VERBOSE=Boolean(SETTINGS.terminalVerbose),SYNC_MS=Number(SETTINGS.syncMs);
 const REACTIVITY=Number(SETTINGS.reactivity),OBSERVATION_TRUST=Number(SETTINGS.observationTrust),CONFIRMATION=Number(SETTINGS.confirmation),ENTRY_THRESHOLD=Number(SETTINGS.entryThreshold),EXIT_THRESHOLD=Number(SETTINGS.exitThreshold),SHOCK_THRESHOLD=Number(SETTINGS.shockThreshold),SECONDARY_THRESHOLD=Number(SETTINGS.secondaryThreshold),HMM_PERSISTENCE=Number(SETTINGS.hmmPersistence),Z_WINDOW=Number(SETTINGS.zWindow);
 const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.accountEquity),TARGET_LEVERAGE=Number(SETTINGS.targetLeverage),POINT_VALUE_Y=Number(SETTINGS.pointValueY),POINT_VALUE_X=Number(SETTINGS.pointValueX),TICK_SIZE_Y=Number(SETTINGS.tickSizeY),TICK_SIZE_X=Number(SETTINGS.tickSizeX),FX_Y=Number(SETTINGS.fxY),FX_X=Number(SETTINGS.fxX),QUANTITY_STEP=Number(SETTINGS.quantityStep),COMMISSION_BPS=Number(SETTINGS.commissionBps),MIN_COMMISSION=Number(SETTINGS.minCommission),EXTRA_SLIPPAGE_TICKS=Number(SETTINGS.extraSlippageTicks),ALLOW_SHORT=Boolean(SETTINGS.allowShort),MAX_SESSION_LOSS=Number(SETTINGS.maxSessionLoss),MAX_TRADE_LOSS=Number(SETTINGS.maxTradeLoss),MAX_HOLDING_SECONDS=Number(SETTINGS.maxHoldingSeconds),MAX_TRADES=Number(SETTINGS.maxTrades),COOLDOWN_OBSERVATIONS=Number(SETTINGS.cooldownObservations);
 
@@ -7968,6 +7974,18 @@ function rollingRms(values,windowSize){const a=values.length>windowSize?values.s
 function roundQuantity(value){if(!Number.isFinite(value)||value<=0)return 0;const step=Math.max(QUANTITY_STEP,1e-8);return Math.floor(value/step)*step}
 function canonicalSymbol(symbol){const s=String(symbol||"").toUpperCase();if(s===String(SYMBOL_Y).toUpperCase())return"Y";if(SYMBOL_X&&s===String(SYMBOL_X).toUpperCase())return"X";return null}
 function nowIso(){return new Date().toISOString()}
+function updateComparison(timestamp){
+    if(!HAS_X||!market.Y||!market.X)return;
+    if(comparison.baseY===null||comparison.baseX===null){
+        comparison.baseY=market.Y.price;
+        comparison.baseX=market.X.price;
+    }
+    if(!Number.isFinite(comparison.baseY)||!Number.isFinite(comparison.baseX)||comparison.baseY===0||comparison.baseX===0)return;
+    comparison.timestamps.push(timestamp);
+    comparison.normalizedY.push(market.Y.price/comparison.baseY*100);
+    comparison.normalizedX.push(market.X.price/comparison.baseX*100);
+    for(const a of [comparison.timestamps,comparison.normalizedY,comparison.normalizedX])if(a.length>5000)a.splice(0,a.length-5000);
+}
 
 function logLine(type,message,timestamp=new Date()){
     const time=timestamp.toLocaleTimeString([],{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit",fractionalSecondDigits:3});
@@ -7990,6 +8008,7 @@ const market={Y:null,X:null,previousY:null,previousX:null,bucket:null,bucketY:nu
 const kalman={state:null,covariance:null,differences:[],trendBuffer:[],innovationBuffer:[],timestamps:[],observed:[],filtered:[],slopeZ:[],innovationZ:[]};
 const hmm={posterior:[.82,.06,.06,.06],candidate:0,candidateCount:0,confirmedState:0,duration:0};
 const regression={state:null,covariance:null,warmup:[],xBar:0,residualVariance:1e-8,residuals:[],spread:[],momentum:[],cumulativeResidual:0,cumulativeSeries:[],timestamps:[],beta:[],zscore:[],normalizedY:[],normalizedX:[],baseY:null,baseX:null};
+const comparison={timestamps:[],normalizedY:[],normalizedX:[],baseY:null,baseX:null};
 const portfolio={active:TRADE_REPLAY,locked:false,startedAt:TRADE_REPLAY?new Date():null,stoppedAt:null,position:0,trade:null,realized:0,grossRealized:0,unrealized:0,costs:0,currentTicks:0,totalTicks:0,currentTarget:0,candidateTarget:0,candidateCount:0,cooldown:0,trades:[],decisions:[],logs:[],equityTimestamps:[],equityNet:[],equityRealized:[],peakNet:0,maxDrawdown:0,observations:0,lastSignalLabel:"WAIT",lastSignalReason:"Warm-up",lastStateFingerprint:null};
 
 function resetPortfolioState(){
@@ -8366,8 +8385,13 @@ function renderModelChart(){
     let traces,layout;
     if(!IS_PAIR){
         traces=[{x:kalman.timestamps,y:kalman.observed,type:"scattergl",mode:"markers",name:"Ticks",marker:{size:3,color:COLORS.raw,opacity:.55}},{x:kalman.timestamps,y:kalman.filtered,type:"scattergl",mode:"lines",name:"Prix latent Kalman",line:{color:COLORS.blue,width:2.2}}];
+        if(HAS_X&&comparison.timestamps.length){
+            traces.push({x:comparison.timestamps,y:comparison.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,yaxis:"y2",line:{color:COLORS.green,width:1.3,dash:"dot"}});
+            traces.push({x:comparison.timestamps,y:comparison.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,yaxis:"y2",line:{color:COLORS.purple,width:1.5}});
+        }
         if(portfolio.trade&&Number.isFinite(portfolio.trade.entryY))traces.push({x:[portfolio.trade.openedAt,kalman.timestamps[kalman.timestamps.length-1]],y:[portfolio.trade.entryY,portfolio.trade.entryY],type:"scatter",mode:"lines",name:"Prix d’entrée",line:{color:portfolio.trade.direction>0?COLORS.green:COLORS.red,width:1.2,dash:"dot"}});
-        layout=commonLayout(`${ASSET_Y} · Ticks et prix latent`,`shadow-single-${SYMBOL_Y}`)
+        layout=commonLayout(`${ASSET_Y} · Kalman${HAS_X?` · comparaison ${ASSET_X}`:""}`,`shadow-single-${SYMBOL_Y}-${SYMBOL_X||"none"}`);
+        if(HAS_X&&comparison.timestamps.length)layout.yaxis2={title:"base 100",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:false,automargin:true};
     }else{
         traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:STRATEGY==="Relative Value Mean Reversion"?"Spread z (niveau)":"Momentum résiduel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
         layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
@@ -8425,8 +8449,11 @@ function handleTick(message){
     const timestamp=parseTimestamp(message.timestamp??message.ts),price=finite(message.price);if(!Number.isFinite(price)||Number.isNaN(timestamp.getTime()))return;
     const tick={timestamp,price,bid:finite(message.bid),ask:finite(message.ask),volume:finite(message.volume),replay:Boolean(message.replay)};
     market[side]=tick;if(!tick.replay)market.liveSeen=true;
-    DOM.connection.textContent=`${tick.replay?"REPLAY":"LIVE"} · ${timestamp.toLocaleTimeString([],{hour12:false})} · Y ${market.Y?formatPrice(market.Y.price):"—"}${IS_PAIR?` · X ${market.X?formatPrice(market.X.price):"—"}`:""}`;
-    if(!IS_PAIR)processSingleTick(tick,tick.replay);else processPairTick(side,tick,tick.replay)
+    updateComparison(timestamp);
+    DOM.connection.textContent=`${tick.replay?"REPLAY":"LIVE"} · ${timestamp.toLocaleTimeString([],{hour12:false})} · Y ${market.Y?formatPrice(market.Y.price):"—"}${HAS_X?` · X ${market.X?formatPrice(market.X.price):"—"}`:""}`;
+    if(IS_PAIR)processPairTick(side,tick,tick.replay);
+    else if(side==="Y")processSingleTick(tick,tick.replay);
+    else renderAll()
 }
 function connect(){
     clearTimeout(reconnectTimer);DOM.connection.textContent="CONNECTING TO LSE WEBSOCKET…";socket=new WebSocket("wss://data-ws.londonstrategicedge.com");
@@ -8434,7 +8461,8 @@ function connect(){
         const message=JSON.parse(event.data);
         if(message.type==="welcome"){socket.send(JSON.stringify({action:"auth",api_key:API_KEY}));return}
         if(message.type==="authenticated"){
-            const start=(Date.now()-REPLAY_MINUTES*60000)/1000,symbols=IS_PAIR?[SYMBOL_Y,SYMBOL_X]:[SYMBOL_Y];
+            const start=(Date.now()-REPLAY_MINUTES*60000)/1000,symbols=[SYMBOL_Y];
+            if(HAS_X)symbols.push(SYMBOL_X);
             for(const symbol of symbols)socket.send(JSON.stringify({action:"subscribe",symbol,start}));
             DOM.connection.textContent=`AUTHENTICATED · REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connecté | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradé":"replay warm-up uniquement"}`);return
         }
