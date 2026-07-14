@@ -7359,41 +7359,33 @@ except Exception:
 
 with st.sidebar:
     st.markdown("### Shadow Trader")
+    st.caption("1. Choisis d'abord l'actif principal X, puis le modele.")
 
-    if default_api_key:
-        api_key = default_api_key
-        st.caption("Clé LSE chargée depuis les secrets du serveur.")
-    else:
-        api_key = st.text_input(
-            "Clé API LSE",
-            type="password",
-            placeholder="lse_live_...",
-            key="paper_api_key",
+    default_primary = (
+        available_markets.index("Gold")
+        if "Gold" in available_markets
+        else (
+            available_markets.index("Nasdaq 100")
+            if "Nasdaq 100" in available_markets
+            else 0
         )
+    )
+    asset_y = st.selectbox(
+        "Actif X principal",
+        options=available_markets,
+        index=default_primary,
+        key="paper_asset_y",
+    )
+    symbol_y = resolved_symbols[asset_y]
 
-if not api_key:
-    st.info("Ajoute la clé LSE dans les secrets du serveur ou dans la sidebar.")
-    st.stop()
+    y_market_open, y_market_detail = market_is_open(asset_y)
+    if y_market_open:
+        st.success(f"{asset_y} ouvert - {y_market_detail}")
+    else:
+        st.warning(f"{asset_y} ferme - {y_market_detail}. Choisis un actif ouvert pour lancer une session.")
 
-try:
-    resolved_symbols, unresolved_markets = resolve_lse_symbols(api_key)
-except Exception as error:
-    st.error(f"Impossible de lire le catalogue LSE : {error}")
-    st.stop()
-
-available_markets = [
-    market
-    for market in MARKETS
-    if market in resolved_symbols
-]
-
-if not available_markets:
-    st.error("Aucun marché compatible trouvé dans le catalogue LSE.")
-    st.stop()
-
-with st.sidebar:
     strategy = st.selectbox(
-        "Stratégie paper",
+        "Que veux-tu faire ?",
         options=list(STRATEGIES),
         key="paper_strategy",
     )
@@ -7402,34 +7394,25 @@ with st.sidebar:
     strategy_family = STRATEGY_FAMILY[strategy]
     is_pair = strategy in PAIR_STRATEGIES
 
-    default_y = (
-        available_markets.index("Nasdaq 100")
-        if "Nasdaq 100" in available_markets
-        else 0
-    )
-
-    asset_y = st.selectbox(
-        "Actif Y",
-        options=available_markets,
-        index=default_y,
-        key="paper_asset_y",
-    )
-    symbol_y = resolved_symbols[asset_y]
-
     if is_pair:
-        x_options = [market for market in available_markets if market != asset_y]
-        if not x_options:
-            st.error("Cette strategie a besoin de deux actifs disponibles.")
+        hedge_options = [market for market in available_markets if market != asset_y]
+        if not hedge_options:
+            st.error("Cette strategie a besoin d'un deuxieme actif disponible.")
             st.stop()
-        preferred_x = "S&P 500" if asset_y != "S&P 500" else "Nasdaq 100"
-        default_x = x_options.index(preferred_x) if preferred_x in x_options else 0
+        preferred_hedge = "S&P 500" if asset_y != "S&P 500" else "Nasdaq 100"
+        default_hedge = hedge_options.index(preferred_hedge) if preferred_hedge in hedge_options else 0
         asset_x = st.selectbox(
-            "Actif X / hedge",
-            options=x_options,
-            index=default_x,
+            "Actif Y hedge / comparaison",
+            options=hedge_options,
+            index=default_hedge,
             key="paper_asset_x",
         )
         symbol_x = resolved_symbols[asset_x]
+        x_market_open, x_market_detail = market_is_open(asset_x)
+        if x_market_open:
+            st.success(f"{asset_x} ouvert - {x_market_detail}")
+        else:
+            st.warning(f"{asset_x} ferme - {x_market_detail}. Le modele de paire ne lancera pas de session.")
         sync_label = st.selectbox(
             "Synchronisation",
             options=list(SYNC_OPTIONS),
@@ -7440,19 +7423,20 @@ with st.sidebar:
     else:
         asset_x = None
         symbol_x = None
-        st.caption("Mode mono-actif : le signal et le paper trading utilisent Y.")
+        x_market_open, x_market_detail = True, ""
         sync_ms = 0
 
-    y_market_open, y_market_detail = market_is_open(asset_y)
-    x_market_open, x_market_detail = market_is_open(asset_x)
     market_open = y_market_open and x_market_open
-    market_status = f"Y {asset_y}: {y_market_detail}"
+    market_status = f"X {asset_y}: {y_market_detail}"
     if asset_x:
-        market_status += f" | X {asset_x}: {x_market_detail}"
-    if market_open:
-        st.success(f"Marche ouvert - {market_status}")
-    else:
-        st.warning(f"Marche ferme - {market_status}")
+        market_status += f" | Y {asset_x}: {x_market_detail}"
+
+    st.divider()
+    adjust_model = st.toggle(
+        "Ajustements avances du modele",
+        value=False,
+        key="paper_adjust_model",
+    )
 
     replay_label = st.selectbox(
         "Warm-up / replay",
@@ -7479,157 +7463,64 @@ with st.sidebar:
         key="paper_verbose",
     )
 
-    st.divider()
-    st.markdown("#### Modèle")
+    reactivity = 5
+    observation_trust = 6
+    confirmation = 3
+    norm_window = 750
+    z_window = 60
+    hmm_persistence = 0.92
+    secondary_threshold = 0.50
 
-    reactivity = st.slider(
-        "Réactivité Kalman",
-        1,
-        10,
-        5,
-        key="paper_reactivity",
-    )
-    observation_trust = st.slider(
-        "Confiance dans les ticks",
-        1,
-        10,
-        6,
-        key="paper_trust",
-    )
-    confirmation = st.slider(
-        "Confirmations avant entrée",
-        1,
-        10,
-        3,
-        key="paper_confirmation",
-    )
-    norm_window = st.slider(
-        "Fenêtre de normalisation (observations)",
-        200,
-        3000,
-        750,
-        50,
-        help=(
-            "Fenêtre utilisée pour ramener la pente et l’innovation à une vraie "
-            "échelle en σ. Plus elle est courte, plus les seuils s’adaptent vite "
-            "au régime en cours."
-        ),
-        key="paper_norm_window",
-    )
-
-    if strategy_family in {"trend", "single_reversion"}:
-        entry_threshold = st.slider(
-            "Seuil de pente d’entrée (σ)",
-            0.10,
-            3.00,
-            1.25,
-            0.05,
-            key="paper_trend_entry",
-        )
-        exit_threshold = st.slider(
-            "Seuil de pente de sortie (σ)",
-            0.00,
-            1.50,
-            0.35,
-            0.05,
-            key="paper_trend_exit",
-        )
-        shock_threshold = st.slider(
-            "Innovation de choc (σ)",
-            1.0,
-            6.0,
-            2.75,
-            0.25,
-            key="paper_trend_shock",
-        )
-        hmm_persistence = 0.92
-        secondary_threshold = 0.50
-
-    elif strategy_family == "hmm":
-        entry_threshold = st.slider(
-            "Probabilité d’entrée",
-            0.50,
-            0.95,
-            0.70,
-            0.05,
-            key="paper_hmm_entry",
-        )
-        exit_threshold = st.slider(
-            "Probabilité minimale de maintien",
-            0.20,
-            0.80,
-            0.48,
-            0.04,
-            key="paper_hmm_hold",
-        )
-        secondary_threshold = st.slider(
-            "Probabilité choc — sortie",
-            0.25,
-            0.90,
-            0.50,
-            0.05,
-            key="paper_hmm_shock",
-        )
-        hmm_persistence = st.slider(
-            "Persistance HMM",
-            0.70,
-            0.99,
-            0.92,
-            0.01,
-            key="paper_hmm_persistence",
-        )
+    if strategy_family == "hmm":
+        entry_threshold = 0.70
+        exit_threshold = 0.48
+        shock_threshold = 2.75
+    elif strategy_family == "pair_momentum":
+        entry_threshold = 1.25
+        exit_threshold = 0.35
+        shock_threshold = 4.0
+    elif strategy_family == "pair_reversion":
+        entry_threshold = 2.00
+        exit_threshold = 0.25
+        shock_threshold = 5.0
+    elif strategy_family == "single_reversion":
+        entry_threshold = 1.80
+        exit_threshold = 0.35
+        shock_threshold = 4.50
+    else:
+        entry_threshold = 1.25
+        exit_threshold = 0.35
         shock_threshold = 2.75
 
-    elif strategy_family == "pair_momentum":
-        entry_threshold = st.slider(
-            "Z-score momentum résiduel — entrée",
-            0.50,
-            4.00,
-            1.25,
-            0.10,
-            key="paper_beta_entry",
-        )
-        exit_threshold = st.slider(
-            "Z-score momentum résiduel — sortie",
-            0.00,
-            2.00,
-            0.35,
-            0.05,
-            key="paper_beta_exit",
-        )
-        shock_threshold = 4.0
-        hmm_persistence = 0.92
-        secondary_threshold = 0.50
+    if adjust_model:
+        st.divider()
+        st.markdown("#### Ajustements avances")
 
-    else:
-        entry_threshold = st.slider(
-            "Z-score spread — entrée",
-            0.75,
-            5.00,
-            2.00,
-            0.10,
-            key="paper_rv_entry",
+        reactivity = st.slider("Reactivite Kalman", 1, 10, reactivity, key="paper_reactivity")
+        observation_trust = st.slider("Confiance dans les ticks", 1, 10, observation_trust, key="paper_trust")
+        confirmation = st.slider("Confirmations avant entree", 1, 10, confirmation, key="paper_confirmation")
+        norm_window = st.slider(
+            "Fenetre de normalisation",
+            200,
+            3000,
+            norm_window,
+            50,
+            key="paper_norm_window",
         )
-        exit_threshold = st.slider(
-            "Z-score spread — sortie",
-            0.00,
-            2.00,
-            0.25,
-            0.05,
-            key="paper_rv_exit",
-        )
-        shock_threshold = 5.0
-        hmm_persistence = 0.92
-        secondary_threshold = 0.50
 
-    z_window = st.slider(
-        "Fenêtre z-score",
-        20,
-        250,
-        60,
-        10,
-        key="paper_z_window",
-    )
+        if strategy_family == "hmm":
+            entry_threshold = st.slider("Probabilite entree", 0.50, 0.95, entry_threshold, 0.05, key="paper_hmm_entry")
+            exit_threshold = st.slider("Probabilite maintien", 0.20, 0.80, exit_threshold, 0.04, key="paper_hmm_hold")
+            secondary_threshold = st.slider("Probabilite choc", 0.25, 0.90, secondary_threshold, 0.05, key="paper_hmm_shock")
+            hmm_persistence = st.slider("Persistance HMM", 0.70, 0.99, hmm_persistence, 0.01, key="paper_hmm_persistence")
+        elif strategy_family in {"pair_momentum", "pair_reversion"}:
+            entry_threshold = st.slider("Seuil z-score entree", 0.50, 5.00, entry_threshold, 0.10, key="paper_pair_entry")
+            exit_threshold = st.slider("Seuil z-score sortie", 0.00, 2.00, exit_threshold, 0.05, key="paper_pair_exit")
+            z_window = st.slider("Fenetre z-score", 20, 250, z_window, 10, key="paper_z_window")
+        else:
+            entry_threshold = st.slider("Seuil entree", 0.10, 4.00, entry_threshold, 0.05, key="paper_single_entry")
+            exit_threshold = st.slider("Seuil sortie", 0.00, 2.00, exit_threshold, 0.05, key="paper_single_exit")
+            shock_threshold = st.slider("Innovation choc", 1.00, 6.00, shock_threshold, 0.25, key="paper_single_shock")
 
     st.divider()
     st.markdown("#### Exécution et levier")
@@ -8502,8 +8393,13 @@ function renderModelChart(){
         layout=commonLayout(`${ASSET_Y} · Kalman${HAS_X?` · comparaison ${ASSET_X}`:""}`,`shadow-single-${SYMBOL_Y}-${SYMBOL_X||"none"}`);
         if(HAS_X&&comparison.timestamps.length)layout.yaxis2={title:"base 100",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:false,automargin:true};
     }else{
-        traces=[{x:regression.timestamps,y:regression.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,line:{color:COLORS.blue,width:2}},{x:regression.timestamps,y:regression.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,line:{color:COLORS.purple,width:2}},{x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:SIGNAL_FAMILY==="pair_reversion"?"Spread z":"Residuel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}}];
-        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · Pair model`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))
+        const hasModel=regression.timestamps.length>0;
+        const pairTimes=hasModel?regression.timestamps:comparison.timestamps;
+        const pairY=hasModel?regression.normalizedY:comparison.normalizedY;
+        const pairX=hasModel?regression.normalizedX:comparison.normalizedX;
+        traces=[{x:pairTimes,y:pairY,type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks base 100`,line:{color:COLORS.blue,width:2}},{x:pairTimes,y:pairX,type:"scattergl",mode:"lines",name:`${ASSET_X} ticks base 100`,line:{color:COLORS.purple,width:2}}];
+        if(hasModel)traces.push({x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:SIGNAL_FAMILY==="pair_reversion"?"Spread z":"Residuel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}});
+        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · ${hasModel?"Pair model":"Ticks live"}`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);if(hasModel){layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))}
     }
     Plotly.react("modelChart",traces,layout,plotConfig)
 }
