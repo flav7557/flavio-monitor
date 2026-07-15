@@ -2893,10 +2893,38 @@ def openai_error_message(
     return message[:700] or response.text[:700]
 
 
-def call_bureau_ai(
+def groq_error_message(
+    response: requests.Response,
+) -> str:
+    try:
+        payload = response.json()
+        error = payload.get("error", {})
+    except Exception:
+        return response.text[:700]
+
+    message = error.get("message", "")
+    code = error.get("code")
+
+    if response.status_code in {401, 403}:
+        return (
+            "clé Groq invalide ou non autorisée. Remplace GROQ_API_KEY "
+            "dans les secrets Streamlit."
+        )
+
+    if response.status_code == 429:
+        return (
+            "quota ou limite Groq atteint. Réessaie plus tard ou vérifie "
+            f"les limites du compte Groq. Détail: {message[:300]}"
+        )
+
+    if code:
+        return f"{code}: {message[:650]}"
+
+    return message[:700] or response.text[:700]
+
+
+def build_bureau_ai_prompt(
     *,
-    api_key: str,
-    model: str,
     selected_label: str,
     selected_context: str,
     dashboard_context: str,
@@ -2906,12 +2934,18 @@ def call_bureau_ai(
     question = user_question.strip() or (
         "Explique simplement ce que signifie l'élément sélectionné."
     )
+    web_instruction = (
+        "Si tu utilises le web, distingue ce qui vient du dashboard et ce "
+        "qui vient de sources externes."
+        if use_web
+        else "N'utilise que les données fournies par le dashboard."
+    )
 
-    prompt = f"""
+    return f"""
 Tu es l'assistant analyste intégré au Bureau Larbou de Flavio Monitor.
 Réponds en français, de façon claire et utile pour lire le dashboard.
 Tu n'envoies aucun ordre, tu ne donnes pas de recommandation d'achat ou de vente.
-Si tu utilises le web, distingue ce qui vient du dashboard et ce qui vient de sources externes.
+{web_instruction}
 Si tu n'as pas assez d'information, dis-le clairement.
 
 Date système: {pd.Timestamp.utcnow().date().isoformat()}
@@ -2931,9 +2965,85 @@ Question ou contexte utilisateur:
 Format attendu:
 - commence par une réponse courte en 2-3 phrases ;
 - puis donne les points importants ;
-- si une recherche web est utile, cite les sources ou les liens fournis par l'outil ;
 - reste prudent sur les causes de marché et signale les hypothèses.
 """.strip()
+
+
+def call_bureau_ai(
+    *,
+    provider: str,
+    api_key: str,
+    model: str,
+    selected_label: str,
+    selected_context: str,
+    dashboard_context: str,
+    user_question: str,
+    use_web: bool,
+) -> str:
+    provider = provider.lower().strip()
+    prompt = build_bureau_ai_prompt(
+        selected_label=selected_label,
+        selected_context=selected_context,
+        dashboard_context=dashboard_context,
+        user_question=user_question,
+        use_web=use_web and provider == "openai",
+    )
+
+    if provider == "groq":
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "Tu es un analyste de marché prudent. "
+                        "Tu réponds uniquement en français."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            "temperature": 0.2,
+            "max_tokens": 900,
+        }
+
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps(payload),
+            timeout=75,
+        )
+
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"Groq a retourné {response.status_code}: "
+                f"{groq_error_message(response)}"
+            )
+
+        data = response.json()
+        answer = (
+            data.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+            .strip()
+        )
+
+        if not answer:
+            raise RuntimeError(
+                "Réponse Groq vide malgré un appel API réussi."
+            )
+
+        return answer
+
+    if provider != "openai":
+        raise RuntimeError(
+            "AI_PROVIDER doit valoir 'groq' ou 'openai'."
+        )
 
     payload: dict[str, Any] = {
         "model": model,
@@ -3069,10 +3179,28 @@ def render_bureau_ai_assistant(
                     height=95,
                 )
 
+                provider = get_secret_value(
+                    "AI_PROVIDER",
+                    "groq",
+                ).lower().strip()
+                provider_label = (
+                    "Groq"
+                    if provider == "groq"
+                    else "OpenAI"
+                    if provider == "openai"
+                    else provider
+                )
+                st.caption(f"Moteur IA : {provider_label}")
+
                 use_web = st.toggle(
                     "Recherche web si utile",
-                    value=True,
+                    value=provider == "openai",
+                    disabled=provider != "openai",
                     key="bureau_ai_use_web",
+                    help=(
+                        "Disponible avec OpenAI. Avec Groq, l'assistant "
+                        "analyse les données du dashboard sans recherche web."
+                    ),
                 )
 
                 if st.button(
@@ -3082,11 +3210,32 @@ def render_bureau_ai_assistant(
                     key="bureau_ai_explain_button",
                 ):
                     st.session_state["bureau_ai_open"] = True
-                    api_key = get_secret_value("OPENAI_API_KEY")
-                    model = get_secret_value(
-                        "OPENAI_MODEL",
-                        "gpt-4.1-mini",
-                    )
+                    if provider == "groq":
+                        api_key = get_secret_value("GROQ_API_KEY")
+                        model = get_secret_value(
+                            "GROQ_MODEL",
+                            "llama-3.3-70b-versatile",
+                        )
+                        missing_secret_message = (
+                            "Ajoute GROQ_API_KEY dans les secrets "
+                            "Streamlit pour activer l'assistant Groq."
+                        )
+                    elif provider == "openai":
+                        api_key = get_secret_value("OPENAI_API_KEY")
+                        model = get_secret_value(
+                            "OPENAI_MODEL",
+                            "gpt-4.1-mini",
+                        )
+                        missing_secret_message = (
+                            "Ajoute OPENAI_API_KEY dans les secrets "
+                            "Streamlit pour activer l'assistant OpenAI."
+                        )
+                    else:
+                        api_key = None
+                        model = None
+                        missing_secret_message = (
+                            "AI_PROVIDER doit valoir 'groq' ou 'openai'."
+                        )
                     st.session_state.pop(
                         "bureau_ai_last_error",
                         None,
@@ -3095,16 +3244,19 @@ def render_bureau_ai_assistant(
                     if not api_key:
                         st.session_state[
                             "bureau_ai_last_error"
-                        ] = (
-                            "Ajoute OPENAI_API_KEY dans les secrets "
-                            "Streamlit pour activer l'assistant."
-                        )
+                        ] = missing_secret_message
                     else:
                         with st.spinner("Analyse en cours..."):
                             try:
                                 answer = call_bureau_ai(
+                                    provider=provider,
                                     api_key=api_key,
-                                    model=model or "gpt-4.1-mini",
+                                    model=model
+                                    or (
+                                        "llama-3.3-70b-versatile"
+                                        if provider == "groq"
+                                        else "gpt-4.1-mini"
+                                    ),
                                     selected_label=selected_label,
                                     selected_context=context_options[
                                         selected_label
