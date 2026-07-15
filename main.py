@@ -7242,7 +7242,7 @@ def market_is_open(asset_name: str | None) -> tuple[bool, str]:
 
 
 REPLAY_OPTIONS = {
-    "Direct live (sans replay)": 0,
+    "Démarrage rapide (dernier tick)": 1,
     "5 minutes": 5,
     "15 minutes": 15,
     "30 minutes": 30,
@@ -7468,11 +7468,12 @@ with st.sidebar:
         "Warm-up / replay",
         options=list(REPLAY_OPTIONS),
         index=0,
-        key="paper_replay_v2",
+        key="paper_replay_v3",
     )
     replay_minutes = REPLAY_OPTIONS[replay_label]
+    quick_start = replay_label.startswith("Démarrage rapide")
 
-    if replay_minutes > 0:
+    if replay_minutes > 0 and not quick_start:
         trade_replay = st.toggle(
             "Trader aussi le replay",
             value=False,
@@ -7484,7 +7485,7 @@ with st.sidebar:
         )
     else:
         trade_replay = False
-        st.caption("Mode direct : aucun historique n'est chargé, démarrage au prochain tick disponible.")
+        st.caption("Démarrage rapide : charge uniquement la dernière minute pour afficher le premier tick.")
 
     terminal_verbose = st.toggle(
         "Terminal verbose",
@@ -7990,7 +7991,14 @@ function rollingZ(values,windowSize){const a=values.slice(-Math.max(10,windowSiz
    moyenne, donc une tendance soutenue reste visible au lieu d'être absorbée. */
 function rollingRms(values,windowSize){const a=values.length>windowSize?values.slice(values.length-windowSize):values;let s=0,n=0;for(const v of a){if(Number.isFinite(v)){s+=v*v;n++}}return n?Math.sqrt(s/n):null}
 function roundQuantity(value){if(!Number.isFinite(value)||value<=0)return 0;const step=Math.max(QUANTITY_STEP,1e-8);return Math.floor(value/step)*step}
-function canonicalSymbol(symbol){const s=String(symbol||"").toUpperCase();if(s===String(SYMBOL_Y).toUpperCase())return"Y";if(SYMBOL_X&&s===String(SYMBOL_X).toUpperCase())return"X";return null}
+function normalizeSymbol(symbol){return String(symbol||"").toUpperCase().replace(/[^A-Z0-9]/g,"")}
+function canonicalSymbol(symbol){
+    const s=String(symbol||"").toUpperCase(),n=normalizeSymbol(symbol),y=String(SYMBOL_Y).toUpperCase(),yn=normalizeSymbol(SYMBOL_Y),x=String(SYMBOL_X||"").toUpperCase(),xn=normalizeSymbol(SYMBOL_X);
+    if(s===y||n===yn)return"Y";
+    if(SYMBOL_X&&(s===x||n===xn))return"X";
+    if(!HAS_X&&n)return"Y";
+    return null
+}
 function nowIso(){return new Date().toISOString()}
 function updateComparison(timestamp){
     if(!HAS_X||!market.Y||!market.X)return;
@@ -8518,7 +8526,8 @@ function connect(){
                 socket.send(JSON.stringify(payload))
             }
             if(REPLAY_MINUTES>0){
-                DOM.connection.textContent=`AUTHENTICATED · REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connecté | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradé":"replay warm-up uniquement"}`)
+                const replayLabel=REPLAY_MINUTES<=1?"démarrage rapide":`replay ${REPLAY_MINUTES} min`;
+                DOM.connection.textContent=`AUTHENTICATED · ${replayLabel.toUpperCase()}`;logLine("SYSTEM",`LSE connecté | ${replayLabel} | ${TRADE_REPLAY?"replay tradé":"warm-up uniquement"}`)
             }else{
                 DOM.connection.textContent="AUTHENTICATED · LIVE DIRECT";logLine("SYSTEM","LSE connecté | mode direct sans replay")
             }
