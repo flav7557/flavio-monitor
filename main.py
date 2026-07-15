@@ -7242,6 +7242,7 @@ def market_is_open(asset_name: str | None) -> tuple[bool, str]:
 
 
 REPLAY_OPTIONS = {
+    "Direct live (sans replay)": 0,
     "5 minutes": 5,
     "15 minutes": 15,
     "30 minutes": 30,
@@ -7466,20 +7467,24 @@ with st.sidebar:
     replay_label = st.selectbox(
         "Warm-up / replay",
         options=list(REPLAY_OPTIONS),
-        index=4,
+        index=0,
         key="paper_replay",
     )
     replay_minutes = REPLAY_OPTIONS[replay_label]
 
-    trade_replay = st.toggle(
-        "Trader aussi le replay",
-        value=False,
-        help=(
-            "Désactivé : le replay initialise le modèle. "
-            "Activé : le paper P&L commence au début du replay."
-        ),
-        key="paper_trade_replay",
-    )
+    if replay_minutes > 0:
+        trade_replay = st.toggle(
+            "Trader aussi le replay",
+            value=False,
+            help=(
+                "Désactivé : le replay initialise le modèle. "
+                "Activé : le paper P&L commence au début du replay."
+            ),
+            key="paper_trade_replay",
+        )
+    else:
+        trade_replay = False
+        st.caption("Mode direct : aucun historique n'est chargé, démarrage au prochain tick disponible.")
 
     terminal_verbose = st.toggle(
         "Terminal verbose",
@@ -8505,10 +8510,19 @@ function connect(){
         const message=JSON.parse(event.data);
         if(message.type==="welcome"){socket.send(JSON.stringify({action:"auth",api_key:API_KEY}));return}
         if(message.type==="authenticated"){
-            const start=(Date.now()-REPLAY_MINUTES*60000)/1000,symbols=[SYMBOL_Y];
+            const symbols=[SYMBOL_Y];
             if(HAS_X)symbols.push(SYMBOL_X);
-            for(const symbol of symbols)socket.send(JSON.stringify({action:"subscribe",symbol,start}));
-            DOM.connection.textContent=`AUTHENTICATED · REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connecté | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradé":"replay warm-up uniquement"}`);return
+            for(const symbol of symbols){
+                const payload={action:"subscribe",symbol};
+                if(REPLAY_MINUTES>0)payload.start=(Date.now()-REPLAY_MINUTES*60000)/1000;
+                socket.send(JSON.stringify(payload))
+            }
+            if(REPLAY_MINUTES>0){
+                DOM.connection.textContent=`AUTHENTICATED · REPLAY ${REPLAY_MINUTES} MIN`;logLine("SYSTEM",`LSE connecté | replay ${REPLAY_MINUTES} min | ${TRADE_REPLAY?"replay tradé":"replay warm-up uniquement"}`)
+            }else{
+                DOM.connection.textContent="AUTHENTICATED · LIVE DIRECT";logLine("SYSTEM","LSE connecté | mode direct sans replay")
+            }
+            return
         }
         if(message.type==="replay_started"){DOM.connection.textContent="REPLAY WARM-UP…";return}
         if(message.type==="replay_complete"){DOM.connection.textContent="REPLAY COMPLETE · WAITING LIVE";return}
