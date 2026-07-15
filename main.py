@@ -2359,6 +2359,20 @@ st.markdown(
             font-size: 0.82rem;
             margin-bottom: 0.45rem;
         }
+
+        .bureau-ai-panel-title {
+            color: #f4f7fb;
+            font-size: 1rem;
+            font-weight: 720;
+            margin-bottom: 0.1rem;
+        }
+
+        .bureau-ai-panel-hint {
+            color: #8490a3;
+            font-size: 0.78rem;
+            line-height: 1.35;
+            margin-bottom: 0.7rem;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -2844,6 +2858,41 @@ def extract_openai_text(data: dict[str, Any]) -> str:
     return "\n\n".join(parts).strip()
 
 
+def openai_error_message(
+    response: requests.Response,
+) -> str:
+    try:
+        payload = response.json()
+        error = payload.get("error", {})
+    except Exception:
+        return response.text[:700]
+
+    code = error.get("code")
+    message = error.get("message", "")
+
+    if code == "insufficient_quota":
+        return (
+            "quota OpenAI insuffisant. La clé est bien lue par le site, "
+            "mais le projet OpenAI n'a pas de crédit/quota actif. "
+            "Active le billing OpenAI ou utilise une clé d'un projet avec "
+            "quota disponible."
+        )
+
+    if code == "invalid_api_key":
+        return (
+            "clé OpenAI invalide ou révoquée. Remplace OPENAI_API_KEY "
+            "dans les secrets Streamlit."
+        )
+
+    if response.status_code == 429:
+        return (
+            "limite OpenAI atteinte. Réessaie plus tard ou vérifie les "
+            f"quotas du projet. Détail: {message[:300]}"
+        )
+
+    return message[:700] or response.text[:700]
+
+
 def call_bureau_ai(
     *,
     api_key: str,
@@ -2928,7 +2977,7 @@ Format attendu:
     if response.status_code >= 400:
         raise RuntimeError(
             f"OpenAI a retourné {response.status_code}: "
-            f"{response.text[:700]}"
+            f"{openai_error_message(response)}"
         )
 
     answer = extract_openai_text(response.json())
@@ -2947,19 +2996,38 @@ def render_bureau_ai_assistant(
 ) -> None:
     with bureau_ai_slot.container():
         _, assistant_column = st.columns(
-            [6.5, 1.55],
+            [5.2, 2.4],
             vertical_alignment="top",
         )
 
         with assistant_column:
-            with st.popover(
-                "Assistant IA",
+            assistant_open = bool(
+                st.session_state.get("bureau_ai_open", False)
+            )
+
+            if st.button(
+                "Fermer l'assistant" if assistant_open else "Assistant IA",
                 use_container_width=True,
+                key="bureau_ai_toggle_button",
             ):
-                st.markdown("#### Assistant Bureau")
-                st.caption(
+                assistant_open = not assistant_open
+                st.session_state["bureau_ai_open"] = assistant_open
+
+            if not assistant_open:
+                return
+
+            with st.container(border=True):
+                st.markdown(
+                    '<div class="bureau-ai-panel-title">'
+                    "Assistant Bureau</div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div class="bureau-ai-panel-hint">'
                     "Clique une ligne du Bureau, ou choisis un élément ici, "
-                    "puis demande une explication."
+                    "puis demande une explication. Le panneau reste ouvert "
+                    "après l'analyse.</div>",
+                    unsafe_allow_html=True,
                 )
 
                 if not context_options:
@@ -3011,17 +3079,25 @@ def render_bureau_ai_assistant(
                     "Expliquer",
                     type="primary",
                     use_container_width=True,
+                    key="bureau_ai_explain_button",
                 ):
+                    st.session_state["bureau_ai_open"] = True
                     api_key = get_secret_value("OPENAI_API_KEY")
                     model = get_secret_value(
                         "OPENAI_MODEL",
                         "gpt-4.1-mini",
                     )
+                    st.session_state.pop(
+                        "bureau_ai_last_error",
+                        None,
+                    )
 
                     if not api_key:
-                        st.warning(
-                            "Ajoute OPENAI_API_KEY dans les secrets Streamlit "
-                            "pour activer l'assistant."
+                        st.session_state[
+                            "bureau_ai_last_error"
+                        ] = (
+                            "Ajoute OPENAI_API_KEY dans les secrets "
+                            "Streamlit pour activer l'assistant."
                         )
                     else:
                         with st.spinner("Analyse en cours..."):
@@ -3041,16 +3117,24 @@ def render_bureau_ai_assistant(
                                     "bureau_ai_last_answer"
                                 ] = answer
                             except Exception as error:
-                                st.error(
+                                st.session_state[
+                                    "bureau_ai_last_error"
+                                ] = (
                                     "Assistant IA indisponible : "
                                     f"{error}"
                                 )
 
+                last_error = st.session_state.get(
+                    "bureau_ai_last_error"
+                )
                 last_answer = st.session_state.get(
                     "bureau_ai_last_answer"
                 )
 
-                if last_answer:
+                if last_error:
+                    st.markdown("---")
+                    st.error(last_error)
+                elif last_answer:
                     st.markdown("---")
                     st.markdown(last_answer)
 
