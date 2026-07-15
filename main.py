@@ -2265,6 +2265,8 @@ from __future__ import annotations
 from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import urlencode
+import json
+import os
 import re
 
 import pandas as pd
@@ -2338,6 +2340,25 @@ st.markdown(
             border-radius: 10px;
             padding: 11px 13px;
         }
+
+        div[data-testid="stPopover"] > button {
+            border-color: #3b82f6;
+            color: #dbeafe;
+            background: rgba(37, 99, 235, 0.14);
+        }
+
+        .bureau-ai-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 10px;
+            border: 1px solid #273142;
+            border-radius: 8px;
+            background: #101620;
+            color: #d1d4dc;
+            font-size: 0.82rem;
+            margin-bottom: 0.45rem;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -2354,6 +2375,8 @@ st.markdown(
     '</div>',
     unsafe_allow_html=True,
 )
+
+bureau_ai_slot = st.empty()
 
 
 # =============================================================================
@@ -2698,6 +2721,341 @@ def style_bureau_table(
 
 
 # =============================================================================
+# BUREAU AI ASSISTANT
+# =============================================================================
+
+def get_secret_value(
+    name: str,
+    default: str | None = None,
+) -> str | None:
+    value = None
+
+    try:
+        value = st.secrets.get(name)
+    except Exception:
+        value = None
+
+    if value is None:
+        value = os.environ.get(name)
+
+    if value in (None, ""):
+        return default
+
+    return str(value)
+
+
+def clean_ai_value(value: Any) -> Any:
+    if pd.isna(value):
+        return None
+
+    if isinstance(value, float):
+        return round(value, 4)
+
+    if isinstance(value, pd.Timestamp):
+        return value.date().isoformat()
+
+    return value
+
+
+def dataframe_preview(
+    dataframe: pd.DataFrame,
+    max_rows: int = 12,
+) -> str:
+    if dataframe is None or dataframe.empty:
+        return "Aucune donnée disponible."
+
+    preview = dataframe.head(max_rows).copy()
+
+    for column in preview.columns:
+        preview[column] = preview[column].map(clean_ai_value)
+
+    return preview.to_string(index=False)
+
+
+def selected_dataframe_rows(event: Any) -> list[int]:
+    try:
+        return list(event.selection.rows)
+    except Exception:
+        pass
+
+    try:
+        return list(event["selection"]["rows"])
+    except Exception:
+        return []
+
+
+def set_bureau_ai_selection(
+    label: str,
+    context: str,
+) -> None:
+    st.session_state["bureau_ai_selected_label"] = label
+    st.session_state["bureau_ai_selected_context"] = context
+
+
+def metric_context_from_row(
+    row: pd.Series | dict[str, Any],
+) -> str:
+    items = []
+
+    for key, value in dict(row).items():
+        if pd.isna(value):
+            continue
+
+        if isinstance(value, float):
+            value = f"{value:.4f}"
+
+        items.append(f"- {key}: {value}")
+
+    return "\n".join(items)
+
+
+def add_context_option(
+    options: dict[str, str],
+    label: str,
+    context: str,
+) -> None:
+    base_label = label
+    suffix = 2
+
+    while label in options:
+        label = f"{base_label} ({suffix})"
+        suffix += 1
+
+    options[label] = context
+
+
+def extract_openai_text(data: dict[str, Any]) -> str:
+    output_text = data.get("output_text")
+    if output_text:
+        return str(output_text).strip()
+
+    parts: list[str] = []
+
+    for item in data.get("output", []):
+        for content in item.get("content", []):
+            if not isinstance(content, dict):
+                continue
+
+            text = content.get("text") or content.get("output_text")
+
+            if text:
+                parts.append(str(text))
+
+    return "\n\n".join(parts).strip()
+
+
+def call_bureau_ai(
+    *,
+    api_key: str,
+    model: str,
+    selected_label: str,
+    selected_context: str,
+    dashboard_context: str,
+    user_question: str,
+    use_web: bool,
+) -> str:
+    question = user_question.strip() or (
+        "Explique simplement ce que signifie l'élément sélectionné."
+    )
+
+    prompt = f"""
+Tu es l'assistant analyste intégré au Bureau Larbou de Flavio Monitor.
+Réponds en français, de façon claire et utile pour lire le dashboard.
+Tu n'envoies aucun ordre, tu ne donnes pas de recommandation d'achat ou de vente.
+Si tu utilises le web, distingue ce qui vient du dashboard et ce qui vient de sources externes.
+Si tu n'as pas assez d'information, dis-le clairement.
+
+Date système: {pd.Timestamp.utcnow().date().isoformat()}
+
+Élément sélectionné par l'utilisateur:
+{selected_label}
+
+Contexte exact de l'élément:
+{selected_context}
+
+Vue synthétique du Bureau Larbou:
+{dashboard_context}
+
+Question ou contexte utilisateur:
+{question}
+
+Format attendu:
+- commence par une réponse courte en 2-3 phrases ;
+- puis donne les points importants ;
+- si une recherche web est utile, cite les sources ou les liens fournis par l'outil ;
+- reste prudent sur les causes de marché et signale les hypothèses.
+""".strip()
+
+    payload: dict[str, Any] = {
+        "model": model,
+        "input": prompt,
+        "max_output_tokens": 900,
+    }
+
+    if use_web:
+        payload["tools"] = [
+            {
+                "type": "web_search",
+            }
+        ]
+        payload["tool_choice"] = "auto"
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    response = requests.post(
+        "https://api.openai.com/v1/responses",
+        headers=headers,
+        data=json.dumps(payload),
+        timeout=75,
+    )
+
+    if (
+        use_web
+        and response.status_code in {400, 404}
+    ):
+        payload.pop("tools", None)
+        payload.pop("tool_choice", None)
+        response = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=75,
+        )
+
+    if response.status_code >= 400:
+        raise RuntimeError(
+            f"OpenAI a retourné {response.status_code}: "
+            f"{response.text[:700]}"
+        )
+
+    answer = extract_openai_text(response.json())
+
+    if not answer:
+        raise RuntimeError(
+            "Réponse IA vide malgré un appel API réussi."
+        )
+
+    return answer
+
+
+def render_bureau_ai_assistant(
+    context_options: dict[str, str],
+    dashboard_context: str,
+) -> None:
+    with bureau_ai_slot.container():
+        _, assistant_column = st.columns(
+            [6.5, 1.55],
+            vertical_alignment="top",
+        )
+
+        with assistant_column:
+            with st.popover(
+                "Assistant IA",
+                use_container_width=True,
+            ):
+                st.markdown("#### Assistant Bureau")
+                st.caption(
+                    "Clique une ligne du Bureau, ou choisis un élément ici, "
+                    "puis demande une explication."
+                )
+
+                if not context_options:
+                    st.info(
+                        "Le Bureau n'a pas encore assez de données à analyser."
+                    )
+                    return
+
+                labels = list(context_options)
+                session_label = st.session_state.get(
+                    "bureau_ai_selected_label"
+                )
+                default_index = (
+                    labels.index(session_label)
+                    if session_label in labels
+                    else 0
+                )
+
+                selected_label = st.selectbox(
+                    "Élément",
+                    options=labels,
+                    index=default_index,
+                    key="bureau_ai_context_picker",
+                )
+
+                st.markdown(
+                    f'<div class="bureau-ai-chip">Sélection : '
+                    f'{selected_label}</div>',
+                    unsafe_allow_html=True,
+                )
+
+                question = st.text_area(
+                    "Question ou contexte optionnel",
+                    placeholder=(
+                        "Ex : explique pourquoi ça monte, compare avec "
+                        "les autres actifs, ou résume le signal macro."
+                    ),
+                    key="bureau_ai_question",
+                    height=95,
+                )
+
+                use_web = st.toggle(
+                    "Recherche web si utile",
+                    value=True,
+                    key="bureau_ai_use_web",
+                )
+
+                if st.button(
+                    "Expliquer",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    api_key = get_secret_value("OPENAI_API_KEY")
+                    model = get_secret_value(
+                        "OPENAI_MODEL",
+                        "gpt-4.1-mini",
+                    )
+
+                    if not api_key:
+                        st.warning(
+                            "Ajoute OPENAI_API_KEY dans les secrets Streamlit "
+                            "pour activer l'assistant."
+                        )
+                    else:
+                        with st.spinner("Analyse en cours..."):
+                            try:
+                                answer = call_bureau_ai(
+                                    api_key=api_key,
+                                    model=model or "gpt-4.1-mini",
+                                    selected_label=selected_label,
+                                    selected_context=context_options[
+                                        selected_label
+                                    ],
+                                    dashboard_context=dashboard_context,
+                                    user_question=question,
+                                    use_web=use_web,
+                                )
+                                st.session_state[
+                                    "bureau_ai_last_answer"
+                                ] = answer
+                            except Exception as error:
+                                st.error(
+                                    "Assistant IA indisponible : "
+                                    f"{error}"
+                                )
+
+                last_answer = st.session_state.get(
+                    "bureau_ai_last_answer"
+                )
+
+                if last_answer:
+                    st.markdown("---")
+                    st.markdown(last_answer)
+
+
+# =============================================================================
 # INDEX PERFORMANCE
 # =============================================================================
 
@@ -2989,6 +3347,11 @@ if not selected_indices:
         "Aucun indice sélectionné : CAC 40 affiché par défaut."
     )
 
+bureau_ai_context_options: dict[str, str] = {}
+display_macro = pd.DataFrame()
+top_movers = pd.DataFrame()
+bottom_movers = pd.DataFrame()
+
 
 try:
     performance_table, index_closes = load_symbol_performance(
@@ -2998,6 +3361,38 @@ try:
 except Exception as error:
     st.error(f"Performance indices : {error}")
     st.stop()
+
+for index_name in selected_indices:
+    if index_name not in performance_table.index:
+        continue
+
+    row = {
+        "Classe": "Indice",
+        "Actif": index_name,
+    }
+
+    for label, days in PERFORMANCE_HORIZONS.items():
+        row[label] = performance_table.loc[
+            index_name,
+            f"{days}j",
+        ]
+
+    series = index_closes[index_name].dropna()
+
+    if not series.empty:
+        row["Première date historique"] = (
+            pd.Timestamp(series.index[0]).date().isoformat()
+        )
+        row["Dernière date historique"] = (
+            pd.Timestamp(series.index[-1]).date().isoformat()
+        )
+        row["Dernière clôture"] = float(series.iloc[-1])
+
+    add_context_option(
+        bureau_ai_context_options,
+        f"Indice · {index_name}",
+        metric_context_from_row(row),
+    )
 
 
 st.markdown(
@@ -3165,6 +3560,33 @@ if commodity_symbols:
 
         commodity_table = pd.DataFrame(commodity_rows)
 
+        for item in commodity_rows:
+            label = (
+                f"Matière première · {item['Famille']} · "
+                f"{item['Actif']}"
+            )
+            full_name = f"{item['Famille']} · {item['Actif']}"
+            context_row = {
+                **item,
+            }
+
+            if full_name in commodity_closes.columns:
+                series = commodity_closes[full_name].dropna()
+
+                if not series.empty:
+                    context_row["Dernière clôture"] = float(
+                        series.iloc[-1]
+                    )
+                    context_row["Dernière date"] = pd.Timestamp(
+                        series.index[-1]
+                    ).date().isoformat()
+
+            add_context_option(
+                bureau_ai_context_options,
+                label,
+                metric_context_from_row(context_row),
+            )
+
         st.dataframe(
             style_bureau_table(
                 commodity_table,
@@ -3288,14 +3710,43 @@ if not commodity_performance.empty:
 
 general_table = pd.DataFrame(general_rows)
 
-st.dataframe(
+general_table_event = st.dataframe(
     style_bureau_table(
         general_table,
         list(PERFORMANCE_HORIZONS),
     ),
     hide_index=True,
     use_container_width=True,
+    on_select="rerun",
+    selection_mode="single-row",
+    key="bureau_general_table",
 )
+
+general_selected_rows = selected_dataframe_rows(
+    general_table_event
+)
+
+if general_selected_rows:
+    selected_general_row = general_table.iloc[
+        general_selected_rows[0]
+    ]
+    selected_general_label = (
+        f"{selected_general_row['Classe']} · "
+        f"{selected_general_row['Famille']} · "
+        f"{selected_general_row['Actif']}"
+    )
+    selected_general_context = metric_context_from_row(
+        selected_general_row
+    )
+    set_bureau_ai_selection(
+        selected_general_label,
+        selected_general_context,
+    )
+    add_context_option(
+        bureau_ai_context_options,
+        selected_general_label,
+        selected_general_context,
+    )
 
 
 st.divider()
@@ -3382,7 +3833,17 @@ else:
             ]
         ].copy()
 
-        st.dataframe(
+        for _, row in display_macro.iterrows():
+            macro_label = (
+                f"Macro · {row['Zone']} · {row['Indicateur']}"
+            )
+            add_context_option(
+                bureau_ai_context_options,
+                macro_label,
+                metric_context_from_row(row),
+            )
+
+        macro_table_event = st.dataframe(
             style_bureau_table(
                 display_macro,
                 ["Inflation YoY", *list(MACRO_HORIZONS)],
@@ -3390,7 +3851,35 @@ else:
             ),
             hide_index=True,
             use_container_width=True,
+            on_select="rerun",
+            selection_mode="single-row",
+            key="bureau_macro_table",
         )
+
+        macro_selected_rows = selected_dataframe_rows(
+            macro_table_event
+        )
+
+        if macro_selected_rows:
+            selected_macro_row = display_macro.iloc[
+                macro_selected_rows[0]
+            ]
+            selected_macro_label = (
+                f"Macro · {selected_macro_row['Zone']} · "
+                f"{selected_macro_row['Indicateur']}"
+            )
+            selected_macro_context = metric_context_from_row(
+                selected_macro_row
+            )
+            set_bureau_ai_selection(
+                selected_macro_label,
+                selected_macro_context,
+            )
+            add_context_option(
+                bureau_ai_context_options,
+                selected_macro_label,
+                selected_macro_context,
+            )
 
         if not macro_history.empty:
             macro_history_chart = go.Figure()
@@ -3964,27 +4453,113 @@ try:
         "Performance",
     ]
 
+    for _, row in top_movers[display_columns].iterrows():
+        add_context_option(
+            bureau_ai_context_options,
+            f"Top performer · {row['Ticker']} · {row['Nom']}",
+            metric_context_from_row(
+                {
+                    **row.to_dict(),
+                    "Univers": movers_universe,
+                    "Période": movers_period_label,
+                    "Rang": "Top performer",
+                }
+            ),
+        )
+
+    for _, row in bottom_movers[display_columns].iterrows():
+        add_context_option(
+            bureau_ai_context_options,
+            f"Flop performer · {row['Ticker']} · {row['Nom']}",
+            metric_context_from_row(
+                {
+                    **row.to_dict(),
+                    "Univers": movers_universe,
+                    "Période": movers_period_label,
+                    "Rang": "Flop performer",
+                }
+            ),
+        )
+
     with top_column:
         st.markdown("#### Top")
-        st.dataframe(
+        top_movers_event = st.dataframe(
             style_change_columns(
                 top_movers[display_columns],
                 ["Performance"],
             ),
             hide_index=True,
             use_container_width=True,
+            on_select="rerun",
+            selection_mode="single-row",
+            key="bureau_top_movers_table",
         )
+
+        top_selected_rows = selected_dataframe_rows(
+            top_movers_event
+        )
+
+        if top_selected_rows:
+            selected_top_row = top_movers[display_columns].iloc[
+                top_selected_rows[0]
+            ]
+            selected_top_label = (
+                f"Top performer · {selected_top_row['Ticker']} · "
+                f"{selected_top_row['Nom']}"
+            )
+            selected_top_context = metric_context_from_row(
+                {
+                    **selected_top_row.to_dict(),
+                    "Univers": movers_universe,
+                    "Période": movers_period_label,
+                    "Rang": "Top performer",
+                }
+            )
+            set_bureau_ai_selection(
+                selected_top_label,
+                selected_top_context,
+            )
 
     with bottom_column:
         st.markdown("#### Flop")
-        st.dataframe(
+        bottom_movers_event = st.dataframe(
             style_change_columns(
                 bottom_movers[display_columns],
                 ["Performance"],
             ),
             hide_index=True,
             use_container_width=True,
+            on_select="rerun",
+            selection_mode="single-row",
+            key="bureau_bottom_movers_table",
         )
+
+        bottom_selected_rows = selected_dataframe_rows(
+            bottom_movers_event
+        )
+
+        if bottom_selected_rows:
+            selected_bottom_row = bottom_movers[
+                display_columns
+            ].iloc[
+                bottom_selected_rows[0]
+            ]
+            selected_bottom_label = (
+                f"Flop performer · {selected_bottom_row['Ticker']} · "
+                f"{selected_bottom_row['Nom']}"
+            )
+            selected_bottom_context = metric_context_from_row(
+                {
+                    **selected_bottom_row.to_dict(),
+                    "Univers": movers_universe,
+                    "Période": movers_period_label,
+                    "Rang": "Flop performer",
+                }
+            )
+            set_bureau_ai_selection(
+                selected_bottom_label,
+                selected_bottom_context,
+            )
 
 except Exception as error:
     st.warning(
@@ -3995,6 +4570,68 @@ st.caption(
     "Composants récupérés depuis Wikipédia, cours et performances "
     "calculés avec Yahoo Finance. Les variations sont calculées clôture à "
     f"clôture sur la période sélectionnée : {movers_period_label}."
+)
+
+session_ai_label = st.session_state.get(
+    "bureau_ai_selected_label"
+)
+session_ai_context = st.session_state.get(
+    "bureau_ai_selected_context"
+)
+
+if (
+    session_ai_label
+    and session_ai_context
+    and session_ai_label not in bureau_ai_context_options
+):
+    bureau_ai_context_options[session_ai_label] = session_ai_context
+
+dashboard_context_parts = [
+    "Tableau général actifs:",
+    dataframe_preview(
+        general_table,
+        max_rows=24,
+    ),
+]
+
+if not display_macro.empty:
+    dashboard_context_parts.extend(
+        [
+            "\nMacro inflation:",
+            dataframe_preview(
+                display_macro,
+                max_rows=18,
+            ),
+        ]
+    )
+
+if not top_movers.empty:
+    dashboard_context_parts.extend(
+        [
+            f"\nTop performers {movers_universe} "
+            f"sur {movers_period_label}:",
+            dataframe_preview(
+                top_movers[display_columns],
+                max_rows=10,
+            ),
+        ]
+    )
+
+if not bottom_movers.empty:
+    dashboard_context_parts.extend(
+        [
+            f"\nFlop performers {movers_universe} "
+            f"sur {movers_period_label}:",
+            dataframe_preview(
+                bottom_movers[display_columns],
+                max_rows=10,
+            ),
+        ]
+    )
+
+render_bureau_ai_assistant(
+    bureau_ai_context_options,
+    "\n".join(dashboard_context_parts),
 )
 
 
