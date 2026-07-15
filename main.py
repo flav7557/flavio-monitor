@@ -7922,7 +7922,7 @@ td{padding:6px;border-bottom:1px solid #151d27;color:#c4ceda;white-space:nowrap}
 </div>
 <div class="workspace" id="workspace" data-view="cockpit">
 <div class="panel" data-cell="model">
-<div class="panel-title">MODEL</div>
+<div class="panel-title">TICKS</div>
 <div id="modelChart" class="chart"></div>
 <div class="diagnostics">
 <div class="diag"><div class="diag-label">Prix Y</div><div class="diag-value" id="diagPriceY">—</div></div>
@@ -7968,8 +7968,8 @@ const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.a
 const NORM_WINDOW=Math.max(120,Number(SETTINGS.normWindow)||750);
 const NORM_MIN=Math.max(60,Math.floor(NORM_WINDOW*0.2));
 const PAIR_WARMUP=PAIR_INPUT==="returns"?60:240;
-const MAX_SERIES_POINTS=1800;
-const CHART_MIN_INTERVAL_MS=180;
+const MAX_SERIES_POINTS=900;
+const CHART_MIN_INTERVAL_MS=220;
 const EQUITY_CHART_INTERVAL_MS=800;
 const MARKET_OPEN=Boolean(SETTINGS.marketOpen),MARKET_STATUS=SETTINGS.marketStatus||"";
 
@@ -8433,25 +8433,19 @@ function renderMetrics(features,signal){
 function renderModelChart(){
     let traces,layout;
     if(!IS_PAIR){
-        const tickTimes=kalman.timestamps.length?kalman.timestamps:rawTicks.timestampsY;
-        const tickPrices=kalman.observed.length?kalman.observed:rawTicks.pricesY;
-        traces=[{x:tickTimes,y:tickPrices,type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks`,line:{color:COLORS.raw,width:1.6}}];
-        if(kalman.filtered.length)traces.push({x:kalman.timestamps,y:kalman.filtered,type:"scattergl",mode:"lines",name:"Prix latent Kalman",line:{color:COLORS.blue,width:2.2}});
-        if(HAS_X&&comparison.timestamps.length){
-            traces.push({x:comparison.timestamps,y:comparison.normalizedY,type:"scattergl",mode:"lines",name:`${ASSET_Y} base 100`,yaxis:"y2",line:{color:COLORS.green,width:1.3,dash:"dot"}});
-            traces.push({x:comparison.timestamps,y:comparison.normalizedX,type:"scattergl",mode:"lines",name:`${ASSET_X} base 100`,yaxis:"y2",line:{color:COLORS.purple,width:1.5}});
-        }
-        if(portfolio.trade&&Number.isFinite(portfolio.trade.entryY))traces.push({x:[portfolio.trade.openedAt,kalman.timestamps[kalman.timestamps.length-1]],y:[portfolio.trade.entryY,portfolio.trade.entryY],type:"scatter",mode:"lines",name:"Prix d’entrée",line:{color:portfolio.trade.direction>0?COLORS.green:COLORS.red,width:1.2,dash:"dot"}});
-        layout=commonLayout(`${ASSET_Y} · Kalman${HAS_X?` · comparaison ${ASSET_X}`:""}`,`shadow-single-${SYMBOL_Y}-${SYMBOL_X||"none"}`);
-        if(HAS_X&&comparison.timestamps.length)layout.yaxis2={title:"base 100",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:false,automargin:true};
+        traces=[{x:rawTicks.timestampsY,y:rawTicks.pricesY,type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks`,line:{color:COLORS.raw,width:1.7}}];
+        layout=commonLayout(`${ASSET_Y} · ticks live`,`${SYMBOL_Y}-ticks-only`);
     }else{
-        const hasModel=regression.timestamps.length>0;
-        const pairTimes=hasModel?regression.timestamps:comparison.timestamps;
-        const pairY=hasModel?regression.normalizedY:comparison.normalizedY;
-        const pairX=hasModel?regression.normalizedX:comparison.normalizedX;
-        traces=[{x:pairTimes,y:pairY,type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks base 100`,line:{color:COLORS.blue,width:2}},{x:pairTimes,y:pairX,type:"scattergl",mode:"lines",name:`${ASSET_X} ticks base 100`,line:{color:COLORS.purple,width:2}}];
-        if(hasModel)traces.push({x:regression.timestamps,y:regression.zscore,type:"scattergl",mode:"lines",name:SIGNAL_FAMILY==="pair_reversion"?"Spread z":"Residuel z",yaxis:"y2",line:{color:COLORS.raw,width:1.5}});
-        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · ${hasModel?"Pair model":"Ticks live"}`,`shadow-pair-${SYMBOL_Y}-${SYMBOL_X}`);if(hasModel){layout.yaxis2={title:"z-score",overlaying:"y",side:"left",gridcolor:"rgba(0,0,0,0)",zeroline:true,zerolinecolor:COLORS.muted,range:[-4,4]};layout.shapes=[-ENTRY_THRESHOLD,0,ENTRY_THRESHOLD].map(level=>({type:"line",xref:"paper",x0:0,x1:1,yref:"y2",y0:level,y1:level,line:{color:level===0?COLORS.muted:COLORS.yellow,width:.8,dash:"dot"},opacity:.55}))}
+        const tickTrace=(times,prices,name,color)=>{
+            const base=prices.find(price=>Number.isFinite(price)&&price!==0);
+            return{x:base?times:[],y:base?prices.map(price=>price/base*100):[],type:"scattergl",mode:"lines",name,line:{color,width:1.8}}
+        };
+        traces=[
+            tickTrace(rawTicks.timestampsY,rawTicks.pricesY,`${ASSET_Y} ticks base 100`,COLORS.blue),
+            tickTrace(rawTicks.timestampsX,rawTicks.pricesX,`${ASSET_X} ticks base 100`,COLORS.purple)
+        ];
+        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · ticks live`,`${SYMBOL_Y}-${SYMBOL_X}-ticks-only`);
+        layout.yaxis.title="base 100";
     }
     Plotly.react("modelChart",traces,layout,plotConfig)
 }
