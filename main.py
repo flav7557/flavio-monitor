@@ -7876,7 +7876,8 @@ button.view{padding:5px 9px;font-size:10px;letter-spacing:.06em;background:#0b11
 .workspace[data-view="blotter"] [data-cell="model"],.workspace[data-view="blotter"] [data-cell="equity"],.workspace[data-view="blotter"] [data-cell="terminal"]{display:none}
 .panel{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;border:1px solid var(--border);background:var(--panel);border-radius:10px}
 .panel-title{flex:0 0 28px;display:flex;align-items:center;gap:8px;padding:0 9px;border-bottom:1px solid var(--border);color:#cbd5e1;font-family:"JetBrains Mono",Consolas,monospace;font-size:10px;font-weight:780;letter-spacing:.05em}
-.chart{flex:1 1 auto;min-height:0;width:100%}
+.chart{flex:1 1 auto;min-height:0;width:100%;position:relative;background:#030506}
+.canvas-chart{display:block;width:100%;height:100%}
 .diagnostics{flex:0 0 auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;padding:6px;border-top:1px solid var(--border)}
 .diag{background:#0d131b;border:1px solid #1c2733;border-radius:6px;padding:5px 6px;min-width:0}
 .diag-label{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.06em}
@@ -7969,8 +7970,8 @@ const NORM_WINDOW=Math.max(120,Number(SETTINGS.normWindow)||750);
 const NORM_MIN=Math.max(60,Math.floor(NORM_WINDOW*0.2));
 const PAIR_WARMUP=PAIR_INPUT==="returns"?60:240;
 const MAX_SERIES_POINTS=900;
-const CHART_MIN_INTERVAL_MS=220;
-const EQUITY_CHART_INTERVAL_MS=800;
+const CHART_MIN_INTERVAL_MS=80;
+const EQUITY_CHART_INTERVAL_MS=500;
 const MARKET_OPEN=Boolean(SETTINGS.marketOpen),MARKET_STATUS=SETTINGS.marketStatus||"";
 
 const COLORS={background:"#050708",grid:"#1b2530",text:"#d9e2ec",muted:"#748192",green:"#28b69f",red:"#ef5b5b",yellow:"#d9b44a",blue:"#76b7e5",purple:"#a28af7",raw:"#d9a36c"};
@@ -7984,21 +7985,56 @@ function commonLayout(title,uirevision){return{template:"plotly_dark",paper_bgco
 function finite(value,fallback=null){const n=Number(value);return Number.isFinite(n)?n:fallback}
 function parseTimestamp(value){if(typeof value==="number")return new Date(value<1e12?value*1000:value);const d=new Date(value);return Number.isNaN(d.getTime())?new Date():d}
 function validTimeMs(value){const ms=value instanceof Date?value.getTime():new Date(value).getTime();return Number.isFinite(ms)?ms:null}
-function fitTickWindow(layout,traces){
-    const times=[];
-    for(const trace of traces)for(const value of trace.x||[]){const ms=validTimeMs(value);if(ms!==null)times.push(ms)}
-    if(!times.length)return;
-    const last=Math.max(...times),first=Math.max(Math.min(...times),last-120000);
-    delete layout.uirevision;
-    layout.datarevision=`${last}-${times.length}`;
-    layout.xaxis.autorange=false;
-    layout.xaxis.range=[new Date(first),new Date(last+2000)];
-    layout.yaxis.autorange=true;
-}
 function formatNumber(value,decimals=2){return Number.isFinite(value)?value.toLocaleString(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}):"—"}
 function formatMoney(value){return `${currencyPrefix}${value>0?"+":""}${formatNumber(value,2)}`}
 function formatPrice(value){if(!Number.isFinite(value))return"—";const d=Math.abs(value)<10?5:(Math.abs(value)<100?4:2);return formatNumber(value,d)}
 function signed(value,decimals=2){return Number.isFinite(value)?`${value>=0?"+":""}${value.toFixed(decimals)}`:"—"}
+function ensureCanvas(containerId){
+    const container=$(containerId);
+    let canvas=container.querySelector("canvas");
+    if(!canvas){container.innerHTML="";canvas=document.createElement("canvas");canvas.className="canvas-chart";container.appendChild(canvas)}
+    const rect=container.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),width=Math.max(260,Math.floor(rect.width||260)),height=Math.max(180,Math.floor(rect.height||180));
+    if(canvas.width!==Math.floor(width*dpr)||canvas.height!==Math.floor(height*dpr)){canvas.width=Math.floor(width*dpr);canvas.height=Math.floor(height*dpr);canvas.style.width=`${width}px`;canvas.style.height=`${height}px`}
+    const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,width,height}
+}
+function prepareSeries(series,windowMs=120000){
+    const rows=[];
+    for(const item of series){
+        const points=[];
+        for(let i=0;i<Math.min(item.x.length,item.y.length);i++){
+            const t=validTimeMs(item.x[i]),v=Number(item.y[i]);
+            if(t!==null&&Number.isFinite(v))points.push({t,v})
+        }
+        if(points.length)rows.push({...item,points})
+    }
+    if(!rows.length)return{rows:[],xMin:Date.now()-windowMs,xMax:Date.now()+2000,yMin:-1,yMax:1};
+    const latest=Math.max(...rows.flatMap(row=>row.points.map(point=>point.t)));
+    const xMin=Math.max(Math.min(...rows.flatMap(row=>row.points.map(point=>point.t))),latest-windowMs),xMax=latest+2000;
+    for(const row of rows)row.points=row.points.filter(point=>point.t>=xMin&&point.t<=xMax);
+    const values=rows.flatMap(row=>row.points.map(point=>point.v)).filter(Number.isFinite);
+    let yMin=values.length?Math.min(...values):-1,yMax=values.length?Math.max(...values):1;
+    if(yMin===yMax){const pad=Math.max(Math.abs(yMin)*0.0004,1);yMin-=pad;yMax+=pad}else{const pad=(yMax-yMin)*0.12;yMin-=pad;yMax+=pad}
+    return{rows,xMin,xMax,yMin,yMax}
+}
+function drawCanvasChart(containerId,series,{title="",subtitle="",money=false,windowMs=120000}={}){
+    const {ctx,width,height}=ensureCanvas(containerId),left=44,right=76,top=24,bottom=30,plotW=Math.max(20,width-left-right),plotH=Math.max(20,height-top-bottom),data=prepareSeries(series,windowMs);
+    ctx.clearRect(0,0,width,height);ctx.fillStyle="#030506";ctx.fillRect(0,0,width,height);
+    ctx.font='11px "JetBrains Mono", Consolas, monospace';ctx.fillStyle=COLORS.text;ctx.fillText(title,8,15);
+    if(subtitle){ctx.fillStyle=COLORS.muted;ctx.fillText(subtitle,Math.min(width-220,Math.max(8,title.length*7+18)),15)}
+    ctx.strokeStyle="#16212d";ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){const y=top+plotH*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(width-right,y);ctx.stroke();const value=data.yMax-(data.yMax-data.yMin)*i/4;ctx.fillStyle=COLORS.muted;ctx.fillText(money?formatMoney(value):formatPrice(value),width-right+8,y+4)}
+    for(let i=0;i<=4;i++){const x=left+plotW*i/4;ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+plotH);ctx.stroke();const label=new Date(data.xMin+(data.xMax-data.xMin)*i/4).toLocaleTimeString([],{hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"});ctx.fillStyle=COLORS.muted;ctx.fillText(label,x-22,height-8)}
+    const xScale=t=>left+(t-data.xMin)/(data.xMax-data.xMin)*plotW,yScale=v=>top+(data.yMax-v)/(data.yMax-data.yMin)*plotH;
+    let lastPoint=null,lastColor=COLORS.raw;
+    for(const row of data.rows){
+        if(!row.points.length)continue;
+        ctx.strokeStyle=row.color;ctx.lineWidth=row.width||2;ctx.beginPath();
+        row.points.forEach((point,index)=>{const x=xScale(point.t),y=yScale(point.v);if(index===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);lastPoint=point;lastColor=row.color});
+        ctx.stroke();
+    }
+    if(lastPoint){const x=xScale(lastPoint.t),y=yScale(lastPoint.v);ctx.fillStyle=lastColor;ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();ctx.fillText(money?formatMoney(lastPoint.v):formatPrice(lastPoint.v),width-right+8,Math.max(top+12,Math.min(top+plotH-6,y-7)))}
+    else{ctx.fillStyle=COLORS.muted;ctx.font='12px "JetBrains Mono", Consolas, monospace';ctx.fillText("En attente des ticks...",left+12,top+plotH/2)}
+}
 function variance(values){const a=values.filter(Number.isFinite);if(a.length<2)return 1e-8;const m=a.reduce((s,v)=>s+v,0)/a.length;return a.reduce((s,v)=>s+(v-m)**2,0)/a.length}
 function rollingZ(values,windowSize){const a=values.slice(-Math.max(10,windowSize));if(a.length<10)return null;const m=a.reduce((s,v)=>s+v,0)/a.length,sd=Math.sqrt(variance(a));return !Number.isFinite(sd)||sd<1e-12?0:(a[a.length-1]-m)/sd}
 /* RMS roulant autour de zéro : contrairement à rollingZ, ne retire pas la
@@ -8443,28 +8479,27 @@ function renderMetrics(features,signal){
 }
 
 function renderModelChart(){
-    let traces,layout;
     if(!IS_PAIR){
-        traces=[{x:rawTicks.timestampsY.slice(),y:rawTicks.pricesY.slice(),type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks`,line:{color:COLORS.raw,width:1.7}}];
-        layout=commonLayout(`${ASSET_Y} · ticks live`,`${SYMBOL_Y}-ticks-only`);
+        drawCanvasChart("modelChart",[
+            {x:rawTicks.timestampsY,y:rawTicks.pricesY,name:`${ASSET_Y} ticks`,color:COLORS.raw,width:2.2}
+        ],{title:`${ASSET_Y} ticks`,subtitle:SYMBOL_Y,windowMs:120000});
     }else{
         const tickTrace=(times,prices,name,color)=>{
             const base=prices.find(price=>Number.isFinite(price)&&price!==0);
-            return{x:base?times.slice():[],y:base?prices.map(price=>price/base*100):[],type:"scattergl",mode:"lines",name,line:{color,width:1.8}}
+            return{x:base?times:[],y:base?prices.map(price=>price/base*100):[],name,color,width:2.1}
         };
-        traces=[
+        drawCanvasChart("modelChart",[
             tickTrace(rawTicks.timestampsY,rawTicks.pricesY,`${ASSET_Y} ticks base 100`,COLORS.blue),
             tickTrace(rawTicks.timestampsX,rawTicks.pricesX,`${ASSET_X} ticks base 100`,COLORS.purple)
-        ];
-        layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · ticks live`,`${SYMBOL_Y}-${SYMBOL_X}-ticks-only`);
-        layout.yaxis.title="base 100";
+        ],{title:`${ASSET_Y} / ${ASSET_X}`,subtitle:"ticks base 100",windowMs:120000});
     }
-    fitTickWindow(layout,traces);
-    Plotly.react("modelChart",traces,layout,plotConfig)
 }
 function renderEquityChart(){
-    const layout=commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity");layout.yaxis.ticksuffix=` ${ACCOUNT_CURRENCY}`;layout.shapes=[{type:"line",xref:"paper",x0:0,x1:1,y0:0,y1:0,line:{color:COLORS.muted,width:1}}];
-    Plotly.react("equityChart",[{x:portfolio.equityTimestamps,y:portfolio.equityNet,type:"scattergl",mode:"lines",name:"Net liquidation P&L",fill:"tozeroy",fillcolor:"rgba(40,182,159,0.08)",line:{color:COLORS.green,width:2}},{x:portfolio.equityTimestamps,y:portfolio.equityRealized,type:"scattergl",mode:"lines",name:"Réalisé net",line:{color:COLORS.blue,width:1.5,dash:"dot"}}],layout,plotConfig)
+    const status=portfolio.trade?"position ouverte":(portfolio.active?"session active / flat":"IDLE / flat");
+    drawCanvasChart("equityChart",[
+        {x:portfolio.equityTimestamps,y:portfolio.equityNet,name:"Net liquidation P&L",color:COLORS.green,width:2},
+        {x:portfolio.equityTimestamps,y:portfolio.equityRealized,name:"Réalisé net",color:COLORS.blue,width:1.4}
+    ],{title:`Session P&L`,subtitle:`${status} · ${ACCOUNT_CURRENCY}`,money:true,windowMs:300000})
 }
 /* Les métriques suivent le rAF. Les graphiques sont rendus par paquets :
    Plotly.react est coûteux si on redessine prix + P&L à chaque tick. */
@@ -8498,7 +8533,7 @@ function sessionSummaryRows(){
     return[{generated_at:nowIso(),strategy:STRATEGY,symbol_y:SYMBOL_Y,symbol_x:SYMBOL_X||"",account_currency:ACCOUNT_CURRENCY,account_equity:ACCOUNT_EQUITY,target_leverage:TARGET_LEVERAGE,session_started_at:portfolio.startedAt?portfolio.startedAt.toISOString():"",session_stopped_at:portfolio.stoppedAt?portfolio.stoppedAt.toISOString():"",observations:portfolio.observations,trades:portfolio.trades.length,winning_trades:wins,losing_trades:losses,realized_pnl:portfolio.realized,unrealized_pnl:portfolio.unrealized,net_liquidation_pnl:net,session_bps:net/ACCOUNT_EQUITY*10000,gross_realized_pnl:portfolio.grossRealized,total_costs:portfolio.costs,commission_bps:COMMISSION_BPS,min_commission:MIN_COMMISSION,norm_window:NORM_WINDOW,entry_threshold:ENTRY_THRESHOLD,exit_threshold:EXIT_THRESHOLD,equivalent_y_ticks:portfolio.totalTicks+portfolio.currentTicks,max_drawdown:portfolio.maxDrawdown,point_value_y:POINT_VALUE_Y,tick_size_y:TICK_SIZE_Y,point_value_x:POINT_VALUE_X,tick_size_x:TICK_SIZE_X,trade_replay:TRADE_REPLAY}]
 }
 
-function resizeCharts(){for(const id of ["modelChart","equityChart"]){const el=$(id);if(el&&el.clientWidth>0&&el.clientHeight>0){try{Plotly.Plots.resize(el)}catch(error){}}}}
+function resizeCharts(){renderModelChart();renderEquityChart()}
 function setView(view){
     DOM.workspace.dataset.view=view;
     document.querySelectorAll("button.view").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
@@ -8559,8 +8594,6 @@ if(typeof ResizeObserver!=="undefined"){const ro=new ResizeObserver(()=>resizeCh
 window.addEventListener("resize",resizeCharts);
 
 resetPortfolioState();
-Plotly.newPlot("modelChart",[],commonLayout("Waiting for model observations…","shadow-model-empty"),plotConfig);
-Plotly.newPlot("equityChart",[],commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity-empty"),plotConfig);
 requestAnimationFrame(resizeCharts);
 logLine("SYSTEM",`Normalisation sur ${NORM_WINDOW} obs (min ${NORM_MIN}) · seuil entrée ${ENTRY_THRESHOLD} · commission ${COMMISSION_BPS} bps/côté.`);
 logLine("SYSTEM",TRADE_REPLAY?"AUTO START · le replay sera inclus dans le paper P&L.":"Le replay initialise le modèle. Clique START SESSION pour commencer le P&L live.");
