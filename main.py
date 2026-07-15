@@ -2500,6 +2500,13 @@ MACRO_HORIZONS = {
     "Var. 1 an": 12,
 }
 
+US_LABOR_SERIES = {
+    "NFP": {
+        "fred": "PAYEMS",
+        "label": "Nonfarm payrolls",
+    },
+}
+
 ASSET_COLORS = [
     "#8bb8e8",
     "#d7a86e",
@@ -2628,6 +2635,15 @@ def format_change_value(
 ) -> str:
     if pd.isna(value):
         return "—"
+
+    if label in {
+        "Dernier NFP",
+        "Moy. 3 mois",
+        "Moy. 6 mois",
+        "Moy. 1 an",
+        "Cumul 1 an",
+    }:
+        return f"{float(value):+.0f}k"
 
     suffix = " pt" if label.startswith("Var.") else "%"
     return f"{float(value):+.2f}{suffix}"
@@ -3465,6 +3481,103 @@ def point_change_over_months(
     return float(series.iloc[-1] - series.iloc[-(months + 1)])
 
 
+def nfp_monthly_change_series(
+    payroll_level_series: pd.Series,
+) -> pd.Series:
+    return payroll_level_series.diff().dropna()
+
+
+def trailing_average(
+    series: pd.Series,
+    months: int,
+) -> float | None:
+    if series.empty:
+        return None
+
+    window = series.tail(months).dropna()
+
+    if window.empty:
+        return None
+
+    return float(window.mean())
+
+
+@st.cache_data(ttl=21600, show_spinner=False)
+def load_us_labor_bookmap() -> tuple[pd.DataFrame, pd.DataFrame]:
+    rows = []
+    history_frames: list[pd.DataFrame] = []
+    today = pd.Timestamp.utcnow().tz_localize(None)
+
+    for short_name, config in US_LABOR_SERIES.items():
+        series_id = config["fred"]
+        label = config["label"]
+        level_series = load_fred_series(series_id)
+        nfp_series = nfp_monthly_change_series(level_series)
+
+        if nfp_series.empty:
+            continue
+
+        latest_date = pd.Timestamp(nfp_series.index[-1])
+        months_lag = (
+            today.year - latest_date.year
+        ) * 12 + today.month - latest_date.month
+        freshness = (
+            "Récent"
+            if months_lag <= 2
+            else (
+                "À surveiller"
+                if months_lag <= 6
+                else "Ancien"
+            )
+        )
+
+        row = {
+            "Zone": "États-Unis",
+            "Indicateur": short_name,
+            "Description": label,
+            "FRED": series_id,
+            "Dernière date": latest_date.date().isoformat(),
+            "Dernier NFP": float(nfp_series.iloc[-1]),
+            "Moy. 3 mois": trailing_average(
+                nfp_series,
+                3,
+            ),
+            "Moy. 6 mois": trailing_average(
+                nfp_series,
+                6,
+            ),
+            "Moy. 1 an": trailing_average(
+                nfp_series,
+                12,
+            ),
+            "Cumul 1 an": float(nfp_series.tail(12).sum())
+            if len(nfp_series) >= 12
+            else None,
+            "Fraîcheur": freshness,
+        }
+        rows.append(row)
+
+        frame = nfp_series.tail(60).rename(
+            "NFP mensuel"
+        ).to_frame()
+        frame["Zone"] = "États-Unis"
+        frame["Indicateur"] = short_name
+        frame["Série"] = f"États-Unis · {short_name}"
+        frame["Date"] = frame.index
+        history_frames.append(
+            frame.reset_index(drop=True)
+        )
+
+    summary = pd.DataFrame(rows)
+    history = (
+        pd.concat(history_frames, ignore_index=True)
+        if history_frames
+        else pd.DataFrame()
+    )
+
+    return summary, history
+
+
 @st.cache_data(ttl=21600, show_spinner=False)
 def load_macro_bookmap(
     selected_regions: tuple[str, ...],
@@ -3585,6 +3698,7 @@ if not selected_indices:
 
 bureau_ai_context_options: dict[str, str] = {}
 display_macro = pd.DataFrame()
+display_labor = pd.DataFrame()
 top_movers = pd.DataFrame()
 bottom_movers = pd.DataFrame()
 
@@ -4187,6 +4301,157 @@ else:
             "3 mois, 6 mois et 1 an. La colonne fraîcheur signale les "
             "séries anciennes."
         )
+
+
+st.divider()
+
+st.markdown(
+    '<div class="section-label">Emploi US · NFP</div>',
+    unsafe_allow_html=True,
+)
+
+try:
+    labor_summary, labor_history = load_us_labor_bookmap()
+
+    if labor_summary.empty:
+        st.warning(
+            "Aucune série emploi US exploitable pour le moment."
+        )
+    else:
+        display_labor = labor_summary[
+            [
+                "Zone",
+                "Indicateur",
+                "Dernière date",
+                "Dernier NFP",
+                "Moy. 3 mois",
+                "Moy. 6 mois",
+                "Moy. 1 an",
+                "Cumul 1 an",
+                "Fraîcheur",
+            ]
+        ].copy()
+
+        for _, row in display_labor.iterrows():
+            labor_label = (
+                f"Emploi US · {row['Indicateur']}"
+            )
+            add_context_option(
+                bureau_ai_context_options,
+                labor_label,
+                metric_context_from_row(row),
+            )
+
+        labor_table_event = st.dataframe(
+            style_bureau_table(
+                display_labor,
+                [
+                    "Dernier NFP",
+                    "Moy. 3 mois",
+                    "Moy. 6 mois",
+                    "Moy. 1 an",
+                    "Cumul 1 an",
+                ],
+                asset_column="Zone",
+            ),
+            hide_index=True,
+            use_container_width=True,
+            on_select="rerun",
+            selection_mode="single-row",
+            key="bureau_labor_table",
+        )
+
+        labor_selected_rows = selected_dataframe_rows(
+            labor_table_event
+        )
+
+        if labor_selected_rows:
+            selected_labor_row = display_labor.iloc[
+                labor_selected_rows[0]
+            ]
+            selected_labor_label = (
+                f"Emploi US · {selected_labor_row['Indicateur']}"
+            )
+            selected_labor_context = metric_context_from_row(
+                selected_labor_row
+            )
+            set_bureau_ai_selection(
+                selected_labor_label,
+                selected_labor_context,
+            )
+            add_context_option(
+                bureau_ai_context_options,
+                selected_labor_label,
+                selected_labor_context,
+            )
+
+        if not labor_history.empty:
+            labor_chart = go.Figure()
+
+            for series_name, group in labor_history.groupby("Série"):
+                labor_chart.add_trace(
+                    go.Bar(
+                        x=group["Date"],
+                        y=group["NFP mensuel"],
+                        name=series_name,
+                        marker_color=asset_color(series_name),
+                        hovertemplate=(
+                            series_name
+                            + "<br>%{x|%Y-%m}"
+                            + "<br>NFP: %{y:+.0f}k"
+                            + "<extra></extra>"
+                        ),
+                    )
+                )
+
+            labor_chart.add_hline(
+                y=0,
+                line_width=1,
+                line_dash="dot",
+            )
+            labor_chart.update_layout(
+                template="plotly_dark",
+                paper_bgcolor="#0b0f15",
+                plot_bgcolor="#0b0f15",
+                height=390,
+                margin=dict(l=25, r=25, t=30, b=35),
+                hovermode="x unified",
+                xaxis=dict(
+                    gridcolor="#202938",
+                    zeroline=False,
+                ),
+                yaxis=dict(
+                    title="Créations nettes d'emplois",
+                    ticksuffix="k",
+                    gridcolor="#202938",
+                    zeroline=False,
+                    side="right",
+                ),
+            )
+
+            with st.expander(
+                "Historique NFP sur 5 ans",
+                expanded=False,
+            ):
+                st.plotly_chart(
+                    labor_chart,
+                    use_container_width=True,
+                    config={
+                        "displaylogo": False,
+                        "scrollZoom": True,
+                    },
+                )
+
+        st.caption(
+            "Source : FRED / Federal Reserve Bank of St. Louis, série PAYEMS. "
+            "Le NFP affiché correspond à la variation mensuelle de l'emploi "
+            "salarié non agricole total, en milliers d'emplois."
+        )
+
+except Exception as error:
+    st.warning(
+        f"NFP indisponible : {error}"
+    )
 
 
 
@@ -4837,6 +5102,17 @@ if not display_macro.empty:
             dataframe_preview(
                 display_macro,
                 max_rows=18,
+            ),
+        ]
+    )
+
+if not display_labor.empty:
+    dashboard_context_parts.extend(
+        [
+            "\nEmploi US / NFP:",
+            dataframe_preview(
+                display_labor,
+                max_rows=8,
             ),
         ]
     )
