@@ -7983,6 +7983,18 @@ const plotConfig={responsive:true,displaylogo:false,scrollZoom:true,doubleClick:
 function commonLayout(title,uirevision){return{template:"plotly_dark",paper_bgcolor:COLORS.background,plot_bgcolor:COLORS.background,autosize:true,margin:{l:32,r:58,t:34,b:26},title:{text:title,x:.01,y:.99,yanchor:"top",font:{size:11,color:COLORS.text,family:"JetBrains Mono, Consolas, monospace"}},hovermode:"x unified",dragmode:"pan",uirevision,legend:{orientation:"h",x:0,y:1.10,font:{size:9,color:COLORS.muted},bgcolor:"rgba(0,0,0,0)"},xaxis:{gridcolor:COLORS.grid,zeroline:false,showspikes:true,spikecolor:COLORS.muted},yaxis:{gridcolor:COLORS.grid,zeroline:false,side:"right",automargin:true}}}
 function finite(value,fallback=null){const n=Number(value);return Number.isFinite(n)?n:fallback}
 function parseTimestamp(value){if(typeof value==="number")return new Date(value<1e12?value*1000:value);const d=new Date(value);return Number.isNaN(d.getTime())?new Date():d}
+function validTimeMs(value){const ms=value instanceof Date?value.getTime():new Date(value).getTime();return Number.isFinite(ms)?ms:null}
+function fitTickWindow(layout,traces){
+    const times=[];
+    for(const trace of traces)for(const value of trace.x||[]){const ms=validTimeMs(value);if(ms!==null)times.push(ms)}
+    if(!times.length)return;
+    const last=Math.max(...times),first=Math.max(Math.min(...times),last-120000);
+    delete layout.uirevision;
+    layout.datarevision=`${last}-${times.length}`;
+    layout.xaxis.autorange=false;
+    layout.xaxis.range=[new Date(first),new Date(last+2000)];
+    layout.yaxis.autorange=true;
+}
 function formatNumber(value,decimals=2){return Number.isFinite(value)?value.toLocaleString(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}):"—"}
 function formatMoney(value){return `${currencyPrefix}${value>0?"+":""}${formatNumber(value,2)}`}
 function formatPrice(value){if(!Number.isFinite(value))return"—";const d=Math.abs(value)<10?5:(Math.abs(value)<100?4:2);return formatNumber(value,d)}
@@ -8433,12 +8445,12 @@ function renderMetrics(features,signal){
 function renderModelChart(){
     let traces,layout;
     if(!IS_PAIR){
-        traces=[{x:rawTicks.timestampsY,y:rawTicks.pricesY,type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks`,line:{color:COLORS.raw,width:1.7}}];
+        traces=[{x:rawTicks.timestampsY.slice(),y:rawTicks.pricesY.slice(),type:"scattergl",mode:"lines",name:`${ASSET_Y} ticks`,line:{color:COLORS.raw,width:1.7}}];
         layout=commonLayout(`${ASSET_Y} · ticks live`,`${SYMBOL_Y}-ticks-only`);
     }else{
         const tickTrace=(times,prices,name,color)=>{
             const base=prices.find(price=>Number.isFinite(price)&&price!==0);
-            return{x:base?times:[],y:base?prices.map(price=>price/base*100):[],type:"scattergl",mode:"lines",name,line:{color,width:1.8}}
+            return{x:base?times.slice():[],y:base?prices.map(price=>price/base*100):[],type:"scattergl",mode:"lines",name,line:{color,width:1.8}}
         };
         traces=[
             tickTrace(rawTicks.timestampsY,rawTicks.pricesY,`${ASSET_Y} ticks base 100`,COLORS.blue),
@@ -8447,6 +8459,7 @@ function renderModelChart(){
         layout=commonLayout(`${ASSET_Y} / ${ASSET_X} · ticks live`,`${SYMBOL_Y}-${SYMBOL_X}-ticks-only`);
         layout.yaxis.title="base 100";
     }
+    fitTickWindow(layout,traces);
     Plotly.react("modelChart",traces,layout,plotConfig)
 }
 function renderEquityChart(){
