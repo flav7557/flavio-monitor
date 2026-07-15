@@ -7468,7 +7468,7 @@ with st.sidebar:
         "Warm-up / replay",
         options=list(REPLAY_OPTIONS),
         index=0,
-        key="paper_replay",
+        key="paper_replay_v2",
     )
     replay_minutes = REPLAY_OPTIONS[replay_label]
 
