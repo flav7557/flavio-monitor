@@ -2458,10 +2458,34 @@ MACRO_CPI_SERIES = {
 }
 
 MACRO_HORIZONS = {
-    "3 mois": 3,
-    "6 mois": 6,
-    "1 an": 12,
+    "Var. 3 mois": 3,
+    "Var. 6 mois": 6,
+    "Var. 1 an": 12,
 }
+
+ASSET_COLORS = [
+    "#8bb8e8",
+    "#d7a86e",
+    "#9ccf8a",
+    "#c79bf2",
+    "#e7b7c8",
+    "#79c7b7",
+    "#d8cf7a",
+    "#9fb0c7",
+    "#e09f86",
+    "#8ed1e6",
+    "#b8d28b",
+    "#c4a7e7",
+]
+
+POSITIVE_STYLE = (
+    "color: #b7e4d6; "
+    "background-color: rgba(96, 190, 160, 0.14);"
+)
+NEGATIVE_STYLE = (
+    "color: #f4b8b8; "
+    "background-color: rgba(230, 120, 120, 0.14);"
+)
 
 WIKIPEDIA_URLS = {
     "CAC 40": "https://en.wikipedia.org/wiki/CAC_40",
@@ -2531,28 +2555,145 @@ def signed_percent(value: float | None) -> str:
     return f"{value:+.2f}%"
 
 
+def asset_color(name: str) -> str:
+    stable_index = sum(
+        (index + 1) * ord(character)
+        for index, character in enumerate(name)
+    )
+    return ASSET_COLORS[
+        stable_index % len(ASSET_COLORS)
+    ]
+
+
+def asset_badge(name: str) -> str:
+    color = asset_color(name)
+    return (
+        f'<span style="display:inline-flex;align-items:center;gap:7px;">'
+        f'<span style="width:10px;height:10px;border-radius:3px;'
+        f'background:{color};display:inline-block;"></span>'
+        f'<span>{name}</span></span>'
+    )
+
+
+def color_value_style(value: Any) -> str:
+    if pd.isna(value):
+        return "color: #8490a3;"
+    if float(value) > 0:
+        return POSITIVE_STYLE
+    if float(value) < 0:
+        return NEGATIVE_STYLE
+    return "color: #d1d4dc;"
+
+
+def format_change_value(
+    value: Any,
+    label: str,
+) -> str:
+    if pd.isna(value):
+        return "—"
+
+    suffix = " pt" if label.startswith("Var.") else "%"
+    return f"{float(value):+.2f}{suffix}"
+
+
 def style_performance_table(
     dataframe: pd.DataFrame,
 ) -> pd.io.formats.style.Styler:
-    def color_value(value: Any) -> str:
-        if pd.isna(value):
-            return "color: #8490a3;"
-        if float(value) > 0:
-            return (
-                "color: #26a69a; "
-                "background-color: rgba(38,166,154,0.08);"
+    return (
+        dataframe.style
+        .map(color_value_style)
+        .format(lambda value: "—" if pd.isna(value) else f"{value:+.2f}%")
+    )
+
+
+def style_change_columns(
+    dataframe: pd.DataFrame,
+    columns: list[str],
+) -> pd.io.formats.style.Styler:
+    valid_columns = [
+        column
+        for column in columns
+        if column in dataframe.columns
+    ]
+
+    formatters = {
+        column: (
+            lambda value, column=column: format_change_value(
+                value,
+                column,
             )
-        if float(value) < 0:
-            return (
-                "color: #ef5350; "
-                "background-color: rgba(239,83,80,0.08);"
-            )
-        return "color: #d1d4dc;"
+        )
+        for column in valid_columns
+    }
+
+    if "Dernier" in dataframe.columns:
+        formatters["Dernier"] = (
+            lambda value: "—"
+            if pd.isna(value)
+            else f"{float(value):.2f}"
+        )
 
     return (
         dataframe.style
-        .map(color_value)
-        .format(lambda value: "—" if pd.isna(value) else f"{value:+.2f}%")
+        .map(color_value_style, subset=valid_columns)
+        .format(formatters)
+    )
+
+
+def style_bureau_table(
+    dataframe: pd.DataFrame,
+    change_columns: list[str],
+    asset_column: str = "Actif",
+) -> pd.io.formats.style.Styler:
+    valid_change_columns = [
+        column
+        for column in change_columns
+        if column in dataframe.columns
+    ]
+
+    def color_asset_column(row: pd.Series) -> list[str]:
+        styles = [""] * len(row)
+
+        if asset_column not in row.index:
+            return styles
+
+        color_key = str(row[asset_column])
+
+        if "Famille" in row.index and str(row["Famille"]) != "Indices":
+            color_key = f"{row['Famille']} · {row[asset_column]}"
+
+        color = asset_color(color_key)
+        asset_index = list(row.index).index(asset_column)
+        styles[asset_index] = f"color: {color}; font-weight: 700;"
+
+        return styles
+
+    return (
+        dataframe.style
+        .apply(color_asset_column, axis=1)
+        .map(color_value_style, subset=valid_change_columns)
+        .format({
+            **{
+                column: (
+                    lambda value, column=column: format_change_value(
+                        value,
+                        column,
+                    )
+                )
+                for column in valid_change_columns
+            },
+            **(
+                {
+                    "Dernier": (
+                        lambda value: "—"
+                        if pd.isna(value)
+                        else f"{float(value):.2f}"
+                    )
+                }
+                if "Dernier" in dataframe.columns
+                else {}
+            ),
+        })
     )
 
 
@@ -2578,7 +2719,7 @@ def load_symbol_performance(
 
     downloaded = yf.download(
         tickers=selected_symbols,
-        period="6mo",
+        period="5y",
         interval="1d",
         auto_adjust=False,
         progress=False,
@@ -2708,20 +2849,26 @@ def load_fred_series(
     return series
 
 
-def percent_change_over_months(
+def inflation_yoy_series(
+    series: pd.Series,
+) -> pd.Series:
+    return (
+        series.pct_change(
+            periods=12,
+            fill_method=None,
+        )
+        * 100
+    ).dropna()
+
+
+def point_change_over_months(
     series: pd.Series,
     months: int,
 ) -> float | None:
     if len(series) <= months:
         return None
 
-    latest = float(series.iloc[-1])
-    reference = float(series.iloc[-(months + 1)])
-
-    if reference == 0:
-        return None
-
-    return (latest / reference - 1) * 100
+    return float(series.iloc[-1] - series.iloc[-(months + 1)])
 
 
 @st.cache_data(ttl=21600, show_spinner=False)
@@ -2747,7 +2894,12 @@ def load_macro_bookmap(
             except Exception:
                 continue
 
-            latest_date = pd.Timestamp(series.index[-1])
+            inflation_series = inflation_yoy_series(series)
+
+            if inflation_series.empty:
+                continue
+
+            latest_date = pd.Timestamp(inflation_series.index[-1])
             months_lag = (
                 today.year - latest_date.year
             ) * 12 + today.month - latest_date.month
@@ -2766,19 +2918,21 @@ def load_macro_bookmap(
                 "Indicateur": indicator,
                 "FRED": series_id,
                 "Dernière date": latest_date.date().isoformat(),
-                "Dernier indice": float(series.iloc[-1]),
+                "Inflation YoY": float(inflation_series.iloc[-1]),
                 "Fraîcheur": freshness,
             }
 
             for label, months in MACRO_HORIZONS.items():
-                row[label] = percent_change_over_months(
-                    series,
+                row[label] = point_change_over_months(
+                    inflation_series,
                     months,
                 )
 
             rows.append(row)
 
-            frame = series.tail(36).rename("Indice").to_frame()
+            frame = inflation_series.tail(60).rename(
+                "Inflation YoY"
+            ).to_frame()
             frame["Zone"] = region
             frame["Indicateur"] = indicator
             frame["Série"] = f"{region} · {indicator}"
@@ -2806,8 +2960,8 @@ with st.sidebar:
         st.rerun()
 
     st.caption(
-        "Les horizons sont calculés en séances de bourse : "
-        "21j correspond approximativement à un mois."
+        "Les horizons courts utilisent les derniers jours de cotation disponibles ; "
+        "les graphiques historiques affichent une base 100 sur 5 ans."
     )
 
     selected_indices = st.multiselect(
@@ -2815,10 +2969,7 @@ with st.sidebar:
         options=list(INDEX_SYMBOLS),
         default=[
             "CAC 40",
-            "DAX",
             "Euro Stoxx 50",
-            "S&P 500",
-            "Nasdaq 100",
         ],
         help="Choisis les indices affichés dans les cartes, le graphique et le tableau général.",
     )
@@ -2827,8 +2978,6 @@ with st.sidebar:
         "Familles matières premières",
         options=list(COMMODITY_SYMBOLS),
         default=[
-            "Énergie",
-            "Métaux",
             "Agricoles",
         ],
         help="Les contrats Yahoo Finance sont regroupés par famille.",
@@ -2865,7 +3014,10 @@ for index_name in selected_indices:
     if index_name not in performance_table.index:
         continue
 
-    st.markdown(f"#### {index_name}")
+    st.markdown(
+        f"#### {asset_badge(index_name)}",
+        unsafe_allow_html=True,
+    )
 
     columns = st.columns(4)
 
@@ -2890,25 +3042,33 @@ for index_name in selected_indices:
     if index_name not in performance_table.index:
         continue
 
-    values = performance_table.loc[index_name]
+    series = index_closes[index_name].dropna()
+    if series.empty:
+        continue
+
+    normalized = series / float(series.iloc[0]) * 100
 
     index_chart.add_trace(
         go.Scatter(
-            x=list(range(1, 22)),
-            y=values.tolist(),
-            mode="lines+markers",
+            x=normalized.index,
+            y=normalized.tolist(),
+            mode="lines",
             name=index_name,
+            line=dict(
+                color=asset_color(index_name),
+                width=2.2,
+            ),
             hovertemplate=(
                 index_name
-                + "<br>%{x} séance(s)"
-                + "<br>%{y:+.2f}%"
+                + "<br>%{x|%Y-%m-%d}"
+                + "<br>Base 100: %{y:.2f}"
                 + "<extra></extra>"
             ),
         )
     )
 
 index_chart.add_hline(
-    y=0,
+    y=100,
     line_width=1,
     line_dash="dot",
 )
@@ -2927,14 +3087,12 @@ index_chart.update_layout(
         y=1.08,
     ),
     xaxis=dict(
-        title="Nombre de séances",
-        dtick=1,
+        title="Date",
         gridcolor="#202938",
         zeroline=False,
     ),
     yaxis=dict(
-        title="Performance",
-        ticksuffix="%",
+        title="Base 100",
         gridcolor="#202938",
         zeroline=False,
         side="right",
@@ -2962,9 +3120,9 @@ with st.expander(
     )
 
 st.caption(
-    "Calcul : dernière clôture Yahoo disponible contre la clôture "
-    "située N séances plus tôt. Pendant la séance, la bougie journalière "
-    "Yahoo peut encore évoluer."
+    "Calcul : dernières clôtures Yahoo disponibles. Les cartes montrent les "
+    "variations courtes ; le graphique affiche l'historique en base 100 sur "
+    "5 ans quand la donnée existe."
 )
 
 
@@ -3008,39 +3166,43 @@ if commodity_symbols:
         commodity_table = pd.DataFrame(commodity_rows)
 
         st.dataframe(
-            commodity_table,
+            style_bureau_table(
+                commodity_table,
+                list(PERFORMANCE_HORIZONS),
+            ),
             hide_index=True,
             use_container_width=True,
-            column_config={
-                label: st.column_config.NumberColumn(
-                    label,
-                    format="%+.2f%%",
-                )
-                for label in PERFORMANCE_HORIZONS
-            },
         )
 
         commodity_chart = go.Figure()
 
         for full_name in commodity_performance.index:
-            values = commodity_performance.loc[full_name]
+            series = commodity_closes[full_name].dropna()
+            if series.empty:
+                continue
+
+            normalized = series / float(series.iloc[0]) * 100
             commodity_chart.add_trace(
                 go.Scatter(
-                    x=list(range(1, 22)),
-                    y=values.tolist(),
+                    x=normalized.index,
+                    y=normalized.tolist(),
                     mode="lines",
                     name=full_name,
+                    line=dict(
+                        color=asset_color(full_name),
+                        width=1.9,
+                    ),
                     hovertemplate=(
                         full_name
-                        + "<br>%{x} séance(s)"
-                        + "<br>%{y:+.2f}%"
+                        + "<br>%{x|%Y-%m-%d}"
+                        + "<br>Base 100: %{y:.2f}"
                         + "<extra></extra>"
                     ),
                 )
             )
 
         commodity_chart.add_hline(
-            y=0,
+            y=100,
             line_width=1,
             line_dash="dot",
         )
@@ -3058,14 +3220,12 @@ if commodity_symbols:
                 y=1.08,
             ),
             xaxis=dict(
-                title="Nombre de séances",
-                dtick=1,
+                title="Date",
                 gridcolor="#202938",
                 zeroline=False,
             ),
             yaxis=dict(
-                title="Performance",
-                ticksuffix="%",
+                title="Base 100",
                 gridcolor="#202938",
                 zeroline=False,
                 side="right",
@@ -3073,7 +3233,7 @@ if commodity_symbols:
         )
 
         with st.expander(
-            "Graphique matières premières 1j à 21j",
+            "Historique matières premières base 100 sur 5 ans",
             expanded=False,
         ):
             st.plotly_chart(
@@ -3129,16 +3289,12 @@ if not commodity_performance.empty:
 general_table = pd.DataFrame(general_rows)
 
 st.dataframe(
-    general_table,
+    style_bureau_table(
+        general_table,
+        list(PERFORMANCE_HORIZONS),
+    ),
     hide_index=True,
     use_container_width=True,
-    column_config={
-        label: st.column_config.NumberColumn(
-            label,
-            format="%+.2f%%",
-        )
-        for label in PERFORMANCE_HORIZONS
-    },
 )
 
 
@@ -3190,7 +3346,7 @@ with macro_control_two:
 with macro_control_three:
     macro_sort_label = st.selectbox(
         "Tri",
-        options=["1 an", "6 mois", "3 mois"],
+        options=["Inflation YoY", *list(MACRO_HORIZONS)],
         index=0,
     )
 
@@ -3220,86 +3376,20 @@ else:
                 "Zone",
                 "Indicateur",
                 "Dernière date",
-                "Dernier indice",
-                "3 mois",
-                "6 mois",
-                "1 an",
+                "Inflation YoY",
+                *list(MACRO_HORIZONS),
                 "Fraîcheur",
             ]
         ].copy()
 
-        heatmap_source = macro_summary.set_index(
-            ["Zone", "Indicateur"]
-        )[list(MACRO_HORIZONS)]
-
-        heatmap = go.Figure(
-            data=go.Heatmap(
-                z=heatmap_source.values,
-                x=heatmap_source.columns.tolist(),
-                y=[
-                    f"{zone} · {indicator}"
-                    for zone, indicator in heatmap_source.index
-                ],
-                colorscale=[
-                    [0, "#3b1115"],
-                    [0.5, "#202938"],
-                    [1, "#123b34"],
-                ],
-                zmid=0,
-                colorbar=dict(
-                    title="% variation",
-                ),
-                hovertemplate=(
-                    "%{y}<br>%{x}: %{z:+.2f}%"
-                    "<extra></extra>"
-                ),
-            )
-        )
-        heatmap.update_layout(
-            template="plotly_dark",
-            paper_bgcolor="#0b0f15",
-            plot_bgcolor="#0b0f15",
-            height=max(330, 34 * len(heatmap_source) + 120),
-            margin=dict(l=20, r=25, t=25, b=35),
-            xaxis=dict(
-                side="top",
-                gridcolor="#202938",
-            ),
-            yaxis=dict(
-                gridcolor="#202938",
-            ),
-        )
-
-        st.plotly_chart(
-            heatmap,
-            use_container_width=True,
-            config={
-                "displaylogo": False,
-            },
-        )
-
         st.dataframe(
-            display_macro,
+            style_bureau_table(
+                display_macro,
+                ["Inflation YoY", *list(MACRO_HORIZONS)],
+                asset_column="Zone",
+            ),
             hide_index=True,
             use_container_width=True,
-            column_config={
-                "Dernier indice": st.column_config.NumberColumn(
-                    "Dernier indice",
-                    format="%.2f",
-                ),
-                "3 mois": st.column_config.NumberColumn(
-                    "3 mois",
-                    format="%+.2f%%",
-                ),
-                "6 mois": st.column_config.NumberColumn(
-                    "6 mois",
-                    format="%+.2f%%",
-                ),
-                "1 an": st.column_config.NumberColumn(
-                    "1 an",
-                    format="%+.2f%%",
-                ),
-            },
         )
 
         if not macro_history.empty:
@@ -3309,9 +3399,19 @@ else:
                 macro_history_chart.add_trace(
                     go.Scatter(
                         x=group["Date"],
-                        y=group["Indice"],
+                        y=group["Inflation YoY"],
                         mode="lines",
                         name=series_name,
+                        line=dict(
+                            color=asset_color(series_name),
+                            width=2,
+                        ),
+                        hovertemplate=(
+                            series_name
+                            + "<br>%{x|%Y-%m}"
+                            + "<br>Inflation YoY: %{y:+.2f}%"
+                            + "<extra></extra>"
+                        ),
                     )
                 )
 
@@ -3333,7 +3433,8 @@ else:
                     zeroline=False,
                 ),
                 yaxis=dict(
-                    title="Indice CPI/HICP",
+                    title="Inflation YoY",
+                    ticksuffix="%",
                     gridcolor="#202938",
                     zeroline=False,
                     side="right",
@@ -3341,7 +3442,7 @@ else:
             )
 
             with st.expander(
-                "Historique macro 36 derniers mois",
+                "Historique inflation YoY sur 5 ans",
                 expanded=False,
             ):
                 st.plotly_chart(
@@ -3355,9 +3456,11 @@ else:
 
         st.caption(
             "Source : FRED / Federal Reserve Bank of St. Louis. "
-            "Les variations 3 mois, 6 mois et 1 an sont calculées sur les "
-            "indices CPI/HICP disponibles. La colonne fraîcheur signale les "
-            "séries dont la dernière observation est ancienne."
+            "Inflation YoY = variation de l'indice CPI/HICP par rapport au "
+            "même mois un an plus tôt. Les colonnes Var. indiquent la "
+            "variation du taux d'inflation en points de pourcentage sur "
+            "3 mois, 6 mois et 1 an. La colonne fraîcheur signale les "
+            "séries anciennes."
         )
 
 
@@ -3864,37 +3967,23 @@ try:
     with top_column:
         st.markdown("#### Top")
         st.dataframe(
-            top_movers[display_columns],
+            style_change_columns(
+                top_movers[display_columns],
+                ["Performance"],
+            ),
             hide_index=True,
             use_container_width=True,
-            column_config={
-                "Dernier": st.column_config.NumberColumn(
-                    "Dernier",
-                    format="%.2f",
-                ),
-                "Performance": st.column_config.NumberColumn(
-                    "Perf.",
-                    format="%+.2f%%",
-                ),
-            },
         )
 
     with bottom_column:
         st.markdown("#### Flop")
         st.dataframe(
-            bottom_movers[display_columns],
+            style_change_columns(
+                bottom_movers[display_columns],
+                ["Performance"],
+            ),
             hide_index=True,
             use_container_width=True,
-            column_config={
-                "Dernier": st.column_config.NumberColumn(
-                    "Dernier",
-                    format="%.2f",
-                ),
-                "Performance": st.column_config.NumberColumn(
-                    "Perf.",
-                    format="%+.2f%%",
-                ),
-            },
         )
 
 except Exception as error:
