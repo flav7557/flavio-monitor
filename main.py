@@ -2362,7 +2362,52 @@ st.markdown(
 
 INDEX_SYMBOLS = {
     "CAC 40": "^FCHI",
+    "DAX": "^GDAXI",
+    "Euro Stoxx 50": "^STOXX50E",
+    "FTSE 100": "^FTSE",
     "S&P 500": "^GSPC",
+    "Nasdaq 100": "^NDX",
+    "Dow Jones": "^DJI",
+    "Russell 2000": "^RUT",
+    "Nikkei 225": "^N225",
+}
+
+COMMODITY_SYMBOLS = {
+    "Énergie": {
+        "WTI crude": "CL=F",
+        "Brent": "BZ=F",
+        "Gaz naturel": "NG=F",
+        "Essence RBOB": "RB=F",
+        "Heating oil": "HO=F",
+    },
+    "Métaux": {
+        "Or": "GC=F",
+        "Argent": "SI=F",
+        "Cuivre": "HG=F",
+        "Platine": "PL=F",
+        "Palladium": "PA=F",
+    },
+    "Agricoles": {
+        "Blé": "ZW=F",
+        "Maïs": "ZC=F",
+        "Soja": "ZS=F",
+        "Café": "KC=F",
+        "Cacao": "CC=F",
+        "Sucre": "SB=F",
+        "Coton": "CT=F",
+    },
+    "Élevage": {
+        "Live cattle": "LE=F",
+        "Feeder cattle": "GF=F",
+        "Lean hogs": "HE=F",
+    },
+}
+
+PERFORMANCE_HORIZONS = {
+    "1 jour": 1,
+    "1 semaine": 5,
+    "2 semaines": 10,
+    "1 mois": 21,
 }
 
 WIKIPEDIA_URLS = {
@@ -2463,12 +2508,24 @@ def style_performance_table(
 # =============================================================================
 
 @st.cache_data(ttl=300, show_spinner=False)
-def load_index_performance() -> tuple[pd.DataFrame, pd.DataFrame]:
-    symbols = list(INDEX_SYMBOLS.values())
+def load_symbol_performance(
+    selected_names: tuple[str, ...],
+    symbol_items: tuple[tuple[str, str], ...],
+    max_horizon: int = 21,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    symbol_map = dict(symbol_items)
+    selected_symbols = [
+        symbol_map[name]
+        for name in selected_names
+        if name in symbol_map
+    ]
+
+    if not selected_symbols:
+        raise ValueError("Aucun actif sélectionné.")
 
     downloaded = yf.download(
-        tickers=symbols,
-        period="3mo",
+        tickers=selected_symbols,
+        period="6mo",
         interval="1d",
         auto_adjust=False,
         progress=False,
@@ -2478,17 +2535,17 @@ def load_index_performance() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     close = extract_close_frame(
         downloaded,
-        symbols,
+        selected_symbols,
     )
 
     if close.empty:
         raise ValueError(
-            "Yahoo n’a retourné aucune clôture pour le CAC 40 et le S&P 500."
+            "Yahoo n’a retourné aucune clôture pour la sélection."
         )
 
     reverse_names = {
         symbol: name
-        for name, symbol in INDEX_SYMBOLS.items()
+        for name, symbol in symbol_map.items()
     }
 
     close = close.rename(
@@ -2505,15 +2562,15 @@ def load_index_performance() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     horizon_values: dict[str, dict[str, float | None]] = {}
 
-    for index_name in INDEX_SYMBOLS:
-        if index_name not in close.columns:
-            horizon_values[index_name] = {
+    for asset_name in selected_names:
+        if asset_name not in close.columns:
+            horizon_values[asset_name] = {
                 f"{day}j": None
-                for day in range(1, 22)
+                for day in range(1, max_horizon + 1)
             }
             continue
 
-        series = close[index_name].dropna()
+        series = close[asset_name].dropna()
         current = (
             float(series.iloc[-1])
             if not series.empty
@@ -2522,7 +2579,7 @@ def load_index_performance() -> tuple[pd.DataFrame, pd.DataFrame]:
 
         row: dict[str, float | None] = {}
 
-        for day in range(1, 22):
+        for day in range(1, max_horizon + 1):
             if current is None or len(series) <= day:
                 row[f"{day}j"] = None
             else:
@@ -2533,7 +2590,7 @@ def load_index_performance() -> tuple[pd.DataFrame, pd.DataFrame]:
                     current / reference - 1
                 ) * 100
 
-        horizon_values[index_name] = row
+        horizon_values[asset_name] = row
 
     performance = pd.DataFrame.from_dict(
         horizon_values,
@@ -2541,6 +2598,18 @@ def load_index_performance() -> tuple[pd.DataFrame, pd.DataFrame]:
     )
 
     return performance, close
+
+
+def flatten_commodity_symbols(
+    selected_families: list[str],
+) -> dict[str, str]:
+    symbols: dict[str, str] = {}
+
+    for family in selected_families:
+        for name, symbol in COMMODITY_SYMBOLS.get(family, {}).items():
+            symbols[f"{family} · {name}"] = symbol
+
+    return symbols
 
 
 with st.sidebar:
@@ -2558,27 +2627,61 @@ with st.sidebar:
         "21j correspond approximativement à un mois."
     )
 
+    selected_indices = st.multiselect(
+        "Indices suivis",
+        options=list(INDEX_SYMBOLS),
+        default=[
+            "CAC 40",
+            "DAX",
+            "Euro Stoxx 50",
+            "S&P 500",
+            "Nasdaq 100",
+        ],
+        help="Choisis les indices affichés dans les cartes, le graphique et le tableau général.",
+    )
+
+    selected_commodity_families = st.multiselect(
+        "Familles matières premières",
+        options=list(COMMODITY_SYMBOLS),
+        default=[
+            "Énergie",
+            "Métaux",
+            "Agricoles",
+        ],
+        help="Les contrats Yahoo Finance sont regroupés par famille.",
+    )
+
+if not selected_indices:
+    selected_indices = ["CAC 40"]
+    st.warning(
+        "Aucun indice sélectionné : CAC 40 affiché par défaut."
+    )
+
 
 try:
-    performance_table, index_closes = load_index_performance()
+    performance_table, index_closes = load_symbol_performance(
+        tuple(selected_indices),
+        tuple(INDEX_SYMBOLS.items()),
+    )
 except Exception as error:
     st.error(f"Performance indices : {error}")
     st.stop()
 
 
 st.markdown(
-    '<div class="section-label">CAC 40 et S&P 500</div>',
+    '<div class="section-label">Indices sélectionnés</div>',
     unsafe_allow_html=True,
 )
 
 metric_horizons = [
-    ("1j", "1 jour"),
-    ("5j", "1 semaine"),
-    ("10j", "2 semaines"),
-    ("21j", "1 mois"),
+    (f"{days}j", label)
+    for label, days in PERFORMANCE_HORIZONS.items()
 ]
 
-for index_name in ["CAC 40", "S&P 500"]:
+for index_name in selected_indices:
+    if index_name not in performance_table.index:
+        continue
+
     st.markdown(f"#### {index_name}")
 
     columns = st.columns(4)
@@ -2598,12 +2701,15 @@ for index_name in ["CAC 40", "S&P 500"]:
         )
 
 
-chart = go.Figure()
+index_chart = go.Figure()
 
-for index_name in ["CAC 40", "S&P 500"]:
+for index_name in selected_indices:
+    if index_name not in performance_table.index:
+        continue
+
     values = performance_table.loc[index_name]
 
-    chart.add_trace(
+    index_chart.add_trace(
         go.Scatter(
             x=list(range(1, 22)),
             y=values.tolist(),
@@ -2618,13 +2724,13 @@ for index_name in ["CAC 40", "S&P 500"]:
         )
     )
 
-chart.add_hline(
+index_chart.add_hline(
     y=0,
     line_width=1,
     line_dash="dot",
 )
 
-chart.update_layout(
+index_chart.update_layout(
     template="plotly_dark",
     paper_bgcolor="#0b0f15",
     plot_bgcolor="#0b0f15",
@@ -2653,7 +2759,7 @@ chart.update_layout(
 )
 
 st.plotly_chart(
-    chart,
+    index_chart,
     use_container_width=True,
     config={
         "displaylogo": False,
@@ -2662,7 +2768,7 @@ st.plotly_chart(
 )
 
 with st.expander(
-    "Voir toutes les performances de 1j à 21j",
+    "Voir toutes les performances indices de 1j à 21j",
     expanded=False,
 ):
     st.dataframe(
@@ -2676,6 +2782,180 @@ st.caption(
     "Calcul : dernière clôture Yahoo disponible contre la clôture "
     "située N séances plus tôt. Pendant la séance, la bougie journalière "
     "Yahoo peut encore évoluer."
+)
+
+
+# =============================================================================
+# COMMODITIES
+# =============================================================================
+
+commodity_performance = pd.DataFrame()
+commodity_symbols = flatten_commodity_symbols(
+    selected_commodity_families
+)
+
+if commodity_symbols:
+    st.divider()
+
+    st.markdown(
+        '<div class="section-label">Matières premières</div>',
+        unsafe_allow_html=True,
+    )
+
+    try:
+        commodity_performance, commodity_closes = load_symbol_performance(
+            tuple(commodity_symbols),
+            tuple(commodity_symbols.items()),
+        )
+
+        commodity_rows = []
+
+        for full_name, row in commodity_performance.iterrows():
+            family, asset = full_name.split(" · ", 1)
+            item = {
+                "Famille": family,
+                "Actif": asset,
+            }
+
+            for label, days in PERFORMANCE_HORIZONS.items():
+                item[label] = row.get(f"{days}j")
+
+            commodity_rows.append(item)
+
+        commodity_table = pd.DataFrame(commodity_rows)
+
+        st.dataframe(
+            commodity_table,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                label: st.column_config.NumberColumn(
+                    label,
+                    format="%+.2f%%",
+                )
+                for label in PERFORMANCE_HORIZONS
+            },
+        )
+
+        commodity_chart = go.Figure()
+
+        for full_name in commodity_performance.index:
+            values = commodity_performance.loc[full_name]
+            commodity_chart.add_trace(
+                go.Scatter(
+                    x=list(range(1, 22)),
+                    y=values.tolist(),
+                    mode="lines",
+                    name=full_name,
+                    hovertemplate=(
+                        full_name
+                        + "<br>%{x} séance(s)"
+                        + "<br>%{y:+.2f}%"
+                        + "<extra></extra>"
+                    ),
+                )
+            )
+
+        commodity_chart.add_hline(
+            y=0,
+            line_width=1,
+            line_dash="dot",
+        )
+        commodity_chart.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="#0b0f15",
+            plot_bgcolor="#0b0f15",
+            height=430,
+            margin=dict(l=25, r=25, t=30, b=35),
+            hovermode="x unified",
+            dragmode="pan",
+            legend=dict(
+                orientation="h",
+                x=0,
+                y=1.08,
+            ),
+            xaxis=dict(
+                title="Nombre de séances",
+                dtick=1,
+                gridcolor="#202938",
+                zeroline=False,
+            ),
+            yaxis=dict(
+                title="Performance",
+                ticksuffix="%",
+                gridcolor="#202938",
+                zeroline=False,
+                side="right",
+            ),
+        )
+
+        with st.expander(
+            "Graphique matières premières 1j à 21j",
+            expanded=False,
+        ):
+            st.plotly_chart(
+                commodity_chart,
+                use_container_width=True,
+                config={
+                    "displaylogo": False,
+                    "scrollZoom": True,
+                },
+            )
+
+    except Exception as error:
+        st.warning(
+            f"Matières premières indisponibles : {error}"
+        )
+
+
+st.divider()
+
+st.markdown(
+    '<div class="section-label">Tableau général</div>',
+    unsafe_allow_html=True,
+)
+
+general_rows = []
+
+for index_name, row in performance_table.iterrows():
+    item = {
+        "Classe": "Indice",
+        "Famille": "Indices",
+        "Actif": index_name,
+    }
+
+    for label, days in PERFORMANCE_HORIZONS.items():
+        item[label] = row.get(f"{days}j")
+
+    general_rows.append(item)
+
+if not commodity_performance.empty:
+    for full_name, row in commodity_performance.iterrows():
+        family, asset = full_name.split(" · ", 1)
+        item = {
+            "Classe": "Matière première",
+            "Famille": family,
+            "Actif": asset,
+        }
+
+        for label, days in PERFORMANCE_HORIZONS.items():
+            item[label] = row.get(f"{days}j")
+
+        general_rows.append(item)
+
+general_table = pd.DataFrame(general_rows)
+
+st.dataframe(
+    general_table,
+    hide_index=True,
+    use_container_width=True,
+    column_config={
+        label: st.column_config.NumberColumn(
+            label,
+            format="%+.2f%%",
+        )
+        for label in PERFORMANCE_HORIZONS
+    },
 )
 
 
@@ -2987,6 +3267,7 @@ def load_constituents(
 
 def download_close_chunks(
     symbols: list[str],
+    period: str = "3mo",
     chunk_size: int = 90,
 ) -> pd.DataFrame:
     close_frames: list[pd.DataFrame] = []
@@ -2998,7 +3279,7 @@ def download_close_chunks(
 
         downloaded = yf.download(
             tickers=chunk,
-            period="5d",
+            period=period,
             interval="1d",
             auto_adjust=False,
             progress=False,
@@ -3030,13 +3311,15 @@ def download_close_chunks(
 @st.cache_data(ttl=900, show_spinner=False)
 def load_daily_movers(
     universe: str,
+    horizon_days: int = 1,
 ) -> pd.DataFrame:
     constituents = load_constituents(
         universe
     )
 
     close = download_close_chunks(
-        constituents["Yahoo"].tolist()
+        constituents["Yahoo"].tolist(),
+        period="3mo",
     )
 
     if close.empty:
@@ -3060,10 +3343,10 @@ def load_daily_movers(
 
         series = close[symbol].dropna()
 
-        if len(series) < 2:
+        if len(series) <= horizon_days:
             continue
 
-        previous = float(series.iloc[-2])
+        previous = float(series.iloc[-(horizon_days + 1)])
         latest = float(series.iloc[-1])
 
         if previous == 0:
@@ -3083,6 +3366,7 @@ def load_daily_movers(
                 "Performance": (
                     latest / previous - 1
                 ) * 100,
+                "Période": f"{horizon_days}j",
                 "Date": pd.Timestamp(
                     series.index[-1]
                 ).date(),
@@ -3111,23 +3395,31 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-control_one, control_two = st.columns(
-    [2, 1]
+control_one, control_two, control_three = st.columns(
+    [2, 1.4, 1]
 )
 
 with control_one:
-    movers_universe = st.radio(
+    movers_universe = st.selectbox(
         "Univers",
         options=["CAC 40", "S&P 500"],
-        horizontal=True,
     )
 
 with control_two:
-    mover_count = st.selectbox(
-        "Nombre de valeurs",
-        options=[5, 10, 15],
+    movers_period_label = st.selectbox(
+        "Période",
+        options=list(PERFORMANCE_HORIZONS),
         index=0,
     )
+
+with control_three:
+    mover_count = st.selectbox(
+        "Nombre de valeurs",
+        options=[5, 10, 15, 20],
+        index=0,
+    )
+
+movers_horizon_days = PERFORMANCE_HORIZONS[movers_period_label]
 
 if movers_universe == "S&P 500":
     st.caption(
@@ -3141,7 +3433,8 @@ try:
         f"Chargement des composants {movers_universe}…"
     ):
         movers = load_daily_movers(
-            movers_universe
+            movers_universe,
+            movers_horizon_days,
         )
 
     top_movers = movers.head(
@@ -3209,8 +3502,8 @@ except Exception as error:
 
 st.caption(
     "Composants récupérés depuis Wikipédia, cours et performances "
-    "calculés avec Yahoo Finance. Il s’agit de variations clôture à clôture "
-    "sur la dernière séance disponible."
+    "calculés avec Yahoo Finance. Les variations sont calculées clôture à "
+    f"clôture sur la période sélectionnée : {movers_period_label}."
 )
 
 
