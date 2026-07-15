@@ -2410,6 +2410,59 @@ PERFORMANCE_HORIZONS = {
     "1 mois": 21,
 }
 
+MACRO_CPI_SERIES = {
+    "États-Unis": {
+        "CPI total": "CPIAUCSL",
+        "Core CPI": "CPILFESL",
+    },
+    "Zone euro": {
+        "HICP total": "CP0000EZ19M086NEST",
+    },
+    "France": {
+        "HICP total": "CP0000FRM086NEST",
+        "Core CPI": "FRACPICORMINMEI",
+    },
+    "Allemagne": {
+        "HICP total": "CP0000DEM086NEST",
+        "Core CPI": "DEUCPICORMINMEI",
+    },
+    "Italie": {
+        "HICP total": "CP0000ITM086NEST",
+        "Core CPI": "ITACPICORMINMEI",
+    },
+    "Espagne": {
+        "HICP total": "CP0000ESM086NEST",
+        "Core CPI": "ESPCPICORMINMEI",
+    },
+    "Royaume-Uni": {
+        "CPI total": "GBRCPIALLMINMEI",
+        "Core CPI": "GBRCPICORMINMEI",
+    },
+    "Chine": {
+        "CPI total": "CHNCPIALLMINMEI",
+    },
+    "Japon": {
+        "CPI total": "JPNCPIALLMINMEI",
+        "Core CPI": "JPNCPICORMINMEI",
+    },
+    "Canada": {
+        "CPI total": "CANCPIALLMINMEI",
+        "Core CPI": "CANCPICORMINMEI",
+    },
+    "Inde": {
+        "CPI total": "INDCPIALLMINMEI",
+    },
+    "Brésil": {
+        "CPI total": "BRACPIALLMINMEI",
+    },
+}
+
+MACRO_HORIZONS = {
+    "3 mois": 3,
+    "6 mois": 6,
+    "1 an": 12,
+}
+
 WIKIPEDIA_URLS = {
     "CAC 40": "https://en.wikipedia.org/wiki/CAC_40",
     "S&P 500": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
@@ -2610,6 +2663,136 @@ def flatten_commodity_symbols(
             symbols[f"{family} · {name}"] = symbol
 
     return symbols
+
+
+@st.cache_data(ttl=21600, show_spinner=False)
+def load_fred_series(
+    series_id: str,
+) -> pd.Series:
+    url = (
+        "https://fred.stlouisfed.org/graph/fredgraph.csv"
+        f"?id={series_id}"
+    )
+    dataframe = pd.read_csv(url)
+
+    if "observation_date" not in dataframe.columns:
+        raise ValueError(f"Série FRED invalide : {series_id}")
+
+    value_columns = [
+        column
+        for column in dataframe.columns
+        if column != "observation_date"
+    ]
+
+    if not value_columns:
+        raise ValueError(f"Aucune colonne valeur pour {series_id}")
+
+    series = pd.Series(
+        pd.to_numeric(
+            dataframe[value_columns[0]],
+            errors="coerce",
+        ).values,
+        index=pd.to_datetime(
+            dataframe["observation_date"],
+            errors="coerce",
+        ),
+        name=series_id,
+    )
+
+    series = series.dropna()
+    series = series[~series.index.isna()].sort_index()
+
+    if series.empty:
+        raise ValueError(f"Aucune donnée exploitable pour {series_id}")
+
+    return series
+
+
+def percent_change_over_months(
+    series: pd.Series,
+    months: int,
+) -> float | None:
+    if len(series) <= months:
+        return None
+
+    latest = float(series.iloc[-1])
+    reference = float(series.iloc[-(months + 1)])
+
+    if reference == 0:
+        return None
+
+    return (latest / reference - 1) * 100
+
+
+@st.cache_data(ttl=21600, show_spinner=False)
+def load_macro_bookmap(
+    selected_regions: tuple[str, ...],
+    selected_indicators: tuple[str, ...],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    rows = []
+    history_frames: list[pd.DataFrame] = []
+    today = pd.Timestamp.utcnow().tz_localize(None)
+
+    for region in selected_regions:
+        indicator_map = MACRO_CPI_SERIES.get(region, {})
+
+        for indicator in selected_indicators:
+            series_id = indicator_map.get(indicator)
+
+            if series_id is None:
+                continue
+
+            try:
+                series = load_fred_series(series_id)
+            except Exception:
+                continue
+
+            latest_date = pd.Timestamp(series.index[-1])
+            months_lag = (
+                today.year - latest_date.year
+            ) * 12 + today.month - latest_date.month
+            freshness = (
+                "Récent"
+                if months_lag <= 3
+                else (
+                    "À surveiller"
+                    if months_lag <= 12
+                    else "Ancien"
+                )
+            )
+
+            row = {
+                "Zone": region,
+                "Indicateur": indicator,
+                "FRED": series_id,
+                "Dernière date": latest_date.date().isoformat(),
+                "Dernier indice": float(series.iloc[-1]),
+                "Fraîcheur": freshness,
+            }
+
+            for label, months in MACRO_HORIZONS.items():
+                row[label] = percent_change_over_months(
+                    series,
+                    months,
+                )
+
+            rows.append(row)
+
+            frame = series.tail(36).rename("Indice").to_frame()
+            frame["Zone"] = region
+            frame["Indicateur"] = indicator
+            frame["Série"] = f"{region} · {indicator}"
+            frame["Date"] = frame.index
+            history_frames.append(frame.reset_index(drop=True))
+
+    summary = pd.DataFrame(rows)
+    history = (
+        pd.concat(history_frames, ignore_index=True)
+        if history_frames
+        else pd.DataFrame()
+    )
+
+    return summary, history
 
 
 with st.sidebar:
@@ -2957,6 +3140,225 @@ st.dataframe(
         for label in PERFORMANCE_HORIZONS
     },
 )
+
+
+st.divider()
+
+st.markdown(
+    '<div class="section-label">Macro bookmap inflation</div>',
+    unsafe_allow_html=True,
+)
+
+macro_control_one, macro_control_two, macro_control_three = st.columns(
+    [2.2, 1.4, 1]
+)
+
+with macro_control_one:
+    selected_macro_regions = st.multiselect(
+        "Zones / pays",
+        options=list(MACRO_CPI_SERIES),
+        default=[
+            "États-Unis",
+            "Zone euro",
+            "France",
+            "Allemagne",
+            "Chine",
+            "Japon",
+        ],
+        help="Sélectionne les grandes zones que tu veux surveiller.",
+    )
+
+with macro_control_two:
+    available_macro_indicators = sorted(
+        {
+            indicator
+            for region in selected_macro_regions
+            for indicator in MACRO_CPI_SERIES.get(region, {})
+        }
+    )
+    selected_macro_indicators = st.multiselect(
+        "Indicateurs",
+        options=available_macro_indicators,
+        default=[
+            indicator
+            for indicator in ["CPI total", "HICP total", "Core CPI"]
+            if indicator in available_macro_indicators
+        ],
+        help="Les séries manquantes pour un pays sont ignorées automatiquement.",
+    )
+
+with macro_control_three:
+    macro_sort_label = st.selectbox(
+        "Tri",
+        options=["1 an", "6 mois", "3 mois"],
+        index=0,
+    )
+
+if not selected_macro_regions or not selected_macro_indicators:
+    st.info(
+        "Choisis au moins une zone et un indicateur pour afficher le bookmap macro."
+    )
+else:
+    macro_summary, macro_history = load_macro_bookmap(
+        tuple(selected_macro_regions),
+        tuple(selected_macro_indicators),
+    )
+
+    if macro_summary.empty:
+        st.warning(
+            "Aucune série macro exploitable pour cette sélection."
+        )
+    else:
+        macro_summary = macro_summary.sort_values(
+            by=macro_sort_label,
+            ascending=False,
+            na_position="last",
+        )
+
+        display_macro = macro_summary[
+            [
+                "Zone",
+                "Indicateur",
+                "Dernière date",
+                "Dernier indice",
+                "3 mois",
+                "6 mois",
+                "1 an",
+                "Fraîcheur",
+            ]
+        ].copy()
+
+        heatmap_source = macro_summary.set_index(
+            ["Zone", "Indicateur"]
+        )[list(MACRO_HORIZONS)]
+
+        heatmap = go.Figure(
+            data=go.Heatmap(
+                z=heatmap_source.values,
+                x=heatmap_source.columns.tolist(),
+                y=[
+                    f"{zone} · {indicator}"
+                    for zone, indicator in heatmap_source.index
+                ],
+                colorscale=[
+                    [0, "#3b1115"],
+                    [0.5, "#202938"],
+                    [1, "#123b34"],
+                ],
+                zmid=0,
+                colorbar=dict(
+                    title="% variation",
+                ),
+                hovertemplate=(
+                    "%{y}<br>%{x}: %{z:+.2f}%"
+                    "<extra></extra>"
+                ),
+            )
+        )
+        heatmap.update_layout(
+            template="plotly_dark",
+            paper_bgcolor="#0b0f15",
+            plot_bgcolor="#0b0f15",
+            height=max(330, 34 * len(heatmap_source) + 120),
+            margin=dict(l=20, r=25, t=25, b=35),
+            xaxis=dict(
+                side="top",
+                gridcolor="#202938",
+            ),
+            yaxis=dict(
+                gridcolor="#202938",
+            ),
+        )
+
+        st.plotly_chart(
+            heatmap,
+            use_container_width=True,
+            config={
+                "displaylogo": False,
+            },
+        )
+
+        st.dataframe(
+            display_macro,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Dernier indice": st.column_config.NumberColumn(
+                    "Dernier indice",
+                    format="%.2f",
+                ),
+                "3 mois": st.column_config.NumberColumn(
+                    "3 mois",
+                    format="%+.2f%%",
+                ),
+                "6 mois": st.column_config.NumberColumn(
+                    "6 mois",
+                    format="%+.2f%%",
+                ),
+                "1 an": st.column_config.NumberColumn(
+                    "1 an",
+                    format="%+.2f%%",
+                ),
+            },
+        )
+
+        if not macro_history.empty:
+            macro_history_chart = go.Figure()
+
+            for series_name, group in macro_history.groupby("Série"):
+                macro_history_chart.add_trace(
+                    go.Scatter(
+                        x=group["Date"],
+                        y=group["Indice"],
+                        mode="lines",
+                        name=series_name,
+                    )
+                )
+
+            macro_history_chart.update_layout(
+                template="plotly_dark",
+                paper_bgcolor="#0b0f15",
+                plot_bgcolor="#0b0f15",
+                height=430,
+                margin=dict(l=25, r=25, t=30, b=35),
+                hovermode="x unified",
+                dragmode="pan",
+                legend=dict(
+                    orientation="h",
+                    x=0,
+                    y=1.08,
+                ),
+                xaxis=dict(
+                    gridcolor="#202938",
+                    zeroline=False,
+                ),
+                yaxis=dict(
+                    title="Indice CPI/HICP",
+                    gridcolor="#202938",
+                    zeroline=False,
+                    side="right",
+                ),
+            )
+
+            with st.expander(
+                "Historique macro 36 derniers mois",
+                expanded=False,
+            ):
+                st.plotly_chart(
+                    macro_history_chart,
+                    use_container_width=True,
+                    config={
+                        "displaylogo": False,
+                        "scrollZoom": True,
+                    },
+                )
+
+        st.caption(
+            "Source : FRED / Federal Reserve Bank of St. Louis. "
+            "Les variations 3 mois, 6 mois et 1 an sont calculées sur les "
+            "indices CPI/HICP disponibles. La colonne fraîcheur signale les "
+            "séries dont la dernière observation est ancienne."
+        )
 
 
 
