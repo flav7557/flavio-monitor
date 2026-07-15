@@ -7968,7 +7968,9 @@ const ACCOUNT_CURRENCY=SETTINGS.accountCurrency,ACCOUNT_EQUITY=Number(SETTINGS.a
 const NORM_WINDOW=Math.max(120,Number(SETTINGS.normWindow)||750);
 const NORM_MIN=Math.max(60,Math.floor(NORM_WINDOW*0.2));
 const PAIR_WARMUP=PAIR_INPUT==="returns"?60:240;
-const CHART_MIN_INTERVAL_MS=50;
+const MAX_SERIES_POINTS=1800;
+const CHART_MIN_INTERVAL_MS=180;
+const EQUITY_CHART_INTERVAL_MS=800;
 const MARKET_OPEN=Boolean(SETTINGS.marketOpen),MARKET_STATUS=SETTINGS.marketStatus||"";
 
 const COLORS={background:"#050708",grid:"#1b2530",text:"#d9e2ec",muted:"#748192",green:"#28b69f",red:"#ef5b5b",yellow:"#d9b44a",blue:"#76b7e5",purple:"#a28af7",raw:"#d9a36c"};
@@ -8010,7 +8012,7 @@ function updateComparison(timestamp){
     comparison.timestamps.push(timestamp);
     comparison.normalizedY.push(market.Y.price/comparison.baseY*100);
     comparison.normalizedX.push(market.X.price/comparison.baseX*100);
-    for(const a of [comparison.timestamps,comparison.normalizedY,comparison.normalizedX])if(a.length>5000)a.splice(0,a.length-5000);
+    for(const a of [comparison.timestamps,comparison.normalizedY,comparison.normalizedX])if(a.length>MAX_SERIES_POINTS)a.splice(0,a.length-MAX_SERIES_POINTS);
 }
 
 function logLine(type,message,timestamp=new Date()){
@@ -8018,7 +8020,7 @@ function logLine(type,message,timestamp=new Date()){
     portfolio.logs.push({timestamp:timestamp.toISOString(),type,message});
     if(portfolio.logs.length>5000)portfolio.logs.splice(0,portfolio.logs.length-5000);
     const e=document.createElement("div");e.className=`line ${type}`;e.textContent=`[${time}] ${type.padEnd(7," ")} | ${message}`;DOM.terminal.appendChild(e);
-    while(DOM.terminal.children.length>300)DOM.terminal.removeChild(DOM.terminal.firstChild);
+    while(DOM.terminal.children.length>120)DOM.terminal.removeChild(DOM.terminal.firstChild);
     DOM.terminal.scrollTop=DOM.terminal.scrollHeight;
 }
 function logVerbose(type,message,timestamp){if(VERBOSE)logLine(type,message,timestamp)}
@@ -8046,12 +8048,12 @@ function resetPortfolioState(){
 function appendRawTick(side,tick){
     const times=side==="Y"?rawTicks.timestampsY:rawTicks.timestampsX,prices=side==="Y"?rawTicks.pricesY:rawTicks.pricesX;
     times.push(tick.timestamp);prices.push(tick.price);
-    if(times.length>5000){times.splice(0,times.length-5000);prices.splice(0,prices.length-5000)}
+    if(times.length>MAX_SERIES_POINTS){times.splice(0,times.length-MAX_SERIES_POINTS);prices.splice(0,prices.length-MAX_SERIES_POINTS)}
 }
 function recordEquity(timestamp){
     const net=portfolio.realized+portfolio.unrealized;
     portfolio.equityTimestamps.push(timestamp);portfolio.equityNet.push(net);portfolio.equityRealized.push(portfolio.realized);
-    for(const a of [portfolio.equityTimestamps,portfolio.equityNet,portfolio.equityRealized])if(a.length>5000)a.splice(0,a.length-5000);
+    for(const a of [portfolio.equityTimestamps,portfolio.equityNet,portfolio.equityRealized])if(a.length>MAX_SERIES_POINTS)a.splice(0,a.length-MAX_SERIES_POINTS);
     portfolio.peakNet=Math.max(portfolio.peakNet,net);portfolio.maxDrawdown=Math.max(portfolio.maxDrawdown,portfolio.peakNet-net);
 }
 
@@ -8078,7 +8080,7 @@ function updateKalman(timestamp,price){
     const slopeZ=(ready&&Number.isFinite(trendRms)&&trendRms>1e-15)?trend/trendRms:null;
     const innovationZ=(ready&&Number.isFinite(innovationRms)&&innovationRms>1e-15)?innovation/innovationRms:null;
     kalman.timestamps.push(timestamp);kalman.observed.push(price);kalman.filtered.push(level);kalman.slopeZ.push(slopeZ);kalman.innovationZ.push(innovationZ);
-    for(const a of [kalman.timestamps,kalman.observed,kalman.filtered,kalman.slopeZ,kalman.innovationZ])if(a.length>5000)a.splice(0,a.length-5000);
+    for(const a of [kalman.timestamps,kalman.observed,kalman.filtered,kalman.slopeZ,kalman.innovationZ])if(a.length>MAX_SERIES_POINTS)a.splice(0,a.length-MAX_SERIES_POINTS);
     return{timestamp,price,level,trend,slopeZ,innovationZ,ready,warmup:kalman.trendBuffer.length,beta:null,zscore:null,hmm:null}
 }
 
@@ -8135,7 +8137,7 @@ function updateRegression(timestamp,y,x,priceY,priceX){
     alpha+=k0*residual;beta+=k1*residual;
     const np00=p00-k0*(p00+xc*p10),np01=p01-k0*(p01+xc*p11),np10=p10-k1*(p00+xc*p10),np11=p11-k1*(p01+xc*p11),off=(np01+np10)/2;
     regression.state=[alpha,beta];regression.covariance=[[Math.max(np00,1e-18),off],[off,Math.max(np11,1e-18)]];
-    regression.residuals.push(residual);if(regression.residuals.length>5000)regression.residuals.shift();
+    regression.residuals.push(residual);if(regression.residuals.length>MAX_SERIES_POINTS)regression.residuals.shift();
 
     /* Chaque modèle construit sa propre mesure : le RV lit un niveau de spread,
        le momentum lit une dérive cumulée. Le résidu brut ne sert ni à l'un ni
@@ -8144,7 +8146,7 @@ function updateRegression(timestamp,y,x,priceY,priceX){
     if(isRv){
         // Avec l'intercept ralenti, le residuel a priori EST l'ecart a la relation
         // de long terme : c'est lui le spread, z-score sur Z_WINDOW.
-        regression.spread.push(residual);if(regression.spread.length>5000)regression.spread.shift();
+        regression.spread.push(residual);if(regression.spread.length>MAX_SERIES_POINTS)regression.spread.shift();
         zscore=rollingZ(regression.spread,Z_WINDOW);
     }else{
         /* Momentum résiduel = somme des rendements résiduels sur Z_WINDOW.
@@ -8154,7 +8156,7 @@ function updateRegression(timestamp,y,x,priceY,priceX){
            se retrouvait à 2.6 sd dans la queue. Même défaut que le bug 1. */
         regression.cumulativeResidual+=residual;
         regression.cumulativeSeries.push(regression.cumulativeResidual);
-        if(regression.cumulativeSeries.length>5000)regression.cumulativeSeries.shift();
+        if(regression.cumulativeSeries.length>MAX_SERIES_POINTS)regression.cumulativeSeries.shift();
         const w=Math.max(10,Math.min(Z_WINDOW,regression.cumulativeSeries.length-1));
         if(regression.cumulativeSeries.length>w){
             const drift=regression.cumulativeResidual-regression.cumulativeSeries[regression.cumulativeSeries.length-1-w];
@@ -8170,7 +8172,7 @@ function updateRegression(timestamp,y,x,priceY,priceX){
     regression.timestamps.push(timestamp);regression.beta.push(beta);regression.zscore.push(zscore);
     if(regression.baseY===null){regression.baseY=priceY;regression.baseX=priceX}
     regression.normalizedY.push(priceY/regression.baseY*100);regression.normalizedX.push(priceX/regression.baseX*100);
-    for(const a of [regression.timestamps,regression.beta,regression.zscore,regression.normalizedY,regression.normalizedX])if(a.length>5000)a.splice(0,a.length-5000);
+    for(const a of [regression.timestamps,regression.beta,regression.zscore,regression.normalizedY,regression.normalizedX])if(a.length>MAX_SERIES_POINTS)a.splice(0,a.length-MAX_SERIES_POINTS);
     return{ready:true,alpha,beta,residual,zscore,level:null,slopeZ:null,innovationZ:null,hmm:null}
 }
 
@@ -8457,10 +8459,14 @@ function renderEquityChart(){
     const layout=commonLayout(`Session P&L · ${ACCOUNT_CURRENCY}`,"shadow-equity");layout.yaxis.ticksuffix=` ${ACCOUNT_CURRENCY}`;layout.shapes=[{type:"line",xref:"paper",x0:0,x1:1,y0:0,y1:0,line:{color:COLORS.muted,width:1}}];
     Plotly.react("equityChart",[{x:portfolio.equityTimestamps,y:portfolio.equityNet,type:"scattergl",mode:"lines",name:"Net liquidation P&L",fill:"tozeroy",fillcolor:"rgba(40,182,159,0.08)",line:{color:COLORS.green,width:2}},{x:portfolio.equityTimestamps,y:portfolio.equityRealized,type:"scattergl",mode:"lines",name:"Réalisé net",line:{color:COLORS.blue,width:1.5,dash:"dot"}}],layout,plotConfig)
 }
-/* Les métriques suivent le rAF, les charts sont limités à ~7 Hz : un Plotly.react
-   sur 5 000 points à chaque tick fige l'onglet dès que le flux accélère. */
-let metricsQueued=false,chartTimer=null,lastChartRender=0,lastFeatures={},lastSignal={target:0,label:"WAIT",reason:"Warm-up",regime:"WARMUP"};
-function renderCharts(){lastChartRender=performance.now();chartTimer=null;renderModelChart();renderEquityChart()}
+/* Les métriques suivent le rAF. Les graphiques sont rendus par paquets :
+   Plotly.react est coûteux si on redessine prix + P&L à chaque tick. */
+let metricsQueued=false,chartTimer=null,lastChartRender=0,lastEquityRender=0,lastFeatures={},lastSignal={target:0,label:"WAIT",reason:"Warm-up",regime:"WARMUP"};
+function renderCharts(){
+    const now=performance.now();
+    lastChartRender=now;chartTimer=null;renderModelChart();
+    if(now-lastEquityRender>=EQUITY_CHART_INTERVAL_MS){lastEquityRender=now;renderEquityChart()}
+}
 function scheduleCharts(){if(chartTimer!==null)return;const wait=Math.max(0,CHART_MIN_INTERVAL_MS-(performance.now()-lastChartRender));chartTimer=setTimeout(renderCharts,wait)}
 function renderAll(features=lastFeatures,signal=lastSignal){
     lastFeatures=features;lastSignal=signal;
