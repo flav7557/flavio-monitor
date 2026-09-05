@@ -838,9 +838,8 @@ def _render_terminal(result, live: dict) -> None:
 
 
 @st.fragment(run_every=10)
-def _terminal_fragment(provider: str, intraday: bool) -> None:
+def _terminal_fragment(result, provider: str, intraday: bool) -> None:
     now = pd.Timestamp.utcnow()
-    result = _load(provider, "1d", intraday, int(now.timestamp() // 300))
     symbols = tuple(
         i.symbol for i in _all_instruments(result.global_regime) if i.eligible
     )
@@ -998,8 +997,7 @@ def render() -> None:
         st.error(f"Regime engine could not load market data: {exc}")
         return
 
-    # Live terminal — sector columns, auto-refreshing every 30s
-    _terminal_fragment(provider, intraday)
+    _terminal_fragment(result, provider, intraday)
 
     if show_map:
         _render_visual(result)

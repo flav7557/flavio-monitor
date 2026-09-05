@@ -54,6 +54,11 @@ st.markdown(
             margin-left: 0 !important;
         }
 
+        [data-testid="stElementContainer"],
+        .element-container {
+            opacity: 1 !important;
+        }
+
         .stApp {
             background-color: #08080a;
             background-image:
@@ -409,27 +414,33 @@ def render_section(name, rows, closes):
 
 st.markdown(STYLE, unsafe_allow_html=True)
 
-closes = load_closes(ALL_TICKERS)
 
-now_paris = datetime.now(ZoneInfo("Europe/Paris"))
-stamp = now_paris.strftime("%H:%M")
+@st.fragment(run_every=60)
+def render_data_online() -> None:
+    closes = load_closes(ALL_TICKERS)
 
-header_left, header_right = st.columns([4, 1])
-with header_left:
-    st.markdown(
-        "<div class='do-title'>Data Online</div>"
-        f"<div class='do-sub'>Mis à jour à {stamp} (Paris)</div>",
-        unsafe_allow_html=True,
+    now_paris = datetime.now(ZoneInfo("Europe/Paris"))
+    stamp = now_paris.strftime("%H:%M")
+
+    header_left, header_right = st.columns([4, 1])
+    with header_left:
+        st.markdown(
+            "<div class='do-title'>Data Online</div>"
+            f"<div class='do-sub'>Mis à jour à {stamp} (Paris)</div>",
+            unsafe_allow_html=True,
+        )
+    with header_right:
+        if st.button("Rafraîchir", use_container_width=True):
+            load_closes.clear()
+            closes = load_closes(ALL_TICKERS)
+
+    html_sections = "".join(
+        render_section(name, rows, closes) for name, rows in SECTIONS
     )
-with header_right:
-    if st.button("Rafraîchir", use_container_width=True):
-        load_closes.clear()
-        st.rerun()
+    st.markdown(html_sections, unsafe_allow_html=True)
 
-html_sections = "".join(
-    render_section(name, rows, closes) for name, rows in SECTIONS
-)
-st.markdown(html_sections, unsafe_allow_html=True)
+
+render_data_online()
 '''
 
 if selected_page == "Regime Matrix":
