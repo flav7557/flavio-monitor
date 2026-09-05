@@ -62,7 +62,8 @@ class RegimeStore:
                 "last_score": score,
                 "history": [],
             }
-            change = "newly changed"
+            # first observation seeds the state; it is NOT a regime transition
+            change = "unchanged"
         else:
             change = self._advance(st, raw_regime, score)
 
