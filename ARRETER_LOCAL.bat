@@ -1,0 +1,6 @@
+@echo off
+setlocal
+title Flavio Market Terminal
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\stop_local.ps1"
+if errorlevel 1 pause
+endlocal

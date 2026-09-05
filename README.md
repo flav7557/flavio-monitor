@@ -42,6 +42,17 @@ LSE_API_KEY=your_key_here
 `.env` est ignoré par Git. Ne jamais placer la clé dans `frontend/`, dans une
 variable `NEXT_PUBLIC_*` ou dans le dépôt.
 
+## Démarrage Windows en un clic
+
+1. Extraire complètement l'archive ZIP.
+2. Double-cliquer sur `DEMARRER_LOCAL.bat`.
+3. Saisir la clé London Strategic Edge lorsque Windows la demande.
+
+Le lanceur crée l'environnement local, installe les dépendances, démarre les
+deux services sur `127.0.0.1` et ouvre automatiquement le terminal. La clé reste
+dans le fichier local `.env`, exclu de Git. Utiliser `ARRETER_LOCAL.bat` pour
+arrêter les services et `CONFIGURER_CLE_LSE.bat` pour remplacer la clé.
+
 ## Vérifier les symboles LSE
 
 Le terminal interroge `client.catalog()` au démarrage et résout les instruments
