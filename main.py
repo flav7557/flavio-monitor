@@ -140,7 +140,16 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    for nav_page in ("Data Online", "Regime Matrix", "Bureau Larbou"):
+    if "show_regime_matrix" not in st.session_state:
+        st.session_state["show_regime_matrix"] = True
+    show_regime_matrix = st.session_state["show_regime_matrix"]
+
+    nav_pages = ["Data Online"]
+    if show_regime_matrix:
+        nav_pages.append("Regime Matrix")
+    nav_pages.append("Bureau Larbou")
+
+    for nav_page in nav_pages:
         is_active = (
             st.session_state.get("flavio_nav", "Data Online") == nav_page
         )
@@ -154,10 +163,23 @@ with st.sidebar:
             st.rerun()
 
     selected_page = st.session_state.get("flavio_nav", "Data Online")
+    if selected_page not in nav_pages:
+        selected_page = "Data Online"
 
     st.markdown(
         '<div class="unified-divider"></div>',
         unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="unified-navigation-subtitle" '
+        'style="margin-bottom:0.35rem;">Modules</div>',
+        unsafe_allow_html=True,
+    )
+    st.toggle(
+        "Regime Matrix",
+        key="show_regime_matrix",
+        help="Activer ou masquer la page Regime Matrix dans le menu.",
     )
 
 
