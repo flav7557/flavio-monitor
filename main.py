@@ -183,6 +183,45 @@ with st.sidebar:
     )
 
 
+# -----------------------------------------------------------------------------
+# Barre de navigation en haut de page (toujours visible, même si la barre
+# latérale est repliée — utile sur mobile et quand la flèche est introuvable).
+# -----------------------------------------------------------------------------
+st.markdown(
+    """
+    <style>
+        .topnav-hint {
+            color: #8490a3; font-size: 0.7rem; letter-spacing: 0.16em;
+            text-transform: uppercase; margin: 0 0 0.35rem 0;
+        }
+        div[data-testid="stHorizontalBlock"] .stButton > button {
+            border-radius: 999px;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+st.markdown('<div class="topnav-hint">Navigation</div>', unsafe_allow_html=True)
+
+_topnav_cols = st.columns([3] * len(nav_pages) + [4])
+for _i, _page in enumerate(nav_pages):
+    with _topnav_cols[_i]:
+        if st.button(
+            _page,
+            key=f"topnav_btn_{_page}",
+            use_container_width=True,
+            type="primary" if selected_page == _page else "secondary",
+        ):
+            st.session_state["flavio_nav"] = _page
+            st.rerun()
+
+st.markdown(
+    '<div style="height:1px;background:rgba(255,255,255,0.10);'
+    'margin:0.45rem 0 1.1rem 0;"></div>',
+    unsafe_allow_html=True,
+)
+
+
 def execute_embedded_page(
     source: str,
     module_name: str,
