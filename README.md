@@ -6,7 +6,6 @@ Application Streamlit tout-en-un, thème clair minimaliste.
 
 - **Data Online** (page d'accueil) — vue synthétique de la performance des indices
 - **Bureau Larbou**
-- **Kalman Lab**
 
 ## Data Online
 
@@ -35,7 +34,7 @@ python -m streamlit run main.py
 
 ## Secret LSE
 
-Les pages Bureau Larbou et Kalman Lab utilisent le flux de données LSE. En
+La page Bureau Larbou utilise le flux de données LSE. En
 local, créer un fichier non versionné :
 
 ```text
