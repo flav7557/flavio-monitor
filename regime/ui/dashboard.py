@@ -259,14 +259,14 @@ CSS = f"""
     .rg table.quotes th.cat {{ width:15%; }}
     .rg table.quotes th.asset {{ width:22%; }}
     .rg table.quotes td {{ color:#c9d1d9; font-size:0.74rem; text-align:right;
-        padding:0.46rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.04);
+        padding:0.46rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.14);
         font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden;
         text-overflow:ellipsis; }}
     .rg table.quotes td.l {{ text-align:left; color:#e6edf3; font-weight:650; }}
     .rg table.quotes td.cat {{ color:{DIM}; font-size:0.66rem; letter-spacing:0.08em;
         text-transform:uppercase; font-weight:700; }}
     .rg table.quotes td.sym {{ color:{FAINT}; font-size:0.66rem; }}
-    .rg table.quotes tr.group-start td {{ border-top:1px solid rgba(255,255,255,0.18); }}
+    .rg table.quotes tr.group-start td {{ border-top:1px solid rgba(255,255,255,0.28); }}
     .rg table.quotes tr:last-child td {{ border-bottom:0; }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
 </style>
