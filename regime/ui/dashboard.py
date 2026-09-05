@@ -232,6 +232,23 @@ CSS = f"""
         white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
     .rg span.mcell .ms {{ display:block; font-size:0.98rem; font-weight:700;
         font-variant-numeric:tabular-nums; }}
+    .rg table.term2 {{ width:100%; border-collapse:collapse; }}
+    .rg table.term2 th {{ font-size:0.62rem; letter-spacing:0.1em;
+        text-transform:uppercase; color:{DIM}; font-weight:600; text-align:right;
+        padding:0.4rem 0.8rem; border-bottom:1px solid rgba(255,255,255,0.12); }}
+    .rg table.term2 th.l {{ text-align:left; }}
+    .rg table.term2 td {{ padding:0.42rem 0.8rem; text-align:right;
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        font-variant-numeric:tabular-nums; font-size:0.88rem; color:#c9d1d9; }}
+    .rg table.term2 td.l {{ text-align:left; }}
+    .rg table.term2 tr.cat td {{ background:rgba(255,255,255,0.025);
+        border-top:1px solid rgba(255,255,255,0.09);
+        border-bottom:1px solid rgba(255,255,255,0.09);
+        padding-top:0.6rem; padding-bottom:0.6rem; }}
+    .rg table.term2 .catname {{ font-size:0.72rem; letter-spacing:0.12em;
+        text-transform:uppercase; color:#e6edf3; font-weight:700; }}
+    .rg table.term2 .tagcell {{ font-weight:700; letter-spacing:0.5px;
+        font-size:0.78rem; }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
 </style>
 """
@@ -499,44 +516,54 @@ def _render_status(result, live: dict) -> None:
     )
 
 
+def _cell_color(v) -> str:
+    return UP if (v or 0) > 0 else DOWN if (v or 0) < 0 else DIM
+
+
 def _render_terminal(result, live: dict) -> None:
-    cols = []
-    max_rows = 1
+    """One native table (updates in place on each fragment tick — no reload)."""
+    body = [
+        "<thead><tr><th class='l'>Instrument</th><th>Prix</th>"
+        "<th>Perf jour</th><th>Sentiment</th></tr></thead><tbody>"
+    ]
     for s in result.global_regime.children:
         if not isinstance(s, GroupResult):
             continue
-        stag, scls = _tag(s.score)
         insts = [i for i in _all_instruments(s) if i.eligible]
-        max_rows = max(max_rows, len(insts))
-        rows = []
-        sec_perfs = []
+        if not insts:
+            continue
+        stag, scls = _tag(s.score)
+        scol = {"bull": UP, "bear": DOWN, "neut": FLAT}[scls]
+        perfs = []
+        inst_rows = []
         for i in insts:
             live_px = live.get(i.symbol, i.price)
             chg = _live_change(i, live)
             if chg is not None:
-                sec_perfs.append(chg)
-            chg_c = "bull" if (chg or 0) > 0 else "bear" if (chg or 0) < 0 else "neut"
-            chg_s = "—" if chg is None else f"{chg:+.2f}%"
+                perfs.append(chg)
             itag, icls = _tag(i.score)
-            stale = " ·" if i.stale else ""
-            rows.append(
-                f"<div class='row'><span class='nm'>{html.escape(i.name)}{stale}</span>"
-                f"<span class='px'>{_fmt_px(live_px)}</span>"
-                f"<span class='chg {chg_c}'>{chg_s}</span>"
-                f"<span class='tag {icls}'>{itag}</span></div>"
+            icol = {"bull": UP, "bear": DOWN, "neut": FLAT}[icls]
+            chg_s = "—" if chg is None else f"{chg:+.2f}%"
+            inst_rows.append(
+                f"<tr><td class='l'>{html.escape(i.name)}</td>"
+                f"<td>{_fmt_px(live_px)}</td>"
+                f"<td style='color:{_cell_color(chg)}'>{chg_s}</td>"
+                f"<td class='tagcell' style='color:{icol}'>{itag}</td></tr>"
             )
-        sperf = sum(sec_perfs) / len(sec_perfs) if sec_perfs else None
-        sperf_c = "bull" if (sperf or 0) > 0 else "bear" if (sperf or 0) < 0 else "neut"
+        sperf = sum(perfs) / len(perfs) if perfs else None
         sperf_s = "—" if sperf is None else f"{sperf:+.2f}%"
-        cols.append(
-            f"<div class='col'><h3><span class='cat'>{html.escape(s.name)}</span>"
-            f"<span class='hgrp'><span class='st {scls}'>{stag}</span>"
-            f"<span class='hp {sperf_c}'>{sperf_s}</span></span></h3>"
-            f"{''.join(rows)}</div>"
+        body.append(
+            f"<tr class='cat'><td class='l' colspan='2'>"
+            f"<span class='catname'>{html.escape(s.name)}</span></td>"
+            f"<td style='color:{_cell_color(sperf)};font-weight:700'>{sperf_s}</td>"
+            f"<td class='tagcell' style='color:{scol}'>{stag}</td></tr>"
         )
-    doc = f"<style>{TERMINAL_CSS}</style><div class='term'>{''.join(cols)}</div>"
-    height = 52 + max_rows * 29 + 40
-    components.html(doc, height=height, scrolling=False)
+        body.extend(inst_rows)
+    body.append("</tbody>")
+    st.markdown(
+        f"<div class='rg'><table class='term2'>{''.join(body)}</table></div>",
+        unsafe_allow_html=True,
+    )
 
 
 @st.fragment(run_every=10)
@@ -716,7 +743,6 @@ def render() -> None:
     if show_map:
         _render_visual(result)
 
-    _render_sector_detail(result)
     _render_methodology(result)
 
     ts = result.timestamp
