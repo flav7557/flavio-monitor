@@ -12,3 +12,5 @@ env/
 .DS_Store
 Thumbs.db
 *.log
+.regime_state/
+.pytest_cache/

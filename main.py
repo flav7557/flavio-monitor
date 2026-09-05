@@ -33,6 +33,14 @@ st.markdown(
                 "Avenir", "Futura", sans-serif;
         }
 
+        /* keep Material icon ligatures rendering as icons, not as text */
+        [data-testid="stIconMaterial"],
+        span.material-icons, span.material-icons-outlined,
+        [class*="material-symbols"] {
+            font-family: 'Material Symbols Rounded', 'Material Symbols Outlined',
+                'Material Icons', 'Material Icons Outlined' !important;
+        }
+
         [data-testid="stSidebarNav"] {
             display: none;
         }
@@ -132,7 +140,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    for nav_page in ("Data Online", "Bureau Larbou"):
+    for nav_page in ("Data Online", "Regime Matrix", "Bureau Larbou"):
         is_active = (
             st.session_state.get("flavio_nav", "Data Online") == nav_page
         )
@@ -3410,6 +3418,11 @@ if selected_page == "Data Online":
         "flavio_monitor_data_online",
         "embedded_data_online.py",
     )
+
+elif selected_page == "Regime Matrix":
+    from regime.ui.dashboard import render as render_regime_matrix
+
+    render_regime_matrix()
 
 else:
     execute_embedded_page(
