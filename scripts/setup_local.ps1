@@ -32,6 +32,8 @@ function Find-PackageManager {
     if ($pnpm) { return $pnpm.Source }
     $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
     if ($npm) { return $npm.Source }
+    $codexPnpm = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\bin\fallback\pnpm.cmd"
+    if (Test-Path -LiteralPath $codexPnpm) { return $codexPnpm }
     throw "Node.js 20 ou plus recent est requis. Installe la version LTS depuis https://nodejs.org/"
 }
 
