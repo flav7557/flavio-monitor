@@ -259,14 +259,15 @@ CSS = f"""
     .rg table.quotes th.cat {{ width:15%; }}
     .rg table.quotes th.asset {{ width:22%; }}
     .rg table.quotes td {{ color:#c9d1d9; font-size:0.74rem; text-align:right;
-        padding:0.46rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.14);
+        padding:0.46rem 0.34rem;
         font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden;
         text-overflow:ellipsis; }}
+    .rg table.quotes tr.asset-row td {{ border-bottom:1px solid rgba(255,255,255,0.30); }}
     .rg table.quotes td.l {{ text-align:left; color:#e6edf3; font-weight:650; }}
     .rg table.quotes td.cat {{ color:{DIM}; font-size:0.66rem; letter-spacing:0.08em;
         text-transform:uppercase; font-weight:700; }}
     .rg table.quotes td.sym {{ color:{FAINT}; font-size:0.66rem; }}
-    .rg table.quotes tr.group-start td {{ border-top:1px solid rgba(255,255,255,0.28); }}
+    .rg table.quotes tr.group-start td {{ border-top:1px solid rgba(255,255,255,0.46); }}
     .rg table.quotes tr:last-child td {{ border-bottom:0; }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
 </style>
@@ -824,12 +825,12 @@ def _render_market_board(rows: list[dict]) -> None:
         day_col = _cell_color(day)
         decimals = _quote_decimals(category, symbol)
         row_class = (
-            " class='group-start'"
+            "asset-row group-start"
             if previous_category and category != previous_category
-            else ""
+            else "asset-row"
         )
         body.append(
-            f"<tr{row_class}>"
+            f"<tr class='{row_class}'>"
             f"<td class='l cat'>{html.escape(category)}</td>"
             f"<td class='l'>{html.escape(row['name'])}</td>"
             f"<td class='l sym'>{html.escape(symbol or 'Non trouvé')}</td>"
