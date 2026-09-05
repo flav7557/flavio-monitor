@@ -68,6 +68,12 @@ CSS = """
         line-height:0.95; font-weight:750; letter-spacing:0;
         font-variant-numeric:tabular-nums;
     }
+    .lp-chart {
+        width:100%; height:76px; margin:0.7rem 0 0.85rem 0;
+    }
+    .lp-chart svg {
+        display:block; width:100%; height:100%; overflow:visible;
+    }
     .lp-meta {
         display:flex; align-items:center; justify-content:space-between;
         gap:0.8rem; color:#8b949e; font-size:0.82rem;
@@ -192,7 +198,7 @@ def _quote_from_candles(api_key: str, symbol: str, dataset: Optional[str]) -> di
         try:
             minute = normalize_candles(
                 client.candles(
-                    symbol, timeframe="1m", limit=1, order="desc",
+                    symbol, timeframe="1m", limit=90, order="desc",
                     dataset=dataset,
                 )
             )
@@ -209,13 +215,19 @@ def _quote_from_candles(api_key: str, symbol: str, dataset: Optional[str]) -> di
     if not daily.empty:
         previous = _as_float(daily["close"].iloc[-2 if len(daily) > 1 else -1])
         live = _as_float(daily["close"].iloc[-1])
+    series = []
     if not minute.empty:
         live = _as_float(minute["close"].iloc[-1]) or live
+        series = [
+            float(value)
+            for value in minute["close"].dropna().tail(90).tolist()
+            if _as_float(value) is not None
+        ]
 
     day = None
     if live is not None and previous not in (None, 0):
         day = (live / previous - 1) * 100
-    return {"previous": previous, "live": live, "day": day}
+    return {"previous": previous, "live": live, "day": day, "series": series}
 
 
 def _stream_prices(api_key: str, symbols: tuple[str, ...], seconds: float = 1.25) -> dict:
@@ -334,6 +346,40 @@ def _fmt_pct(value) -> str:
     return f"{value:+.2f}%"
 
 
+def _sparkline(values: list[float], color: str) -> str:
+    clean = [v for v in values if _as_float(v) is not None]
+    if len(clean) < 2:
+        return (
+            "<div class='lp-chart'>"
+            "<svg viewBox='0 0 360 76' preserveAspectRatio='none'>"
+            "<line x1='0' y1='38' x2='360' y2='38' "
+            "stroke='rgba(255,255,255,0.14)' stroke-width='1'/>"
+            "</svg></div>"
+        )
+
+    lo = min(clean)
+    hi = max(clean)
+    span = hi - lo or abs(hi) * 0.001 or 1.0
+    points = []
+    count = len(clean)
+    for index, value in enumerate(clean):
+        x = index / (count - 1) * 360
+        y = 68 - ((value - lo) / span) * 60
+        points.append(f"{x:.1f},{y:.1f}")
+
+    last_y = points[-1].split(",")[1]
+    return (
+        "<div class='lp-chart'>"
+        "<svg viewBox='0 0 360 76' preserveAspectRatio='none'>"
+        "<line x1='0' y1='38' x2='360' y2='38' "
+        "stroke='rgba(255,255,255,0.10)' stroke-width='1'/>"
+        f"<polyline points='{' '.join(points)}' fill='none' stroke='{color}' "
+        "stroke-width='2.1' vector-effect='non-scaling-stroke'/>"
+        f"<circle cx='360' cy='{last_y}' r='3.2' fill='{color}'/>"
+        "</svg></div>"
+    )
+
+
 def _card(row: dict) -> str:
     live = row.get("live")
     day = row.get("day")
@@ -347,6 +393,7 @@ def _card(row: dict) -> str:
         f"<div class='lp-name'>{html.escape(row['name'])}</div>"
         "</div>"
         f"<div class='lp-price'>{html.escape(_fmt_price(live, row['name']))}</div>"
+        f"{_sparkline(row.get('series', []), color)}"
         "<div class='lp-meta'>"
         f"<span class='lp-change' style='color:{color}'>{html.escape(_fmt_pct(day))}</span>"
         f"<span class='{live_class}'>{state}</span>"
