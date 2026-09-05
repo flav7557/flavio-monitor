@@ -262,11 +262,11 @@ CSS = f"""
         padding:0.46rem 0.34rem;
         font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden;
         text-overflow:ellipsis; }}
-    .rg table.quotes tr.asset-row td {{ border-bottom:1px solid rgba(255,255,255,0.30); }}
+    .rg table.quotes tr.asset-row td {{ border-bottom:2px solid rgba(255,255,255,0.62); }}
     .rg table.quotes td.l {{ text-align:left; color:#e6edf3; font-weight:650; }}
     .rg table.quotes td.cat {{ color:{DIM}; font-size:0.66rem; letter-spacing:0.08em;
         text-transform:uppercase; font-weight:700; }}
-    .rg table.quotes tr.group-start td {{ border-top:1px solid rgba(255,255,255,0.46); }}
+    .rg table.quotes tr.group-start td {{ border-top:2px solid rgba(255,255,255,0.78); }}
     .rg table.quotes tr:last-child td {{ border-bottom:0; }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
 </style>
