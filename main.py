@@ -311,16 +311,17 @@ STYLE = """
     table.do {
         width: 100%;
         border-collapse: collapse;
+        border: 1px solid #0a0a0a;
     }
     table.do th {
         font-size: 0.68rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #9aa0a6;
-        padding: 0.35rem 0.6rem;
+        color: #6b7078;
+        padding: 0.45rem 0.6rem;
         text-align: right;
-        border-bottom: 1px solid #e6e8eb;
+        border-bottom: 1px solid #0a0a0a;
     }
     table.do th.do-name, table.do td.do-name {
         text-align: left;
