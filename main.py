@@ -393,12 +393,6 @@ html_sections = "".join(
     render_section(name, rows, closes) for name, rows in SECTIONS
 )
 st.markdown(html_sections, unsafe_allow_html=True)
-
-st.caption(
-    "Perf calculée sur les cours de clôture ajustés. "
-    "3 jours / 1 semaine / 1 mois = 3 / 5 / 21 jours de bourse. "
-    "Données différées."
-)
 '''
 
 BUREAU_LARBOU_SOURCE = r'''
