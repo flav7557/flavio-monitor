@@ -249,34 +249,24 @@ CSS = f"""
         text-transform:uppercase; color:#e6edf3; font-weight:700; }}
     .rg table.term2 .tagcell {{ font-weight:700; letter-spacing:0.5px;
         font-size:0.78rem; }}
-    .rg .quote-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
-        gap:0.75rem; align-items:start; }}
-    .rg .quote-panel {{ border:1px solid rgba(255,255,255,0.08); border-radius:5px;
-        background:rgba(255,255,255,0.018); overflow:hidden; min-width:0; }}
-    .rg .quote-head {{ display:flex; align-items:baseline; justify-content:space-between;
-        gap:0.5rem; padding:0.72rem 0.72rem 0.55rem 0.72rem;
-        border-bottom:1px solid rgba(255,255,255,0.10); }}
-    .rg .quote-title {{ font-size:0.72rem; letter-spacing:0.14em;
-        text-transform:uppercase; color:#f4f5f7; font-weight:700;
-        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
-    .rg .quote-sub {{ color:{DIM}; font-size:0.66rem; white-space:nowrap; }}
+    .rg .quote-board {{ border:1px solid rgba(255,255,255,0.08); border-radius:5px;
+        background:rgba(255,255,255,0.018); overflow:hidden; }}
     .rg table.quotes {{ width:100%; border-collapse:collapse; table-layout:fixed; }}
     .rg table.quotes th {{ color:{DIM}; font-size:0.56rem; letter-spacing:0.08em;
         text-transform:uppercase; font-weight:600; text-align:right;
         padding:0.42rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.08); }}
-    .rg table.quotes th.l {{ text-align:left; width:29%; }}
+    .rg table.quotes th.l {{ text-align:left; }}
+    .rg table.quotes th.cat {{ width:15%; }}
+    .rg table.quotes th.asset {{ width:22%; }}
     .rg table.quotes td {{ color:#c9d1d9; font-size:0.74rem; text-align:right;
         padding:0.46rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.04);
         font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden;
         text-overflow:ellipsis; }}
     .rg table.quotes td.l {{ text-align:left; color:#e6edf3; font-weight:650; }}
+    .rg table.quotes td.cat {{ color:{DIM}; font-size:0.66rem; letter-spacing:0.08em;
+        text-transform:uppercase; font-weight:700; }}
+    .rg table.quotes td.sym {{ color:{FAINT}; font-size:0.66rem; }}
     .rg table.quotes tr:last-child td {{ border-bottom:0; }}
-    @media (max-width: 1700px) {{
-        .rg .quote-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); }}
-    }}
-    @media (max-width: 720px) {{
-        .rg .quote-grid {{ grid-template-columns:1fr; }}
-    }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
 </style>
 """
@@ -288,7 +278,8 @@ CSS = f"""
 @st.cache_resource(ttl=300, show_spinner=False)
 def _load(provider: str, timeframe: str, intraday: bool, salt: int):
     cfg = replace(DEFAULT_CONFIG, provider=provider,
-                  primary_timeframe=timeframe, intraday_enabled=intraday)
+                  primary_timeframe=timeframe, intraday_enabled=intraday,
+                  allow_yf_fallback=False)
     return compute_regime(cfg, store_path=STORE_PATH)
 
 
@@ -485,46 +476,30 @@ def _tag(score: float):
     return "NEUT", "neut"
 
 
-MARKET_BOARD_GROUPS = [
-    ("Énergie", [
-        ("Brent", "BZ=F"),
-        ("WTI", "CL=F"),
-        ("Natural Gas", "NG=F"),
-        ("Gasoline", "RB=F"),
-        ("Heating Oil", "HO=F"),
-    ]),
-    ("Métaux précieux", [
-        ("Gold", "GC=F"),
-        ("Silver", "SI=F"),
-        ("Platinum", "PL=F"),
-        ("Palladium", "PA=F"),
-    ]),
-    ("Indices", [
-        ("S&P 500", "^GSPC"),
-        ("Nasdaq 100", "^NDX"),
-        ("Dow Jones", "^DJI"),
-        ("Euro Stoxx 50", "^STOXX50E"),
-        ("CAC 40", "^FCHI"),
-        ("DAX", "^GDAXI"),
-    ]),
-    ("Forex", [
-        ("EUR/USD", "EURUSD=X"),
-        ("GBP/USD", "GBPUSD=X"),
-        ("USD/JPY", "USDJPY=X"),
-        ("USD/CHF", "USDCHF=X"),
-        ("USD/CAD", "USDCAD=X"),
-        ("AUD/USD", "AUDUSD=X"),
-        ("NZD/USD", "NZDUSD=X"),
-    ]),
+MARKET_BOARD_TARGETS = [
+    ("Énergie", "Brent", "commodities", ("BRENT", "UKOIL", "BCO", "BZ")),
+    ("Énergie", "WTI", "commodities", ("WTI", "USOIL", "CL")),
+    ("Énergie", "Natural Gas", "commodities", ("NATURAL GAS", "NAT GAS", "NG")),
+    ("Énergie", "Gasoline", "commodities", ("GASOLINE", "RBOB", "RB")),
+    ("Énergie", "Heating Oil", "commodities", ("HEATING OIL", "GASOIL", "HO")),
+    ("Métaux précieux", "Gold", "commodities", ("XAU/USD", "GOLD", "GC", "XAU")),
+    ("Métaux précieux", "Silver", "commodities", ("XAG/USD", "SILVER", "SI", "XAG")),
+    ("Métaux précieux", "Platinum", "commodities", ("XPT/USD", "PLATINUM", "PL", "XPT")),
+    ("Métaux précieux", "Palladium", "commodities", ("XPD/USD", "PALLADIUM", "PA", "XPD")),
+    ("Indices", "S&P 500", "indices", ("SPX", "S&P 500", "US500", "SP500")),
+    ("Indices", "Nasdaq 100", "indices", ("NDX", "NASDAQ 100", "US100")),
+    ("Indices", "Dow Jones", "indices", ("DJI", "DOW JONES", "US30")),
+    ("Indices", "Euro Stoxx 50", "indices", ("STOXX50E", "EURO STOXX 50", "EU50")),
+    ("Indices", "CAC 40", "indices", ("CAC 40", "FCHI", "FR40")),
+    ("Indices", "DAX", "indices", ("DAX", "GDAXI", "DE40")),
+    ("Forex", "EUR/USD", "forex", ("EUR/USD",)),
+    ("Forex", "GBP/USD", "forex", ("GBP/USD",)),
+    ("Forex", "USD/JPY", "forex", ("USD/JPY",)),
+    ("Forex", "USD/CHF", "forex", ("USD/CHF",)),
+    ("Forex", "USD/CAD", "forex", ("USD/CAD",)),
+    ("Forex", "AUD/USD", "forex", ("AUD/USD",)),
+    ("Forex", "NZD/USD", "forex", ("NZD/USD",)),
 ]
-
-
-def _board_symbols() -> tuple:
-    return tuple(
-        symbol
-        for _group_name, rows in MARKET_BOARD_GROUPS
-        for _display_name, symbol in rows
-    )
 
 
 def _as_float(value):
@@ -541,133 +516,217 @@ def _as_float(value):
         return None
 
 
-def _quote_from_info(symbol: str) -> dict:
-    import yfinance as yf
+def _match_score(item: dict, candidates: tuple[str, ...]) -> tuple[int, int]:
+    symbol = str(item.get("symbol") or "").upper()
+    name = str(item.get("name") or "").upper()
+    haystack = f"{symbol} {name}"
+    best = 0
+    for raw in candidates:
+        cand = raw.upper()
+        if symbol == cand:
+            best = max(best, 100)
+        elif symbol.replace("/", "") == cand.replace("/", ""):
+            best = max(best, 90)
+        elif cand in symbol:
+            best = max(best, 80)
+        elif cand in name:
+            best = max(best, 70)
+        elif all(part in haystack for part in cand.split()):
+            best = max(best, 60)
+    return best, -len(symbol)
 
+
+def _resolve_board_rows(catalog: list[dict]) -> list[dict]:
+    rows = []
+    by_category = {}
+    for item in catalog:
+        key = str(item.get("category") or "").lower()
+        by_category.setdefault(key, []).append(item)
+
+    for category, display_name, catalog_name, candidates in MARKET_BOARD_TARGETS:
+        pool = by_category.get(catalog_name.lower(), [])
+        scored = sorted(
+            ((_match_score(item, candidates), item) for item in pool),
+            key=lambda pair: pair[0],
+            reverse=True,
+        )
+        item = scored[0][1] if scored and scored[0][0][0] > 0 else None
+        rows.append({
+            "category": category,
+            "name": display_name,
+            "symbol": item.get("symbol") if item else None,
+            "dataset": item.get("dataset") if item else None,
+        })
+    return rows
+
+
+def _quote_from_lse_candles(api_key: str, symbol: str, dataset: Optional[str]) -> dict:
+    from ..data.provider import normalize_candles
+
+    from lse import LSE
+
+    client = LSE(api_key=api_key, timeout=15)
     try:
-        info = yf.Ticker(symbol).info or {}
-    except Exception:
-        info = {}
+        try:
+            daily = normalize_candles(
+                client.candles(
+                    symbol,
+                    timeframe="1d",
+                    limit=2,
+                    order="desc",
+                    dataset=dataset,
+                )
+            )
+        except Exception:
+            daily = pd.DataFrame()
 
-    live = (
-        _as_float(info.get("regularMarketPrice"))
-        or _as_float(info.get("currentPrice"))
-        or _as_float(info.get("bid"))
-        or _as_float(info.get("ask"))
-    )
-    previous = (
-        _as_float(info.get("regularMarketPreviousClose"))
-        or _as_float(info.get("previousClose"))
-        or _as_float(info.get("regularMarketOpen"))
-    )
-    bid = _as_float(info.get("bid"))
-    ask = _as_float(info.get("ask"))
-    if bid is not None and bid <= 0:
-        bid = None
-    if ask is not None and ask <= 0:
-        ask = None
+        try:
+            minute = normalize_candles(
+                client.candles(
+                    symbol,
+                    timeframe="1m",
+                    limit=1,
+                    order="desc",
+                    dataset=dataset,
+                )
+            )
+        except Exception:
+            minute = pd.DataFrame()
+    finally:
+        try:
+            client.disconnect()
+        except Exception:
+            pass
+
+    previous = None
+    live = None
+    if not daily.empty:
+        previous = _as_float(daily["close"].iloc[-2 if len(daily) > 1 else -1])
+        live = _as_float(daily["close"].iloc[-1])
+    if not minute.empty:
+        live = _as_float(minute["close"].iloc[-1]) or live
 
     day = None
     if live is not None and previous not in (None, 0):
         day = (live / previous - 1) * 100
-    else:
-        day = _as_float(info.get("regularMarketChangePercent"))
 
-    return {
-        "previous": previous,
-        "live": live,
-        "day": day,
-        "bid": bid,
-        "ask": ask,
-    }
+    return {"previous": previous, "live": live, "day": day, "bid": None, "ask": None}
 
 
-def _extract_download_price(data, symbol: str):
-    if data is None or getattr(data, "empty", True):
-        return None
-    try:
-        if isinstance(data.columns, pd.MultiIndex):
-            if symbol not in data.columns.get_level_values(0):
-                return None
-            series = data[symbol]["Close"].dropna()
-        else:
-            series = data["Close"].dropna()
-    except Exception:
-        return None
-    if len(series) == 0:
-        return None
-    return _as_float(series.iloc[-1])
+def _stream_lse_bid_ask(api_key: str, symbols: tuple[str, ...], seconds: float = 3.0) -> dict:
+    import queue
+    import threading
+    import time
+
+    from lse import LSE
+
+    if not symbols:
+        return {}
+
+    ticks: dict[str, dict] = {}
+    events: queue.Queue = queue.Queue()
+    client_box = {"client": None}
+
+    def _worker() -> None:
+        client = None
+        try:
+            client = LSE(api_key=api_key, timeout=8)
+            client_box["client"] = client
+            for tick in client.stream(list(symbols), reconnect=False):
+                events.put(tick)
+                if len(ticks) >= len(symbols):
+                    break
+        except Exception:
+            return
+        finally:
+            if client is not None:
+                try:
+                    client.disconnect()
+                except Exception:
+                    pass
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline and len(ticks) < len(symbols):
+        try:
+            tick = events.get(timeout=0.2)
+        except queue.Empty:
+            continue
+        bid = _as_float(getattr(tick, "bid", None))
+        ask = _as_float(getattr(tick, "ask", None))
+        price = _as_float(getattr(tick, "price", None))
+        symbol = getattr(tick, "symbol", None)
+        if symbol:
+            ticks[symbol] = {"live": price, "bid": bid, "ask": ask}
+
+    client = client_box.get("client")
+    if client is not None:
+        try:
+            client.disconnect()
+        except Exception:
+            pass
+    return ticks
 
 
 @st.cache_data(ttl=10, show_spinner=False)
-def _load_market_board(symbols: tuple, salt: int) -> dict:
+def _load_market_board_lse(salt: int) -> list[dict]:
+    import os
     from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 
-    import yfinance as yf
+    from lse import LSE
 
-    symbols = tuple(symbols)
-    out = {symbol: {} for symbol in symbols}
+    api_key = os.environ.get("LSE_API_KEY")
+    if not api_key:
+        raise RuntimeError("LSE_API_KEY manquant : Regime Matrix utilise uniquement l'API LSE.")
 
+    client = LSE(api_key=api_key, timeout=30)
     try:
-        daily = yf.download(
-            list(symbols),
-            period="5d",
-            interval="1d",
-            group_by="ticker",
-            auto_adjust=False,
-            progress=False,
-            threads=True,
-        )
-    except Exception:
-        daily = None
+        rows = _resolve_board_rows(client.catalog())
+        resolved = [row for row in rows if row["symbol"]]
+        quotes = {}
 
-    try:
-        intraday = yf.download(
-            list(symbols),
-            period="1d",
-            interval="1m",
-            group_by="ticker",
-            auto_adjust=False,
-            progress=False,
-            threads=True,
-        )
-    except Exception:
-        intraday = None
-
-    for symbol in symbols:
-        previous = _extract_download_price(daily, symbol)
-        live = _extract_download_price(intraday, symbol) or previous
-        day = None
-        if live is not None and previous not in (None, 0):
-            day = (live / previous - 1) * 100
-        out[symbol] = {
-            "previous": previous,
-            "live": live,
-            "day": day,
-            "bid": None,
-            "ask": None,
-        }
-
-    executor = ThreadPoolExecutor(max_workers=8)
-    try:
-        futures = {
-            executor.submit(_quote_from_info, symbol): symbol
-            for symbol in symbols
-        }
-        for future in as_completed(futures, timeout=6):
-            symbol = futures[future]
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(
+                    _quote_from_lse_candles,
+                    api_key,
+                    row["symbol"],
+                    row["dataset"],
+                ): row["symbol"]
+                for row in resolved
+            }
             try:
-                info_quote = future.result()
-            except Exception:
-                continue
-            for key in ("previous", "live", "day", "bid", "ask"):
-                if info_quote.get(key) is not None:
-                    out[symbol][key] = info_quote[key]
-    except TimeoutError:
-        pass
+                for future in as_completed(futures, timeout=12):
+                    symbol = futures[future]
+                    try:
+                        quotes[symbol] = future.result()
+                    except Exception:
+                        quotes[symbol] = {}
+            except TimeoutError:
+                pass
+
+        stream_quotes = _stream_lse_bid_ask(
+            api_key,
+            tuple(row["symbol"] for row in resolved),
+            seconds=3.0,
+        )
+        for row in rows:
+            symbol = row["symbol"]
+            quote = quotes.get(symbol, {}) if symbol else {}
+            tick = stream_quotes.get(symbol, {}) if symbol else {}
+            if tick.get("live") is not None:
+                quote["live"] = tick["live"]
+            for key in ("bid", "ask"):
+                if tick.get(key) is not None and tick[key] > 0:
+                    quote[key] = tick[key]
+            row.update(quote)
+        return rows
     finally:
-        executor.shutdown(wait=False, cancel_futures=True)
-    return out
+        try:
+            client.disconnect()
+        except Exception:
+            pass
 
 
 def _fmt_px(v, decimals: Optional[int] = None) -> str:
@@ -697,7 +756,12 @@ def _live_change(inst, live: dict):
 @st.cache_data(ttl=10, show_spinner=False)
 def _load_live(provider: str, intraday: bool, symbols: tuple, salt: int) -> dict:
     from ..service import fetch_live_prices
-    cfg = replace(DEFAULT_CONFIG, provider=provider, intraday_enabled=intraday)
+    cfg = replace(
+        DEFAULT_CONFIG,
+        provider=provider,
+        intraday_enabled=intraday,
+        allow_yf_fallback=False,
+    )
     return fetch_live_prices(cfg, list(symbols))
 
 
@@ -741,52 +805,44 @@ def _fmt_pct(v) -> str:
     return f"{v:+.2f}%"
 
 
-def _quote_decimals(symbol: str) -> Optional[int]:
-    if not symbol.endswith("=X"):
+def _quote_decimals(category: str, symbol: Optional[str]) -> Optional[int]:
+    if category != "Forex":
         return None
-    return 2 if "JPY" in symbol else 4
+    return 2 if symbol and "JPY" in symbol else 4
 
 
-def _render_market_board(quotes: dict) -> None:
-    panels = []
-    for group_name, rows in MARKET_BOARD_GROUPS:
-        body = [
-            "<table class='quotes'><thead><tr>"
-            "<th class='l'>Actif</th><th>Prix</th><th>Direct</th>"
-            "<th>Jour</th><th>Bid</th><th>Ask</th></tr></thead><tbody>"
-        ]
-        for display_name, symbol in rows:
-            q = quotes.get(symbol, {})
-            previous = q.get("previous")
-            live = q.get("live")
-            day = q.get("day")
-            bid = q.get("bid")
-            ask = q.get("ask")
-            day_col = _cell_color(day)
-            decimals = _quote_decimals(symbol)
-            body.append(
-                "<tr>"
-                f"<td class='l'>{html.escape(display_name)}</td>"
-                f"<td>{_fmt_px(previous, decimals)}</td>"
-                f"<td>{_fmt_px(live, decimals)}</td>"
-                f"<td style='color:{day_col};font-weight:700'>{_fmt_pct(day)}</td>"
-                f"<td>{_fmt_px(bid, decimals)}</td>"
-                f"<td>{_fmt_px(ask, decimals)}</td>"
-                "</tr>"
-            )
-        body.append("</tbody></table>")
-        panels.append(
-            "<div class='quote-panel'>"
-            "<div class='quote-head'>"
-            f"<div class='quote-title'>{html.escape(group_name)}</div>"
-            "<div class='quote-sub'>Bid / Ask</div>"
-            "</div>"
-            f"{''.join(body)}"
-            "</div>"
+def _render_market_board(rows: list[dict]) -> None:
+    body = [
+        "<table class='quotes'><thead><tr>"
+        "<th class='l cat'>Catégorie</th><th class='l asset'>Actif</th>"
+        "<th class='l'>Symbole LSE</th><th>Prix</th><th>Direct</th>"
+        "<th>Jour</th><th>Bid</th><th>Ask</th></tr></thead><tbody>"
+    ]
+    for row in rows:
+        category = row["category"]
+        symbol = row.get("symbol")
+        previous = row.get("previous")
+        live = row.get("live")
+        day = row.get("day")
+        bid = row.get("bid")
+        ask = row.get("ask")
+        day_col = _cell_color(day)
+        decimals = _quote_decimals(category, symbol)
+        body.append(
+            "<tr>"
+            f"<td class='l cat'>{html.escape(category)}</td>"
+            f"<td class='l'>{html.escape(row['name'])}</td>"
+            f"<td class='l sym'>{html.escape(symbol or 'Non trouvé')}</td>"
+            f"<td>{_fmt_px(previous, decimals)}</td>"
+            f"<td>{_fmt_px(live, decimals)}</td>"
+            f"<td style='color:{day_col};font-weight:700'>{_fmt_pct(day)}</td>"
+            f"<td>{_fmt_px(bid, decimals)}</td>"
+            f"<td>{_fmt_px(ask, decimals)}</td>"
+            "</tr>"
         )
-
+    body.append("</tbody></table>")
     st.markdown(
-        f"<div class='rg'><div class='quote-grid'>{''.join(panels)}</div></div>",
+        f"<div class='rg'><div class='quote-board'>{''.join(body)}</div></div>",
         unsafe_allow_html=True,
     )
 
@@ -844,7 +900,7 @@ def _terminal_fragment(result, provider: str, intraday: bool) -> None:
         i.symbol for i in _all_instruments(result.global_regime) if i.eligible
     )
     live = _load_live(provider, intraday, symbols, int(now.timestamp() // 10))
-    quotes = _load_market_board(_board_symbols(), int(now.timestamp() // 10))
+    quotes = _load_market_board_lse(int(now.timestamp() // 10))
     _render_status(result, live)
     _render_market_board(quotes)
     for w in result.warnings:
@@ -994,7 +1050,7 @@ def render() -> None:
         salt = int(pd.Timestamp.utcnow().timestamp() // 300)
         result = _load(provider, "1d", intraday, salt)
     except Exception as exc:
-        st.error(f"Regime engine could not load market data: {exc}")
+        st.error(f"Impossible de charger Régime Matrix depuis l'API LSE : {exc}")
         return
 
     _terminal_fragment(result, provider, intraday)
