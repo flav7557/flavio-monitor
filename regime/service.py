@@ -9,32 +9,17 @@ from typing import Optional, Tuple
 from .config import DEFAULT_CONFIG, RegimeConfig
 from .data.lse_provider import LSEProvider
 from .data.provider import MarketDataProvider
-from .data.yf_provider import YahooProvider
 from .engine.models import RegimeResult
 from .engine.persistence import RegimeStore
 from .engine.pipeline import run_pipeline
 
 
 def select_provider(cfg: RegimeConfig) -> Tuple[MarketDataProvider, str, Optional[str]]:
-    """Return ``(provider, name, note)``. Prefers LSE; falls back to Yahoo when
-    no key is present (with a user-facing note) unless the caller forced one."""
-
-    if cfg.provider == "yfinance":
-        return YahooProvider(), "yfinance", None
-
+    """Return the London Strategic Edge provider or fail explicitly."""
     lse = LSEProvider()
     if lse.available():
         return lse, "lse", None
-
-    if cfg.allow_yf_fallback:
-        return (
-            YahooProvider(),
-            "yfinance",
-            "LSE_API_KEY is not configured — showing Yahoo Finance "
-            "fallback data. On the deployed app (with the LSE secret configured) the "
-            "same engine runs on the London Strategic Edge feed.",
-        )
-    raise RuntimeError("LSE_API_KEY not configured and yfinance fallback disabled.")
+    raise RuntimeError("LSE_API_KEY not configured. London Strategic Edge is required.")
 
 
 def compute_regime(

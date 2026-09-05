@@ -56,29 +56,6 @@ COMMODITY_TAXONOMY: Dict[str, Dict[str, List[str]]] = {
 }
 
 
-# Real-market fallback universe (Yahoo Finance) used by the yfinance provider
-# and by the test-suite. Each entry: (symbol, display name, sector, cluster).
-YF_COMMODITY_UNIVERSE: List[Tuple[str, str, str, str]] = [
-    ("BZ=F", "Brent", "Energy", "Crude"),
-    ("CL=F", "WTI", "Energy", "Crude"),
-    ("RB=F", "Gasoline", "Energy", "Refined Products"),
-    ("HO=F", "Heating Oil", "Energy", "Refined Products"),
-    ("NG=F", "Natural Gas", "Energy", "Natural Gas"),
-    ("GC=F", "Gold", "Precious Metals", "Gold"),
-    ("SI=F", "Silver", "Precious Metals", "Silver"),
-    ("PL=F", "Platinum", "Precious Metals", "PGM"),
-    ("PA=F", "Palladium", "Precious Metals", "PGM"),
-    ("HG=F", "Copper", "Industrial Metals", "Copper"),
-    ("ALI=F", "Aluminium", "Industrial Metals", "Aluminium"),
-    ("ZC=F", "Corn", "Agriculture", "Grains"),
-    ("ZW=F", "Wheat", "Agriculture", "Grains"),
-    ("ZS=F", "Soybeans", "Agriculture", "Grains"),
-    ("SB=F", "Sugar", "Agriculture", "Softs"),
-    ("KC=F", "Coffee", "Agriculture", "Softs"),
-    ("CT=F", "Cotton", "Agriculture", "Softs"),
-]
-
-
 @dataclass
 class RegimeConfig:
     """All tunable parameters for one asset class (defaults tuned for daily
@@ -88,8 +65,8 @@ class RegimeConfig:
     asset_class: str = "Commodities"
 
     # -- data provider -----------------------------------------------------
-    provider: str = "lse"              # "lse" (primary) or "yfinance" (fallback)
-    allow_yf_fallback: bool = True     # fall back to yfinance when no LSE key
+    provider: str = "lse"
+    allow_yf_fallback: bool = False
     primary_timeframe: str = "1d"
     intraday_timeframe: str = "15m"
     intraday_enabled: bool = True

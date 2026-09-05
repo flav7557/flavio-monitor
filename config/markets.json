@@ -1,0 +1,56 @@
+[
+  {
+    "id": "cac40",
+    "name": "CAC 40",
+    "symbol": null,
+    "categories": ["Indices"],
+    "search_terms": ["CAC 40", "CAC", "FCHI", "FR40"],
+    "position": "top-left",
+    "strict": false
+  },
+  {
+    "id": "gold",
+    "name": "GOLD",
+    "symbol": null,
+    "categories": ["Commodities", "Futures"],
+    "search_terms": ["Gold", "XAU/USD", "XAU", "GC"],
+    "position": "top-middle",
+    "strict": false
+  },
+  {
+    "id": "sp500",
+    "name": "S&P 500",
+    "symbol": null,
+    "categories": ["Indices"],
+    "search_terms": ["S&P 500", "SPX", "SP500", "US500"],
+    "position": "top-right",
+    "strict": false
+  },
+  {
+    "id": "asx5",
+    "name": "ASX 5",
+    "symbol": null,
+    "categories": ["Indices"],
+    "search_terms": ["ASX 5"],
+    "position": "bottom-left",
+    "strict": true
+  },
+  {
+    "id": "oil",
+    "name": "OIL",
+    "symbol": null,
+    "categories": ["Commodities", "Futures"],
+    "search_terms": ["WTI", "West Texas Intermediate", "Crude Oil", "US Oil"],
+    "position": "bottom-middle",
+    "strict": false
+  },
+  {
+    "id": "nasdaq",
+    "name": "NASDAQ",
+    "symbol": null,
+    "categories": ["Indices"],
+    "search_terms": ["Nasdaq 100", "NASDAQ", "NDX", "US100"],
+    "position": "bottom-right",
+    "strict": false
+  }
+]

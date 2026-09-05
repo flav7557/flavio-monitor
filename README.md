@@ -1,99 +1,100 @@
-# Flavio Monitor
+# Flavio Market Terminal
 
-Application Streamlit tout-en-un, thème clair minimaliste.
-
-## Navigation
-
-- **Data Online** (page d'accueil) — vue synthétique de la performance des indices
-- **Regime Matrix** — matrice de régime de marché (commodités) pilotée par le feed LSE
-
-## Data Online
-
-Page d'accueil minimaliste (fond blanc, texte noir). Elle affiche la
-performance des principaux indices sur **3 jours**, **1 semaine** et **1 mois**,
-regroupés par zone :
-
-- **Europe** : Euro Stoxx 50, CAC 40, DAX
-- **US** : Nasdaq 100, S&P 500
-- **Monde** : Nikkei 225, Hang Seng
-- **Or & Pétrole** : Or (Gold), Brent
-
-La performance est calculée sur les cours de clôture ajustés fournis par Yahoo
-Finance (`yfinance`). Les horizons 3 jours / 1 semaine / 1 mois correspondent à
-3 / 5 / 21 jours de bourse. Les données sont mises en cache 10 minutes ; le
-bouton **Rafraîchir** force un rechargement.
-
-> Données différées, à titre informatif uniquement.
-
-## Regime Matrix
-
-Matrice de régime de marché de qualité institutionnelle. Elle évalue en continu
-si chaque groupe d'actifs est *Strong Bearish → Strong Bullish* à partir de
-règles systématiques sur les prix, de façon entièrement traçable
-(instrument → cluster → secteur → complexe global).
-
-Architecture (package `regime/`, moteur découplé de l'UI et testé) :
-
-```
-regime/
-  config.py              # tous les paramètres (poids, seuils, taxonomie, clusters)
-  data/                  # acquisition des données (isolée du moteur)
-    provider.py          # interface + normalisation des chandeliers
-    lse_provider.py      # London Strategic Edge (primaire, catalog + candles)
-    yf_provider.py       # Yahoo Finance (repli / dev)
-  engine/                # moteur déterministe et testable
-    indicators.py normalization.py instrument_scorer.py
-    classification.py breadth.py aggregation.py
-    confidence.py persistence.py explain.py pipeline.py models.py
-  ui/dashboard.py        # rendu Streamlit uniquement
-  service.py             # sélection du provider + exécution du pipeline
-tests/test_engine.py     # 19 tests (scoring, breadth, invariants, persistance)
-```
-
-Score par instrument (−100 baissier … +100 haussier) :
-`0.35·Trend + 0.30·Momentum + 0.20·Intraday + 0.15·Breakout`
-(les composantes indisponibles sont retirées et les poids renormalisés — une
-donnée manquante n'est jamais un signal). Momentum en Z-score de volatilité, pas
-en % bruts comparés entre matières premières. La *breadth* compte les clusters
-(pas les instruments corrélés), et l'agrégation secteur/cluster utilise un centre
-robuste (médiane à partir de 4 enfants) pour qu'un seul outlier ne fasse pas
-basculer un groupe. Persistance + hystérésis évitent le clignotement du régime.
-
-Source de données : **London Strategic Edge** via `LSE_API_KEY` (voir plus bas).
-Pilotage Live et Regime Matrix utilisent uniquement LSE.
-
-Tests :
-
-```powershell
-python -m pytest tests/test_engine.py -q
-```
-
-## Installation locale
-
-```powershell
-python -m pip install -r requirements.txt
-python -m streamlit run main.py
-```
-
-## Secret LSE
-
-Pilotage Live et Regime Matrix utilisent le flux de données LSE. En local,
-créer un fichier non versionné :
+Terminal personnel de visualisation de six marchés. Les données historiques et
+live proviennent exclusivement de London Strategic Edge.
 
 ```text
-.streamlit/secrets.toml
+London Strategic Edge -> FastAPI -> Next.js
 ```
 
-avec :
+La clé API est utilisée uniquement par FastAPI. Elle n'est jamais envoyée au
+navigateur.
 
-```toml
-LSE_API_KEY = "TA_CLE"
+## Structure
+
+```text
+backend/
+  main.py                 API HTTP et WebSocket
+  config.py               configuration serveur
+  lse_client.py           client officiel lse-data
+  market_catalog.py       résolution contrôlée des symboles
+  market_service.py       historique et flux LSE partagé
+  websocket_manager.py    diffusion aux navigateurs
+config/
+  markets.json            six marchés et symboles modifiables
+frontend/
+  app/                    application Next.js
+  components/             terminal, grille, graphiques, sélecteur
+  hooks/                  connexion WebSocket unique
+  lib/                    API et agrégation OHLC
+scripts/
+  find_symbols.py         recherche dans le catalogue LSE
 ```
 
-Sur la plateforme, ajouter la même clé dans les secrets de l'application.
+## Configuration
 
-## Sécurité
+Créer `.env` à partir de `.env.example`, puis renseigner :
 
-La clé LSE est lue côté serveur depuis `LSE_API_KEY` ou `st.secrets`.
-Le navigateur reçoit seulement les prix et les bougies nécessaires aux
-graphiques, jamais la clé API.
+```dotenv
+LSE_API_KEY=your_key_here
+```
+
+`.env` est ignoré par Git. Ne jamais placer la clé dans `frontend/`, dans une
+variable `NEXT_PUBLIC_*` ou dans le dépôt.
+
+## Vérifier les symboles LSE
+
+Le terminal interroge `client.catalog()` au démarrage et résout les instruments
+sans ticker supposé. Pour inspecter les meilleurs résultats avant de fixer un
+symbole dans `config/markets.json` :
+
+```powershell
+python scripts/find_symbols.py
+```
+
+Si `ASX 5` n'existe pas exactement dans le catalogue, il reste indisponible. Il
+n'est jamais remplacé silencieusement par un autre indice.
+
+## Lancer le backend
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+uvicorn backend.main:app --reload
+```
+
+Le serveur est disponible sur `http://127.0.0.1:8000`.
+
+## Lancer le frontend
+
+Dans un second terminal :
+
+```powershell
+cd frontend
+pnpm install
+pnpm dev
+```
+
+Le terminal est disponible sur `http://localhost:3000`.
+Les adresses locales du backend sont déjà les valeurs par défaut. Pour les
+changer, créer `frontend/.env.local` à partir de `frontend/.env.example`.
+
+## API
+
+- `GET /api/health`
+- `GET /api/markets`
+- `GET /api/candles/{symbol}?timeframe=5m&limit=300`
+- `WebSocket /ws/markets`
+
+Périodes disponibles : `1m`, `5m`, `15m`, `1h`, `4h`, `1d`.
+
+Le backend maintient une seule connexion WebSocket LSE pour tous les marchés,
+puis diffuse les ticks à tous les navigateurs. Le frontend agrège chaque tick
+dans la bougie courante et utilise `series.update()` sans recréer le graphique.
+
+## Docker
+
+```powershell
+docker compose up --build
+```

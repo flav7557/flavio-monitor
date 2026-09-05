@@ -1026,9 +1026,8 @@ def render() -> None:
         stamp = paris.strftime("%H:%M")
     except Exception:
         stamp = str(ts)
-    prov = "LSE" if result.provider == "lse" else "Yahoo Finance"
     st.markdown(
-        f"<div class='rg'><div class='foot'>{prov} · Updated {stamp} Paris · "
+        f"<div class='rg'><div class='foot'>LSE · Updated {stamp} Paris · "
         f"{result.n_instruments} instruments</div></div>",
         unsafe_allow_html=True,
     )
