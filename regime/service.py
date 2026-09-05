@@ -30,11 +30,11 @@ def select_provider(cfg: RegimeConfig) -> Tuple[MarketDataProvider, str, Optiona
         return (
             YahooProvider(),
             "yfinance",
-            "LSE_API_KEY not found in this environment — showing Yahoo Finance "
-            "fallback data. On the deployed app (with the LSE secret set) the "
+            "LSE_API_KEY is not configured — showing Yahoo Finance "
+            "fallback data. On the deployed app (with the LSE secret configured) the "
             "same engine runs on the London Strategic Edge feed.",
         )
-    raise RuntimeError("LSE_API_KEY not found and yfinance fallback disabled.")
+    raise RuntimeError("LSE_API_KEY not configured and yfinance fallback disabled.")
 
 
 def compute_regime(

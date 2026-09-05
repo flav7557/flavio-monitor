@@ -60,8 +60,7 @@ robuste (médiane à partir de 4 enfants) pour qu'un seul outlier ne fasse pas
 basculer un groupe. Persistance + hystérésis évitent le clignotement du régime.
 
 Source de données : **London Strategic Edge** via `LSE_API_KEY` (voir plus bas).
-En l'absence de clé, l'app bascule automatiquement sur un repli Yahoo Finance
-avec un bandeau explicite ; le moteur est identique.
+Pilotage Live et Regime Matrix utilisent uniquement LSE.
 
 Tests :
 
@@ -78,8 +77,8 @@ python -m streamlit run main.py
 
 ## Secret LSE
 
-La page Regime Matrix utilise le flux de données LSE. En
-local, créer un fichier non versionné :
+Pilotage Live et Regime Matrix utilisent le flux de données LSE. En local,
+créer un fichier non versionné :
 
 ```text
 .streamlit/secrets.toml
@@ -92,11 +91,9 @@ LSE_API_KEY = "TA_CLE"
 ```
 
 Sur la plateforme, ajouter la même clé dans les secrets de l'application.
-La page Data Online, elle, ne dépend que de Yahoo Finance et ne nécessite
-aucun secret.
 
 ## Sécurité
 
-Le WebSocket LSE est ouvert dans le navigateur. La clé peut donc être inspectée
-par les utilisateurs ayant accès au site. Le déploiement doit rester privé ou
-protégé par authentification.
+La clé LSE est lue côté serveur depuis `LSE_API_KEY` ou `st.secrets`.
+Le navigateur reçoit seulement les prix et les bougies nécessaires aux
+graphiques, jamais la clé API.

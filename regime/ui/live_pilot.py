@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import html
 import json
-import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from typing import Optional
 
@@ -12,6 +11,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
+from ..data.lse_provider import LSEProvider
 from ..data.provider import normalize_candles
 
 
@@ -304,7 +304,7 @@ def _stream_prices(api_key: str, symbols: tuple[str, ...], seconds: float = 1.25
 def _load_quotes(salt: int) -> list[dict]:
     from lse import LSE
 
-    api_key = os.environ.get("LSE_API_KEY")
+    api_key = LSEProvider().api_key()
     if not api_key:
         raise RuntimeError("LSE_API_KEY manquant : les prix live utilisent uniquement l'API LSE.")
 

@@ -2,9 +2,8 @@
 
 Discovers the commodity universe from the live vault catalog, classifies each
 instrument with the taxonomy, and pulls daily + intraday OHLCV candles straight
-from the vault. The API key is read from ``LSE_API_KEY`` (never hardcoded); the
-``lse`` client falls back to that env var on its own, and we also read it here to
-decide availability.
+from the vault. The API key is read from ``LSE_API_KEY`` or Streamlit secrets
+(never hardcoded).
 """
 
 from __future__ import annotations
@@ -17,6 +16,30 @@ from ..engine.models import InstrumentData
 from .provider import MarketDataProvider, normalize_candles
 
 
+def _streamlit_secret_key() -> Optional[str]:
+    try:
+        import streamlit as st
+    except Exception:
+        return None
+
+    try:
+        value = st.secrets.get("LSE_API_KEY")
+    except Exception:
+        value = None
+    if value:
+        return str(value)
+
+    for section in ("lse", "LSE", "london_strategic_edge"):
+        try:
+            group = st.secrets.get(section, {})
+            value = group.get("api_key") or group.get("LSE_API_KEY")
+        except Exception:
+            value = None
+        if value:
+            return str(value)
+    return None
+
+
 class LSEProvider(MarketDataProvider):
     name = "lse"
 
@@ -25,7 +48,7 @@ class LSEProvider(MarketDataProvider):
         self.max_instruments = max_instruments
 
     def api_key(self) -> Optional[str]:
-        return self._api_key or os.environ.get("LSE_API_KEY")
+        return self._api_key or os.environ.get("LSE_API_KEY") or _streamlit_secret_key()
 
     def available(self) -> bool:
         return bool(self.api_key())
@@ -69,7 +92,7 @@ class LSEProvider(MarketDataProvider):
     def fetch_universe(self, cfg: RegimeConfig) -> List[InstrumentData]:
         key = self.api_key()
         if not key:
-            raise RuntimeError("LSE_API_KEY not set")
+            raise RuntimeError("LSE_API_KEY not configured")
 
         from lse import LSE
 

@@ -670,12 +670,13 @@ def _stream_lse_prices(api_key: str, symbols: tuple[str, ...], seconds: float = 
 
 @st.cache_data(ttl=10, show_spinner=False)
 def _load_market_board_lse(salt: int) -> list[dict]:
-    import os
     from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 
     from lse import LSE
 
-    api_key = os.environ.get("LSE_API_KEY")
+    from ..data.lse_provider import LSEProvider
+
+    api_key = LSEProvider().api_key()
     if not api_key:
         raise RuntimeError("LSE_API_KEY manquant : Regime Matrix utilise uniquement l'API LSE.")
 
