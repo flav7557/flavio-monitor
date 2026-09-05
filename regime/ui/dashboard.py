@@ -416,7 +416,11 @@ body{margin:0;background:transparent;color:#e6edf3;
   text-transform:uppercase;color:#8b949e;
   border-bottom:1px solid rgba(255,255,255,0.09);
   display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.col h3 .cat{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.col h3 .hgrp{display:flex;align-items:baseline;gap:8px;flex-shrink:0;}
 .col h3 .st{font-weight:700;font-size:11px;}
+.col h3 .hp{font-weight:700;font-size:12px;letter-spacing:0;
+  font-variant-numeric:tabular-nums;}
 .row{display:flex;align-items:center;gap:8px;padding:5px 10px;
   border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;}
 .row:last-child{border-bottom:0;}
@@ -446,7 +450,19 @@ def _fmt_px(v) -> str:
     return f"{v:.4f}"
 
 
-@st.cache_data(ttl=30, show_spinner=False)
+def _live_change(inst, live: dict):
+    """Live daily performance %: live price vs the pipeline's prior close."""
+    live_px = live.get(inst.symbol, inst.price)
+    dcp = inst.daily_change_pct
+    prev = None
+    if inst.price is not None and dcp is not None and (1 + dcp / 100) != 0:
+        prev = inst.price / (1 + dcp / 100)
+    if live_px is not None and prev:
+        return (live_px / prev - 1) * 100
+    return dcp
+
+
+@st.cache_data(ttl=10, show_spinner=False)
 def _load_live(provider: str, intraday: bool, symbols: tuple, salt: int) -> dict:
     from ..service import fetch_live_prices
     cfg = replace(DEFAULT_CONFIG, provider=provider, intraday_enabled=intraday)
@@ -461,6 +477,11 @@ def _render_status(result, live: dict) -> None:
     live_lbl = ("<span style='color:#3fb950'>● LIVE</span>" if live_on
                 else "<span style='color:#8b949e'>○ delayed</span>")
     now = pd.Timestamp.now(tz="Europe/Paris")
+    perfs = [c for c in (_live_change(i, live)
+             for i in _all_instruments(g) if i.eligible) if c is not None]
+    gperf = sum(perfs) / len(perfs) if perfs else None
+    gperf_c = UP if (gperf or 0) > 0 else DOWN if (gperf or 0) < 0 else DIM
+    gperf_s = "—" if gperf is None else f"{gperf:+.2f}%"
     st.markdown(
         f"<div class='rg' style='display:flex;align-items:baseline;gap:14px;"
         f"flex-wrap:wrap;margin-bottom:0.4rem'>"
@@ -469,10 +490,11 @@ def _render_status(result, live: dict) -> None:
         f"<span style='font-size:1.6rem;font-weight:700;color:{col}'>{g.score:+.0f}</span>"
         f"<span style='font-size:1rem;font-weight:600;color:{col}'>"
         f"{html.escape(short_regime(g.regime, g.score))}</span>"
+        f"<span style='font-size:1rem;font-weight:700;color:{gperf_c}'>{gperf_s}</span>"
         f"<span style='color:{DIM};font-size:0.82rem'>conf {g.confidence:.0f}% · "
         f"{result.n_eligible} active · {live_lbl}"
         f"<span style='color:{DIM}'> · maj {now.strftime('%H:%M:%S')} Paris · "
-        f"auto-refresh 30s</span></span></div>",
+        f"auto-refresh 10s</span></span></div>",
         unsafe_allow_html=True,
     )
 
@@ -487,16 +509,12 @@ def _render_terminal(result, live: dict) -> None:
         insts = [i for i in _all_instruments(s) if i.eligible]
         max_rows = max(max_rows, len(insts))
         rows = []
+        sec_perfs = []
         for i in insts:
             live_px = live.get(i.symbol, i.price)
-            dcp = i.daily_change_pct
-            prev = None
-            if i.price is not None and dcp is not None and (1 + dcp / 100) != 0:
-                prev = i.price / (1 + dcp / 100)
-            if live_px is not None and prev:
-                chg = (live_px / prev - 1) * 100
-            else:
-                chg = dcp
+            chg = _live_change(i, live)
+            if chg is not None:
+                sec_perfs.append(chg)
             chg_c = "bull" if (chg or 0) > 0 else "bear" if (chg or 0) < 0 else "neut"
             chg_s = "—" if chg is None else f"{chg:+.2f}%"
             itag, icls = _tag(i.score)
@@ -507,9 +525,13 @@ def _render_terminal(result, live: dict) -> None:
                 f"<span class='chg {chg_c}'>{chg_s}</span>"
                 f"<span class='tag {icls}'>{itag}</span></div>"
             )
+        sperf = sum(sec_perfs) / len(sec_perfs) if sec_perfs else None
+        sperf_c = "bull" if (sperf or 0) > 0 else "bear" if (sperf or 0) < 0 else "neut"
+        sperf_s = "—" if sperf is None else f"{sperf:+.2f}%"
         cols.append(
-            f"<div class='col'><h3><span>{html.escape(s.name)}</span>"
-            f"<span class='st {scls}'>{stag} {s.score:+.0f}</span></h3>"
+            f"<div class='col'><h3><span class='cat'>{html.escape(s.name)}</span>"
+            f"<span class='hgrp'><span class='st {scls}'>{stag}</span>"
+            f"<span class='hp {sperf_c}'>{sperf_s}</span></span></h3>"
             f"{''.join(rows)}</div>"
         )
     doc = f"<style>{TERMINAL_CSS}</style><div class='term'>{''.join(cols)}</div>"
@@ -517,14 +539,14 @@ def _render_terminal(result, live: dict) -> None:
     components.html(doc, height=height, scrolling=False)
 
 
-@st.fragment(run_every=30)
+@st.fragment(run_every=10)
 def _terminal_fragment(provider: str, intraday: bool) -> None:
     now = pd.Timestamp.utcnow()
     result = _load(provider, "1d", intraday, int(now.timestamp() // 300))
     symbols = tuple(
         i.symbol for i in _all_instruments(result.global_regime) if i.eligible
     )
-    live = _load_live(provider, intraday, symbols, int(now.timestamp() // 30))
+    live = _load_live(provider, intraday, symbols, int(now.timestamp() // 10))
     _render_status(result, live)
     _render_terminal(result, live)
     for w in result.warnings:
