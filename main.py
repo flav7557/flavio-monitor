@@ -59,12 +59,49 @@ st.markdown(
             background-attachment: fixed;
             background-repeat: no-repeat;
         }
+
+        div[data-testid="stHorizontalBlock"] .stButton > button {
+            border-radius: 0 !important;
+            border-color: rgba(255, 255, 255, 0.18) !important;
+            background: rgba(255, 255, 255, 0.02) !important;
+            color: #8b949e !important;
+            font-size: 0.72rem !important;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        div[data-testid="stHorizontalBlock"] .stButton > button[kind="primary"] {
+            color: #f4f5f7 !important;
+            border-color: rgba(255, 255, 255, 0.42) !important;
+        }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 from regime.ui.dashboard import render as render_regime_matrix
+from regime.ui.live_pilot import render as render_live_pilot
 
 
-render_regime_matrix()
+PAGES = {
+    "Pilotage Live": render_live_pilot,
+    "Regime Matrix": render_regime_matrix,
+}
+
+selected_page = st.session_state.get("flavio_page", "Pilotage Live")
+if selected_page not in PAGES:
+    selected_page = "Pilotage Live"
+
+nav_cols = st.columns([1, 1, 7])
+for index, page_name in enumerate(PAGES):
+    with nav_cols[index]:
+        if st.button(
+            page_name,
+            key=f"nav_{page_name}",
+            type="primary" if selected_page == page_name else "secondary",
+            use_container_width=True,
+        ):
+            st.session_state["flavio_page"] = page_name
+            st.rerun()
+
+PAGES[selected_page]()
