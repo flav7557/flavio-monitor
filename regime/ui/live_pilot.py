@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import html
+import json
 import os
 from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from typing import Optional
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from ..data.provider import normalize_candles
 
@@ -41,16 +43,20 @@ CSS = """
     .lp-clock {
         color:#8b949e; font-size:0.72rem; font-variant-numeric:tabular-nums;
     }
+    html, body {
+        margin:0; padding:0; background:#08080a; overflow:hidden;
+        font-family:"Century Gothic", "Questrial", "Avenir", "Futura", sans-serif;
+    }
     .lp-grid {
         display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
-        grid-template-rows:repeat(2,minmax(235px,36vh));
+        grid-template-rows:repeat(2,335px);
         gap:0; border:1px solid rgba(255,255,255,0.26);
         background:rgba(255,255,255,0.20);
     }
     .lp-cell {
         min-width:0; background:#08080a; border-right:1px solid rgba(255,255,255,0.26);
         border-bottom:1px solid rgba(255,255,255,0.26);
-        padding:1.15rem 1.25rem; display:flex; flex-direction:column;
+        padding:0.95rem 1.0rem 0.7rem 1.0rem; display:flex; flex-direction:column;
         justify-content:space-between;
     }
     .lp-cell:nth-child(3n) { border-right:0; }
@@ -64,15 +70,12 @@ CSS = """
         text-transform:uppercase; font-weight:700; margin-top:0.35rem;
     }
     .lp-price {
-        color:#f4f5f7; font-size:clamp(2.1rem,4.4vw,4.9rem);
+        color:#f4f5f7; font-size:clamp(1.9rem,3.5vw,3.7rem);
         line-height:0.95; font-weight:750; letter-spacing:0;
         font-variant-numeric:tabular-nums;
     }
     .lp-chart {
-        width:100%; height:76px; margin:0.7rem 0 0.85rem 0;
-    }
-    .lp-chart svg {
-        display:block; width:100%; height:100%; overflow:visible;
+        width:100%; flex:1; min-height:170px; margin:0.65rem 0 0.45rem 0;
     }
     .lp-meta {
         display:flex; align-items:center; justify-content:space-between;
@@ -89,9 +92,13 @@ CSS = """
         color:#f85149; border:1px solid rgba(248,81,73,0.35);
         padding:0.9rem 1rem; font-size:0.86rem;
     }
+    .lp-tv {
+        color:#6e7681; text-decoration:none; font-size:0.62rem;
+        letter-spacing:0.08em; text-transform:uppercase;
+    }
     @media (max-width: 900px) {
         .lp-grid { grid-template-columns:1fr; grid-template-rows:none; }
-        .lp-cell { min-height:185px; border-right:0; border-bottom:1px solid rgba(255,255,255,0.26); }
+        .lp-cell { min-height:310px; border-right:0; border-bottom:1px solid rgba(255,255,255,0.26); }
         .lp-cell:nth-child(n+4) { border-bottom:1px solid rgba(255,255,255,0.26); }
         .lp-cell:last-child { border-bottom:0; }
     }
@@ -198,7 +205,7 @@ def _quote_from_candles(api_key: str, symbol: str, dataset: Optional[str]) -> di
         try:
             minute = normalize_candles(
                 client.candles(
-                    symbol, timeframe="1m", limit=90, order="desc",
+                    symbol, timeframe="1m", limit=240, order="desc",
                     dataset=dataset,
                 )
             )
@@ -215,19 +222,28 @@ def _quote_from_candles(api_key: str, symbol: str, dataset: Optional[str]) -> di
     if not daily.empty:
         previous = _as_float(daily["close"].iloc[-2 if len(daily) > 1 else -1])
         live = _as_float(daily["close"].iloc[-1])
-    series = []
+    candles = []
     if not minute.empty:
         live = _as_float(minute["close"].iloc[-1]) or live
-        series = [
-            float(value)
-            for value in minute["close"].dropna().tail(90).tolist()
-            if _as_float(value) is not None
-        ]
+        chart_frame = minute.dropna(subset=["open", "high", "low", "close"]).tail(240)
+        for ts, candle in chart_frame.iterrows():
+            timestamp = pd.Timestamp(ts)
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.tz_localize("UTC")
+            else:
+                timestamp = timestamp.tz_convert("UTC")
+            candles.append({
+                "time": int(timestamp.timestamp()),
+                "open": float(candle["open"]),
+                "high": float(candle["high"]),
+                "low": float(candle["low"]),
+                "close": float(candle["close"]),
+            })
 
     day = None
     if live is not None and previous not in (None, 0):
         day = (live / previous - 1) * 100
-    return {"previous": previous, "live": live, "day": day, "series": series}
+    return {"previous": previous, "live": live, "day": day, "candles": candles}
 
 
 def _stream_prices(api_key: str, symbols: tuple[str, ...], seconds: float = 1.25) -> dict:
@@ -326,6 +342,11 @@ def _load_quotes(salt: int) -> list[dict]:
         if tick.get("live") is not None:
             quote["live"] = tick["live"]
             quote["is_stream"] = True
+            if quote.get("candles"):
+                last = quote["candles"][-1]
+                last["close"] = tick["live"]
+                last["high"] = max(last["high"], tick["live"])
+                last["low"] = min(last["low"], tick["live"])
         row.update(quote)
     return rows
 
@@ -346,41 +367,7 @@ def _fmt_pct(value) -> str:
     return f"{value:+.2f}%"
 
 
-def _sparkline(values: list[float], color: str) -> str:
-    clean = [v for v in values if _as_float(v) is not None]
-    if len(clean) < 2:
-        return (
-            "<div class='lp-chart'>"
-            "<svg viewBox='0 0 360 76' preserveAspectRatio='none'>"
-            "<line x1='0' y1='38' x2='360' y2='38' "
-            "stroke='rgba(255,255,255,0.14)' stroke-width='1'/>"
-            "</svg></div>"
-        )
-
-    lo = min(clean)
-    hi = max(clean)
-    span = hi - lo or abs(hi) * 0.001 or 1.0
-    points = []
-    count = len(clean)
-    for index, value in enumerate(clean):
-        x = index / (count - 1) * 360
-        y = 68 - ((value - lo) / span) * 60
-        points.append(f"{x:.1f},{y:.1f}")
-
-    last_y = points[-1].split(",")[1]
-    return (
-        "<div class='lp-chart'>"
-        "<svg viewBox='0 0 360 76' preserveAspectRatio='none'>"
-        "<line x1='0' y1='38' x2='360' y2='38' "
-        "stroke='rgba(255,255,255,0.10)' stroke-width='1'/>"
-        f"<polyline points='{' '.join(points)}' fill='none' stroke='{color}' "
-        "stroke-width='2.1' vector-effect='non-scaling-stroke'/>"
-        f"<circle cx='360' cy='{last_y}' r='3.2' fill='{color}'/>"
-        "</svg></div>"
-    )
-
-
-def _card(row: dict) -> str:
+def _card(row: dict, index: int) -> str:
     live = row.get("live")
     day = row.get("day")
     color = UP if (day or 0) > 0 else DOWN if (day or 0) < 0 else DIM
@@ -393,13 +380,127 @@ def _card(row: dict) -> str:
         f"<div class='lp-name'>{html.escape(row['name'])}</div>"
         "</div>"
         f"<div class='lp-price'>{html.escape(_fmt_price(live, row['name']))}</div>"
-        f"{_sparkline(row.get('series', []), color)}"
+        f"<div class='lp-chart' id='chart-{index}'></div>"
         "<div class='lp-meta'>"
         f"<span class='lp-change' style='color:{color}'>{html.escape(_fmt_pct(day))}</span>"
         f"<span class='{live_class}'>{state}</span>"
         "</div>"
         "</div>"
     )
+
+
+def _render_live_html(rows: list[dict], now: pd.Timestamp) -> str:
+    chart_rows = [
+        {
+            "name": row["name"],
+            "day": row.get("day"),
+            "candles": row.get("candles", []),
+        }
+        for row in rows
+    ]
+    payload = json.dumps(chart_rows, ensure_ascii=False)
+    cards = "".join(_card(row, index) for index, row in enumerate(rows))
+    return f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+{CSS}
+</head>
+<body>
+<div class="lp">
+    <div class="lp-head">
+        <div class="lp-title">Live Pilotage</div>
+        <div>
+            <span class="lp-clock">maj {html.escape(now.strftime('%H:%M:%S'))} Paris</span>
+            <span style="color:#30363d;margin:0 0.45rem;">/</span>
+            <a class="lp-tv" href="https://www.tradingview.com/" target="_blank">TradingView</a>
+        </div>
+    </div>
+    <div class="lp-grid">{cards}</div>
+</div>
+<script>
+const rows = {payload};
+const upColor = "{UP}";
+const downColor = "{DOWN}";
+const neutralColor = "{DIM}";
+
+function seriesColor(row) {{
+    if ((row.day || 0) > 0) return upColor;
+    if ((row.day || 0) < 0) return downColor;
+    return neutralColor;
+}}
+
+function addCandles(chart, options) {{
+    if (LightweightCharts.CandlestickSeries && chart.addSeries) {{
+        return chart.addSeries(LightweightCharts.CandlestickSeries, options);
+    }}
+    return chart.addCandlestickSeries(options);
+}}
+
+rows.forEach((row, index) => {{
+    const container = document.getElementById(`chart-${{index}}`);
+    const color = seriesColor(row);
+    const chart = LightweightCharts.createChart(container, {{
+        width: container.clientWidth,
+        height: container.clientHeight,
+        autoSize: true,
+        layout: {{
+            background: {{ type: "solid", color: "#08080a" }},
+            textColor: "rgba(139,148,158,0.78)",
+            fontFamily: "Century Gothic, Questrial, Avenir, sans-serif",
+        }},
+        grid: {{
+            vertLines: {{ color: "rgba(255,255,255,0.045)" }},
+            horzLines: {{ color: "rgba(255,255,255,0.045)" }},
+        }},
+        crosshair: {{
+            mode: LightweightCharts.CrosshairMode.Normal,
+            vertLine: {{ color: "rgba(255,255,255,0.22)", width: 1, style: 2, labelBackgroundColor: "#0d1117" }},
+            horzLine: {{ color: "rgba(255,255,255,0.22)", width: 1, style: 2, labelBackgroundColor: "#0d1117" }},
+        }},
+        rightPriceScale: {{
+            borderColor: "rgba(255,255,255,0.14)",
+            scaleMargins: {{ top: 0.12, bottom: 0.12 }},
+        }},
+        timeScale: {{
+            borderColor: "rgba(255,255,255,0.14)",
+            timeVisible: true,
+            secondsVisible: false,
+            rightOffset: 3,
+            barSpacing: 5,
+        }},
+        localization: {{
+            locale: "fr-FR",
+        }},
+    }});
+    const candles = row.candles || [];
+    const series = addCandles(chart, {{
+        upColor,
+        downColor,
+        borderUpColor: upColor,
+        borderDownColor: downColor,
+        wickUpColor: upColor,
+        wickDownColor: downColor,
+        priceLineColor: color,
+        priceLineWidth: 1,
+        lastValueVisible: true,
+    }});
+    if (candles.length > 0) {{
+        series.setData(candles);
+        chart.timeScale().fitContent();
+    }}
+    const observer = new ResizeObserver(entries => {{
+        const rect = entries[0].contentRect;
+        chart.resize(rect.width, rect.height);
+    }});
+    observer.observe(container);
+}});
+</script>
+</body>
+</html>
+"""
 
 
 @st.fragment(run_every=2)
@@ -415,16 +516,7 @@ def _live_grid() -> None:
         )
         return
 
-    st.markdown(
-        "<div class='lp'>"
-        "<div class='lp-head'>"
-        "<div class='lp-title'>Live Pilotage</div>"
-        f"<div class='lp-clock'>maj {now.strftime('%H:%M:%S')} Paris</div>"
-        "</div>"
-        f"<div class='lp-grid'>{''.join(_card(row) for row in rows)}</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    components.html(_render_live_html(rows, now), height=725, scrolling=False)
 
 
 def render() -> None:
