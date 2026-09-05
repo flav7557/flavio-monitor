@@ -266,6 +266,7 @@ CSS = f"""
     .rg table.quotes td.cat {{ color:{DIM}; font-size:0.66rem; letter-spacing:0.08em;
         text-transform:uppercase; font-weight:700; }}
     .rg table.quotes td.sym {{ color:{FAINT}; font-size:0.66rem; }}
+    .rg table.quotes tr.group-start td {{ border-top:1px solid rgba(255,255,255,0.18); }}
     .rg table.quotes tr:last-child td {{ border-bottom:0; }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
 </style>
@@ -610,10 +611,10 @@ def _quote_from_lse_candles(api_key: str, symbol: str, dataset: Optional[str]) -
     if live is not None and previous not in (None, 0):
         day = (live / previous - 1) * 100
 
-    return {"previous": previous, "live": live, "day": day, "bid": None, "ask": None}
+    return {"previous": previous, "live": live, "day": day}
 
 
-def _stream_lse_bid_ask(api_key: str, symbols: tuple[str, ...], seconds: float = 3.0) -> dict:
+def _stream_lse_prices(api_key: str, symbols: tuple[str, ...], seconds: float = 3.0) -> dict:
     import queue
     import threading
     import time
@@ -653,12 +654,10 @@ def _stream_lse_bid_ask(api_key: str, symbols: tuple[str, ...], seconds: float =
             tick = events.get(timeout=0.2)
         except queue.Empty:
             continue
-        bid = _as_float(getattr(tick, "bid", None))
-        ask = _as_float(getattr(tick, "ask", None))
         price = _as_float(getattr(tick, "price", None))
         symbol = getattr(tick, "symbol", None)
         if symbol:
-            ticks[symbol] = {"live": price, "bid": bid, "ask": ask}
+            ticks[symbol] = {"live": price}
 
     client = client_box.get("client")
     if client is not None:
@@ -706,7 +705,7 @@ def _load_market_board_lse(salt: int) -> list[dict]:
             except TimeoutError:
                 pass
 
-        stream_quotes = _stream_lse_bid_ask(
+        stream_quotes = _stream_lse_prices(
             api_key,
             tuple(row["symbol"] for row in resolved),
             seconds=3.0,
@@ -717,9 +716,6 @@ def _load_market_board_lse(salt: int) -> list[dict]:
             tick = stream_quotes.get(symbol, {}) if symbol else {}
             if tick.get("live") is not None:
                 quote["live"] = tick["live"]
-            for key in ("bid", "ask"):
-                if tick.get(key) is not None and tick[key] > 0:
-                    quote[key] = tick[key]
             row.update(quote)
         return rows
     finally:
@@ -816,30 +812,33 @@ def _render_market_board(rows: list[dict]) -> None:
         "<table class='quotes'><thead><tr>"
         "<th class='l cat'>Catégorie</th><th class='l asset'>Actif</th>"
         "<th class='l'>Symbole LSE</th><th>Prix</th><th>Direct</th>"
-        "<th>Jour</th><th>Bid</th><th>Ask</th></tr></thead><tbody>"
+        "<th>Jour</th></tr></thead><tbody>"
     ]
+    previous_category = None
     for row in rows:
         category = row["category"]
         symbol = row.get("symbol")
         previous = row.get("previous")
         live = row.get("live")
         day = row.get("day")
-        bid = row.get("bid")
-        ask = row.get("ask")
         day_col = _cell_color(day)
         decimals = _quote_decimals(category, symbol)
+        row_class = (
+            " class='group-start'"
+            if previous_category and category != previous_category
+            else ""
+        )
         body.append(
-            "<tr>"
+            f"<tr{row_class}>"
             f"<td class='l cat'>{html.escape(category)}</td>"
             f"<td class='l'>{html.escape(row['name'])}</td>"
             f"<td class='l sym'>{html.escape(symbol or 'Non trouvé')}</td>"
             f"<td>{_fmt_px(previous, decimals)}</td>"
             f"<td>{_fmt_px(live, decimals)}</td>"
             f"<td style='color:{day_col};font-weight:700'>{_fmt_pct(day)}</td>"
-            f"<td>{_fmt_px(bid, decimals)}</td>"
-            f"<td>{_fmt_px(ask, decimals)}</td>"
             "</tr>"
         )
+        previous_category = category
     body.append("</tbody></table>")
     st.markdown(
         f"<div class='rg'><div class='quote-board'>{''.join(body)}</div></div>",
@@ -999,43 +998,6 @@ def _render_sector_detail(result) -> None:
                 _render_instrument_drawer(inst)
 
 
-def _render_methodology(result) -> None:
-    cfg = DEFAULT_CONFIG
-    with st.expander("Methodology", expanded=False):
-        st.markdown(
-            f"""
-**Instrument score** &nbsp; −100 … +100
-- {cfg.w_trend:.0%} Trend · {cfg.w_momentum:.0%} Momentum · \
-{cfg.w_intraday:.0%} Intraday · {cfg.w_breakout:.0%} Breakout
-- Missing components are dropped and the rest renormalised.
-
-**Trend** MA{cfg.sma_fast} / MA{cfg.sma_slow}, slope, ATR-normalised
-**Momentum** {' / '.join(map(str, cfg.momentum_horizons))} periods, \
-{cfg.zscore_window}-period Z-score (volatility-adjusted)
-**Breakout** {cfg.donchian_period}-period Donchian channel
-
-**Regime thresholds**
-- Strong Bullish > +{cfg.t_strong_bull:.0f} · Bullish > +{cfg.t_bull:.0f}
-- Neutral {cfg.t_bear:.0f} → +{cfg.t_bull:.0f}
-- Bearish < {cfg.t_bear:.0f} · Strong Bearish < {cfg.t_strong_bear:.0f}
-
-**Aggregation** clusters are the confirmation unit (correlated instruments do \
-not inflate breadth); groups use a median-based center (4+ children) so one \
-outlier cannot flip a sector.
-
-**Persistence** {cfg.persistence_length} observations before a regime switch.
-""")
-        if st.toggle("Developer / raw config", value=False, key="rg_devcfg"):
-            st.json({
-                "provider": result.provider,
-                "weights": cfg.component_weights(),
-                "thresholds": {
-                    "strong_bull": cfg.t_strong_bull, "bull": cfg.t_bull,
-                    "bear": cfg.t_bear, "strong_bear": cfg.t_strong_bear},
-                "sector_weights": cfg.sector_weights,
-            })
-
-
 # --------------------------------------------------------------------------- #
 # entry point
 # --------------------------------------------------------------------------- #
@@ -1057,8 +1019,6 @@ def render() -> None:
 
     if show_map:
         _render_visual(result)
-
-    _render_methodology(result)
 
     ts = result.timestamp
     try:
