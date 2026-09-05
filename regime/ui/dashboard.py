@@ -256,8 +256,8 @@ CSS = f"""
         text-transform:uppercase; font-weight:600; text-align:right;
         padding:0.42rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.08); }}
     .rg table.quotes th.l {{ text-align:left; }}
-    .rg table.quotes th.cat {{ width:15%; }}
-    .rg table.quotes th.asset {{ width:22%; }}
+    .rg table.quotes th.cat {{ width:18%; }}
+    .rg table.quotes th.asset {{ width:28%; }}
     .rg table.quotes td {{ color:#c9d1d9; font-size:0.74rem; text-align:right;
         padding:0.46rem 0.34rem;
         font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden;
@@ -266,7 +266,6 @@ CSS = f"""
     .rg table.quotes td.l {{ text-align:left; color:#e6edf3; font-weight:650; }}
     .rg table.quotes td.cat {{ color:{DIM}; font-size:0.66rem; letter-spacing:0.08em;
         text-transform:uppercase; font-weight:700; }}
-    .rg table.quotes td.sym {{ color:{FAINT}; font-size:0.66rem; }}
     .rg table.quotes tr.group-start td {{ border-top:1px solid rgba(255,255,255,0.46); }}
     .rg table.quotes tr:last-child td {{ border-bottom:0; }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
@@ -812,8 +811,7 @@ def _render_market_board(rows: list[dict]) -> None:
     body = [
         "<table class='quotes'><thead><tr>"
         "<th class='l cat'>Catégorie</th><th class='l asset'>Actif</th>"
-        "<th class='l'>Symbole LSE</th><th>Prix</th><th>Direct</th>"
-        "<th>Jour</th></tr></thead><tbody>"
+        "<th>Prix</th><th>Direct</th><th>Jour</th></tr></thead><tbody>"
     ]
     previous_category = None
     for row in rows:
@@ -833,7 +831,6 @@ def _render_market_board(rows: list[dict]) -> None:
             f"<tr class='{row_class}'>"
             f"<td class='l cat'>{html.escape(category)}</td>"
             f"<td class='l'>{html.escape(row['name'])}</td>"
-            f"<td class='l sym'>{html.escape(symbol or 'Non trouvé')}</td>"
             f"<td>{_fmt_px(previous, decimals)}</td>"
             f"<td>{_fmt_px(live, decimals)}</td>"
             f"<td style='color:{day_col};font-weight:700'>{_fmt_pct(day)}</td>"
