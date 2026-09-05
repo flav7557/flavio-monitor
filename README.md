@@ -6,7 +6,6 @@ Application Streamlit tout-en-un, thème clair minimaliste.
 
 - **Data Online** (page d'accueil) — vue synthétique de la performance des indices
 - **Regime Matrix** — matrice de régime de marché (commodités) pilotée par le feed LSE
-- **Bureau Larbou**
 
 ## Data Online
 
@@ -79,7 +78,7 @@ python -m streamlit run main.py
 
 ## Secret LSE
 
-La page Bureau Larbou utilise le flux de données LSE. En
+La page Regime Matrix utilise le flux de données LSE. En
 local, créer un fichier non versionné :
 
 ```text
