@@ -249,6 +249,34 @@ CSS = f"""
         text-transform:uppercase; color:#e6edf3; font-weight:700; }}
     .rg table.term2 .tagcell {{ font-weight:700; letter-spacing:0.5px;
         font-size:0.78rem; }}
+    .rg .quote-grid {{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+        gap:0.75rem; align-items:start; }}
+    .rg .quote-panel {{ border:1px solid rgba(255,255,255,0.08); border-radius:5px;
+        background:rgba(255,255,255,0.018); overflow:hidden; min-width:0; }}
+    .rg .quote-head {{ display:flex; align-items:baseline; justify-content:space-between;
+        gap:0.5rem; padding:0.72rem 0.72rem 0.55rem 0.72rem;
+        border-bottom:1px solid rgba(255,255,255,0.10); }}
+    .rg .quote-title {{ font-size:0.72rem; letter-spacing:0.14em;
+        text-transform:uppercase; color:#f4f5f7; font-weight:700;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+    .rg .quote-sub {{ color:{DIM}; font-size:0.66rem; white-space:nowrap; }}
+    .rg table.quotes {{ width:100%; border-collapse:collapse; table-layout:fixed; }}
+    .rg table.quotes th {{ color:{DIM}; font-size:0.56rem; letter-spacing:0.08em;
+        text-transform:uppercase; font-weight:600; text-align:right;
+        padding:0.42rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.08); }}
+    .rg table.quotes th.l {{ text-align:left; width:29%; }}
+    .rg table.quotes td {{ color:#c9d1d9; font-size:0.74rem; text-align:right;
+        padding:0.46rem 0.34rem; border-bottom:1px solid rgba(255,255,255,0.04);
+        font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden;
+        text-overflow:ellipsis; }}
+    .rg table.quotes td.l {{ text-align:left; color:#e6edf3; font-weight:650; }}
+    .rg table.quotes tr:last-child td {{ border-bottom:0; }}
+    @media (max-width: 1700px) {{
+        .rg .quote-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); }}
+    }}
+    @media (max-width: 720px) {{
+        .rg .quote-grid {{ grid-template-columns:1fr; }}
+    }}
     div[data-testid="stHorizontalBlock"] .stButton > button {{ border-radius:999px; }}
 </style>
 """
@@ -257,7 +285,7 @@ CSS = f"""
 # --------------------------------------------------------------------------- #
 # data loading (cached)
 # --------------------------------------------------------------------------- #
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_resource(ttl=300, show_spinner=False)
 def _load(provider: str, timeframe: str, intraday: bool, salt: int):
     cfg = replace(DEFAULT_CONFIG, provider=provider,
                   primary_timeframe=timeframe, intraday_enabled=intraday)
@@ -457,9 +485,196 @@ def _tag(score: float):
     return "NEUT", "neut"
 
 
-def _fmt_px(v) -> str:
+MARKET_BOARD_GROUPS = [
+    ("Énergie", [
+        ("Brent", "BZ=F"),
+        ("WTI", "CL=F"),
+        ("Natural Gas", "NG=F"),
+        ("Gasoline", "RB=F"),
+        ("Heating Oil", "HO=F"),
+    ]),
+    ("Métaux précieux", [
+        ("Gold", "GC=F"),
+        ("Silver", "SI=F"),
+        ("Platinum", "PL=F"),
+        ("Palladium", "PA=F"),
+    ]),
+    ("Indices", [
+        ("S&P 500", "^GSPC"),
+        ("Nasdaq 100", "^NDX"),
+        ("Dow Jones", "^DJI"),
+        ("Euro Stoxx 50", "^STOXX50E"),
+        ("CAC 40", "^FCHI"),
+        ("DAX", "^GDAXI"),
+    ]),
+    ("Forex", [
+        ("EUR/USD", "EURUSD=X"),
+        ("GBP/USD", "GBPUSD=X"),
+        ("USD/JPY", "USDJPY=X"),
+        ("USD/CHF", "USDCHF=X"),
+        ("USD/CAD", "USDCAD=X"),
+        ("AUD/USD", "AUDUSD=X"),
+        ("NZD/USD", "NZDUSD=X"),
+    ]),
+]
+
+
+def _board_symbols() -> tuple:
+    return tuple(
+        symbol
+        for _group_name, rows in MARKET_BOARD_GROUPS
+        for _display_name, symbol in rows
+    )
+
+
+def _as_float(value):
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except Exception:
+        pass
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+def _quote_from_info(symbol: str) -> dict:
+    import yfinance as yf
+
+    try:
+        info = yf.Ticker(symbol).info or {}
+    except Exception:
+        info = {}
+
+    live = (
+        _as_float(info.get("regularMarketPrice"))
+        or _as_float(info.get("currentPrice"))
+        or _as_float(info.get("bid"))
+        or _as_float(info.get("ask"))
+    )
+    previous = (
+        _as_float(info.get("regularMarketPreviousClose"))
+        or _as_float(info.get("previousClose"))
+        or _as_float(info.get("regularMarketOpen"))
+    )
+    bid = _as_float(info.get("bid"))
+    ask = _as_float(info.get("ask"))
+    if bid is not None and bid <= 0:
+        bid = None
+    if ask is not None and ask <= 0:
+        ask = None
+
+    day = None
+    if live is not None and previous not in (None, 0):
+        day = (live / previous - 1) * 100
+    else:
+        day = _as_float(info.get("regularMarketChangePercent"))
+
+    return {
+        "previous": previous,
+        "live": live,
+        "day": day,
+        "bid": bid,
+        "ask": ask,
+    }
+
+
+def _extract_download_price(data, symbol: str):
+    if data is None or getattr(data, "empty", True):
+        return None
+    try:
+        if isinstance(data.columns, pd.MultiIndex):
+            if symbol not in data.columns.get_level_values(0):
+                return None
+            series = data[symbol]["Close"].dropna()
+        else:
+            series = data["Close"].dropna()
+    except Exception:
+        return None
+    if len(series) == 0:
+        return None
+    return _as_float(series.iloc[-1])
+
+
+@st.cache_data(ttl=10, show_spinner=False)
+def _load_market_board(symbols: tuple, salt: int) -> dict:
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
+
+    import yfinance as yf
+
+    symbols = tuple(symbols)
+    out = {symbol: {} for symbol in symbols}
+
+    try:
+        daily = yf.download(
+            list(symbols),
+            period="5d",
+            interval="1d",
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+    except Exception:
+        daily = None
+
+    try:
+        intraday = yf.download(
+            list(symbols),
+            period="1d",
+            interval="1m",
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+    except Exception:
+        intraday = None
+
+    for symbol in symbols:
+        previous = _extract_download_price(daily, symbol)
+        live = _extract_download_price(intraday, symbol) or previous
+        day = None
+        if live is not None and previous not in (None, 0):
+            day = (live / previous - 1) * 100
+        out[symbol] = {
+            "previous": previous,
+            "live": live,
+            "day": day,
+            "bid": None,
+            "ask": None,
+        }
+
+    executor = ThreadPoolExecutor(max_workers=8)
+    try:
+        futures = {
+            executor.submit(_quote_from_info, symbol): symbol
+            for symbol in symbols
+        }
+        for future in as_completed(futures, timeout=6):
+            symbol = futures[future]
+            try:
+                info_quote = future.result()
+            except Exception:
+                continue
+            for key in ("previous", "live", "day", "bid", "ask"):
+                if info_quote.get(key) is not None:
+                    out[symbol][key] = info_quote[key]
+    except TimeoutError:
+        pass
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    return out
+
+
+def _fmt_px(v, decimals: Optional[int] = None) -> str:
     if v is None:
         return "—"
+    if decimals is not None:
+        return f"{v:,.{decimals}f}"
     if abs(v) >= 1000:
         return f"{v:,.1f}"
     if abs(v) >= 1:
@@ -520,6 +735,62 @@ def _cell_color(v) -> str:
     return UP if (v or 0) > 0 else DOWN if (v or 0) < 0 else DIM
 
 
+def _fmt_pct(v) -> str:
+    if v is None:
+        return "—"
+    return f"{v:+.2f}%"
+
+
+def _quote_decimals(symbol: str) -> Optional[int]:
+    if not symbol.endswith("=X"):
+        return None
+    return 2 if "JPY" in symbol else 4
+
+
+def _render_market_board(quotes: dict) -> None:
+    panels = []
+    for group_name, rows in MARKET_BOARD_GROUPS:
+        body = [
+            "<table class='quotes'><thead><tr>"
+            "<th class='l'>Actif</th><th>Prix</th><th>Direct</th>"
+            "<th>Jour</th><th>Bid</th><th>Ask</th></tr></thead><tbody>"
+        ]
+        for display_name, symbol in rows:
+            q = quotes.get(symbol, {})
+            previous = q.get("previous")
+            live = q.get("live")
+            day = q.get("day")
+            bid = q.get("bid")
+            ask = q.get("ask")
+            day_col = _cell_color(day)
+            decimals = _quote_decimals(symbol)
+            body.append(
+                "<tr>"
+                f"<td class='l'>{html.escape(display_name)}</td>"
+                f"<td>{_fmt_px(previous, decimals)}</td>"
+                f"<td>{_fmt_px(live, decimals)}</td>"
+                f"<td style='color:{day_col};font-weight:700'>{_fmt_pct(day)}</td>"
+                f"<td>{_fmt_px(bid, decimals)}</td>"
+                f"<td>{_fmt_px(ask, decimals)}</td>"
+                "</tr>"
+            )
+        body.append("</tbody></table>")
+        panels.append(
+            "<div class='quote-panel'>"
+            "<div class='quote-head'>"
+            f"<div class='quote-title'>{html.escape(group_name)}</div>"
+            "<div class='quote-sub'>Bid / Ask</div>"
+            "</div>"
+            f"{''.join(body)}"
+            "</div>"
+        )
+
+    st.markdown(
+        f"<div class='rg'><div class='quote-grid'>{''.join(panels)}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+
 def _render_terminal(result, live: dict) -> None:
     """One native table (updates in place on each fragment tick — no reload)."""
     body = [
@@ -574,8 +845,9 @@ def _terminal_fragment(provider: str, intraday: bool) -> None:
         i.symbol for i in _all_instruments(result.global_regime) if i.eligible
     )
     live = _load_live(provider, intraday, symbols, int(now.timestamp() // 10))
+    quotes = _load_market_board(_board_symbols(), int(now.timestamp() // 10))
     _render_status(result, live)
-    _render_terminal(result, live)
+    _render_market_board(quotes)
     for w in result.warnings:
         if "LSE_API_KEY" in w or "fallback" in w.lower():
             st.markdown(
@@ -715,20 +987,9 @@ outlier cannot flip a sector.
 def render() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
 
-    with st.sidebar:
-        st.markdown("<div class='rg eyebrow' style='margin-top:0'>Regime data</div>",
-                    unsafe_allow_html=True)
-        source = st.selectbox("Source", ["Auto (LSE → Yahoo)", "Yahoo Finance"],
-                              index=0, label_visibility="collapsed")
-        intraday = st.toggle("Use intraday impulse", value=True)
-        if st.button("Refresh data", use_container_width=True):
-            _load.clear()
-
-    provider = "yfinance" if source == "Yahoo Finance" else "lse"
-
-    with st.sidebar:
-        show_map = st.toggle("Show market map & scale", value=False,
-                             key="rg_showmap")
+    provider = "lse"
+    intraday = True
+    show_map = False
 
     try:
         salt = int(pd.Timestamp.utcnow().timestamp() // 300)

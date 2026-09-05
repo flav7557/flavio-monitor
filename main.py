@@ -19,7 +19,7 @@ import streamlit as st
 st.set_page_config(
     page_title="Flavio Monitor",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(
@@ -43,6 +43,15 @@ st.markdown(
 
         [data-testid="stSidebarNav"] {
             display: none;
+        }
+
+        section[data-testid="stSidebar"],
+        [data-testid="collapsedControl"] {
+            display: none !important;
+        }
+
+        section[data-testid="stSidebar"] + div {
+            margin-left: 0 !important;
         }
 
         .stApp {
@@ -122,64 +131,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-with st.sidebar:
-    st.markdown(
-        '<div class="unified-navigation-title">Flavio Monitor</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="unified-navigation-subtitle">'
-        'Data online · Regime matrix'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="unified-divider"></div>',
-        unsafe_allow_html=True,
-    )
-
-    if "show_regime_matrix" not in st.session_state:
-        st.session_state["show_regime_matrix"] = True
-    show_regime_matrix = st.session_state["show_regime_matrix"]
-
-    nav_pages = ["Data Online"]
-    if show_regime_matrix:
-        nav_pages.append("Regime Matrix")
-
-    for nav_page in nav_pages:
-        is_active = (
-            st.session_state.get("flavio_nav", "Data Online") == nav_page
-        )
-        if st.button(
-            nav_page,
-            key=f"flavio_nav_btn_{nav_page}",
-            use_container_width=True,
-            type="primary" if is_active else "secondary",
-        ):
-            st.session_state["flavio_nav"] = nav_page
-            st.rerun()
-
-    selected_page = st.session_state.get("flavio_nav", "Data Online")
-    if selected_page not in nav_pages:
-        selected_page = "Data Online"
-
-    st.markdown(
-        '<div class="unified-divider"></div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="unified-navigation-subtitle" '
-        'style="margin-bottom:0.35rem;">Modules</div>',
-        unsafe_allow_html=True,
-    )
-    st.toggle(
-        "Regime Matrix",
-        key="show_regime_matrix",
-        help="Activer ou masquer la page Regime Matrix dans le menu.",
-    )
+nav_pages = ["Data Online", "Regime Matrix"]
+selected_page = st.session_state.get("flavio_nav", "Data Online")
+if selected_page not in nav_pages:
+    selected_page = "Data Online"
 
 
 # -----------------------------------------------------------------------------
