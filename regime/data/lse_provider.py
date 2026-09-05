@@ -107,6 +107,32 @@ class LSEProvider(MarketDataProvider):
             except Exception:
                 pass
 
+    def latest_prices(self, symbols) -> dict:
+        key = self.api_key()
+        symbols = list(symbols)
+        if not key or not symbols:
+            return {}
+        from lse import LSE
+
+        client = LSE(api_key=key, timeout=30)
+        out = {}
+        try:
+            for sym in symbols:
+                try:
+                    rows = client.candles(
+                        sym, timeframe="1m", limit=1, order="desc")
+                    df = normalize_candles(rows)
+                    if not df.empty:
+                        out[sym] = float(df["close"].iloc[-1])
+                except Exception:
+                    continue
+        finally:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
+        return out
+
     @staticmethod
     def _candles(client, symbol, timeframe, limit, dataset):
         try:

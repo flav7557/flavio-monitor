@@ -100,6 +100,12 @@ class MarketDataProvider:
     def fetch_universe(self, cfg: RegimeConfig) -> List[InstrumentData]:
         raise NotImplementedError
 
+    def latest_prices(self, symbols) -> dict:
+        """Best-effort latest price per symbol for the live terminal. Kept
+        deliberately light (called every ~30s). Returns ``{symbol: price}``;
+        missing symbols simply fall back to the last regime price upstream."""
+        return {}
+
     @staticmethod
     def _last_timestamp(daily: pd.DataFrame,
                         intraday: Optional[pd.DataFrame]) -> Optional[pd.Timestamp]:

@@ -73,3 +73,29 @@ class YahooProvider(MarketDataProvider):
                 last_timestamp=self._last_timestamp(d, intr),
             ))
         return out
+
+    def latest_prices(self, symbols) -> dict:
+        import yfinance as yf
+
+        symbols = list(symbols)
+        if not symbols:
+            return {}
+        try:
+            data = yf.download(
+                symbols, period="1d", interval="1m", progress=False,
+                group_by="ticker", threads=True,
+            )
+        except Exception:
+            return {}
+        out = {}
+        for sym in symbols:
+            try:
+                if isinstance(data.columns, pd.MultiIndex):
+                    s = data[sym]["Close"].dropna()
+                else:
+                    s = data["Close"].dropna()
+                if len(s):
+                    out[sym] = float(s.iloc[-1])
+            except Exception:
+                continue
+        return out

@@ -49,3 +49,12 @@ def compute_regime(
     if note:
         result.warnings.insert(0, note)
     return result
+
+
+def fetch_live_prices(cfg: RegimeConfig, symbols) -> dict:
+    """Light, frequently-called latest-price fetch (live terminal)."""
+    provider, _name, _note = select_provider(cfg)
+    try:
+        return provider.latest_prices(symbols)
+    except Exception:
+        return {}

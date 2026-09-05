@@ -403,6 +403,138 @@ def _render_visual(result) -> None:
     components.html(doc, height=height, scrolling=False)
 
 
+# --------------------------------------------------------------------------- #
+# live terminal
+# --------------------------------------------------------------------------- #
+TERMINAL_CSS = """
+*{box-sizing:border-box}
+body{margin:0;background:transparent;color:#e6edf3;
+  font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;}
+.term{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.col{border:1px solid rgba(255,255,255,0.07);border-radius:5px;background:#0b0b0d;}
+.col h3{margin:0;padding:9px 10px;font-size:10px;letter-spacing:2px;
+  text-transform:uppercase;color:#8b949e;
+  border-bottom:1px solid rgba(255,255,255,0.09);
+  display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.col h3 .st{font-weight:700;font-size:11px;}
+.row{display:flex;align-items:center;gap:8px;padding:5px 10px;
+  border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;}
+.row:last-child{border-bottom:0;}
+.nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c9d1d9;}
+.px{width:70px;text-align:right;color:#e6edf3;font-variant-numeric:tabular-nums;}
+.chg{width:60px;text-align:right;font-variant-numeric:tabular-nums;font-size:11px;}
+.tag{width:46px;text-align:right;font-weight:700;letter-spacing:0.5px;}
+.bull{color:#3fb950}.bear{color:#f85149}.neut{color:#6e7681}
+"""
+
+
+def _tag(score: float):
+    if score >= 15:
+        return "BULL", "bull"
+    if score <= -15:
+        return "BEAR", "bear"
+    return "NEUT", "neut"
+
+
+def _fmt_px(v) -> str:
+    if v is None:
+        return "—"
+    if abs(v) >= 1000:
+        return f"{v:,.1f}"
+    if abs(v) >= 1:
+        return f"{v:,.2f}"
+    return f"{v:.4f}"
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def _load_live(provider: str, intraday: bool, symbols: tuple, salt: int) -> dict:
+    from ..service import fetch_live_prices
+    cfg = replace(DEFAULT_CONFIG, provider=provider, intraday_enabled=intraday)
+    return fetch_live_prices(cfg, list(symbols))
+
+
+def _render_status(result, live: dict) -> None:
+    g = result.global_regime
+    _, cls = _tag(g.score)
+    col = {"bull": UP, "bear": DOWN, "neut": FLAT}[cls]
+    live_on = len(live) > 0
+    live_lbl = ("<span style='color:#3fb950'>● LIVE</span>" if live_on
+                else "<span style='color:#8b949e'>○ delayed</span>")
+    now = pd.Timestamp.now(tz="Europe/Paris")
+    st.markdown(
+        f"<div class='rg' style='display:flex;align-items:baseline;gap:14px;"
+        f"flex-wrap:wrap;margin-bottom:0.4rem'>"
+        f"<span style='font-size:0.8rem;letter-spacing:0.24em;color:{DIM}'>"
+        f"{html.escape(result.asset_class.upper())}</span>"
+        f"<span style='font-size:1.6rem;font-weight:700;color:{col}'>{g.score:+.0f}</span>"
+        f"<span style='font-size:1rem;font-weight:600;color:{col}'>"
+        f"{html.escape(short_regime(g.regime, g.score))}</span>"
+        f"<span style='color:{DIM};font-size:0.82rem'>conf {g.confidence:.0f}% · "
+        f"{result.n_eligible} active · {live_lbl}"
+        f"<span style='color:{DIM}'> · maj {now.strftime('%H:%M:%S')} Paris · "
+        f"auto-refresh 30s</span></span></div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_terminal(result, live: dict) -> None:
+    cols = []
+    max_rows = 1
+    for s in result.global_regime.children:
+        if not isinstance(s, GroupResult):
+            continue
+        stag, scls = _tag(s.score)
+        insts = [i for i in _all_instruments(s) if i.eligible]
+        max_rows = max(max_rows, len(insts))
+        rows = []
+        for i in insts:
+            live_px = live.get(i.symbol, i.price)
+            dcp = i.daily_change_pct
+            prev = None
+            if i.price is not None and dcp is not None and (1 + dcp / 100) != 0:
+                prev = i.price / (1 + dcp / 100)
+            if live_px is not None and prev:
+                chg = (live_px / prev - 1) * 100
+            else:
+                chg = dcp
+            chg_c = "bull" if (chg or 0) > 0 else "bear" if (chg or 0) < 0 else "neut"
+            chg_s = "—" if chg is None else f"{chg:+.2f}%"
+            itag, icls = _tag(i.score)
+            stale = " ·" if i.stale else ""
+            rows.append(
+                f"<div class='row'><span class='nm'>{html.escape(i.name)}{stale}</span>"
+                f"<span class='px'>{_fmt_px(live_px)}</span>"
+                f"<span class='chg {chg_c}'>{chg_s}</span>"
+                f"<span class='tag {icls}'>{itag}</span></div>"
+            )
+        cols.append(
+            f"<div class='col'><h3><span>{html.escape(s.name)}</span>"
+            f"<span class='st {scls}'>{stag} {s.score:+.0f}</span></h3>"
+            f"{''.join(rows)}</div>"
+        )
+    doc = f"<style>{TERMINAL_CSS}</style><div class='term'>{''.join(cols)}</div>"
+    height = 52 + max_rows * 29 + 40
+    components.html(doc, height=height, scrolling=False)
+
+
+@st.fragment(run_every=30)
+def _terminal_fragment(provider: str, intraday: bool) -> None:
+    now = pd.Timestamp.utcnow()
+    result = _load(provider, "1d", intraday, int(now.timestamp() // 300))
+    symbols = tuple(
+        i.symbol for i in _all_instruments(result.global_regime) if i.eligible
+    )
+    live = _load_live(provider, intraday, symbols, int(now.timestamp() // 30))
+    _render_status(result, live)
+    _render_terminal(result, live)
+    for w in result.warnings:
+        if "LSE_API_KEY" in w or "fallback" in w.lower():
+            st.markdown(
+                f"<div class='rg'><div class='stale'>ℹ {html.escape(w)}</div></div>",
+                unsafe_allow_html=True)
+            break
+
+
 def _render_instrument_drawer(inst: InstrumentScore) -> None:
     comps = inst.components
     rows = []
@@ -545,6 +677,10 @@ def render() -> None:
 
     provider = "yfinance" if source == "Yahoo Finance" else "lse"
 
+    with st.sidebar:
+        show_map = st.toggle("Show market map & scale", value=False,
+                             key="rg_showmap")
+
     try:
         salt = int(pd.Timestamp.utcnow().timestamp() // 300)
         result = _load(provider, "1d", intraday, salt)
@@ -552,8 +688,12 @@ def render() -> None:
         st.error(f"Regime engine could not load market data: {exc}")
         return
 
-    _render_hero(result)
-    _render_visual(result)
+    # Live terminal — sector columns, auto-refreshing every 30s
+    _terminal_fragment(provider, intraday)
+
+    if show_map:
+        _render_visual(result)
+
     _render_sector_detail(result)
     _render_methodology(result)
 
