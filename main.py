@@ -37,8 +37,21 @@ st.markdown(
             display: none;
         }
 
+        .stApp {
+            background-color: #08080a;
+            background-image:
+                radial-gradient(55vw 55vw at 12% -5%,
+                    rgba(96, 130, 210, 0.10), transparent 60%),
+                radial-gradient(50vw 50vw at 105% 25%,
+                    rgba(210, 120, 90, 0.07), transparent 55%),
+                radial-gradient(45vw 45vw at 50% 115%,
+                    rgba(90, 200, 170, 0.06), transparent 60%);
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+
         .unified-navigation-title {
-            color: #0a0a0a;
+            color: #f4f5f7;
             font-size: 1.45rem;
             font-weight: 750;
             letter-spacing: -0.035em;
@@ -53,7 +66,7 @@ st.markdown(
 
         .unified-divider {
             height: 1px;
-            background: #e6e8eb;
+            background: rgba(255, 255, 255, 0.12);
             margin: 0.25rem 0 0.8rem 0;
         }
 
@@ -80,8 +93,8 @@ st.markdown(
             margin: 0 !important;
         }
         section[data-testid="stSidebar"] .stButton > button:hover {
-            background: #f4f5f6 !important;
-            color: #0a0a0a !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            color: #f4f5f7 !important;
         }
         section[data-testid="stSidebar"] .stButton > button:focus:not(:active) {
             color: #9aa0a6 !important;
@@ -89,12 +102,12 @@ st.markdown(
         section[data-testid="stSidebar"] .stButton > button[kind="primary"],
         section[data-testid="stSidebar"] .stButton > button[kind="primary"]:focus {
             background: transparent !important;
-            color: #0a0a0a !important;
+            color: #f4f5f7 !important;
             font-weight: 700 !important;
-            border-left: 2px solid #0a0a0a !important;
+            border-left: 2px solid #f4f5f7 !important;
         }
         section[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
-            background: #f4f5f6 !important;
+            background: rgba(255, 255, 255, 0.06) !important;
         }
     </style>
     """,
@@ -284,7 +297,6 @@ def fmt_pct(value):
 
 STYLE = """
 <style>
-    .stApp { background: #ffffff; }
     .block-container { padding-top: 2.4rem; max-width: 940px; }
     #MainMenu, header, footer { visibility: hidden; }
 
@@ -292,7 +304,7 @@ STYLE = """
         font-size: 1.9rem;
         font-weight: 700;
         letter-spacing: -0.02em;
-        color: #0a0a0a;
+        color: #f4f5f7;
         margin: 0;
     }
     .do-sub {
@@ -305,41 +317,42 @@ STYLE = """
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.14em;
-        color: #6b7078;
+        color: #7c828c;
         margin: 2.1rem 0 0.4rem 0;
     }
     table.do {
         width: 100%;
         border-collapse: collapse;
-        border: 1px solid #0a0a0a;
+        border: 1px solid rgba(244, 245, 247, 0.85);
+        background: rgba(255, 255, 255, 0.015);
     }
     table.do th {
         font-size: 0.68rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #6b7078;
+        color: #7c828c;
         padding: 0.45rem 0.6rem;
         text-align: right;
-        border-bottom: 1px solid #0a0a0a;
+        border-bottom: 1px solid rgba(244, 245, 247, 0.85);
     }
     table.do th.do-name, table.do td.do-name {
         text-align: left;
     }
     table.do td {
         padding: 0.7rem 0.6rem;
-        border-bottom: 1px solid #f1f2f4;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         font-size: 0.95rem;
-        color: #0a0a0a;
+        color: #f4f5f7;
         text-align: right;
         font-variant-numeric: tabular-nums;
     }
     table.do td.do-name {
         font-weight: 600;
     }
-    .do-up { color: #0a8f3c; font-weight: 600; }
-    .do-down { color: #d32f2f; font-weight: 600; }
-    .do-flat, .do-muted { color: #9aa0a6; }
+    .do-up { color: #34d399; font-weight: 600; }
+    .do-down { color: #f87171; font-weight: 600; }
+    .do-flat, .do-muted { color: #7c828c; }
 </style>
 """
 
